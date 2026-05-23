@@ -346,7 +346,7 @@
 
       <div class="form-row mb-2">
         <div class="form-group">
-          <label>BNH Start Date</label>
+          <label>Brenna's Start Date at BNH</label>
           <input type="date" id="p-start-date" onchange="saveAndRender()" />
         </div>
         <div class="form-group">
@@ -438,12 +438,12 @@
       <div class="section-title">Shared Income Settings</div>
       <div class="form-row">
         <div class="form-group">
-          <label>KH Annual Terminal Salary ($)</label>
+          <label>Kevin's Annual Terminal Salary ($)</label>
           <input type="number" id="kh-terminal-salary" step="500" min="0" onchange="saveAndRender()" />
-          <div class="form-hint">KH's expected final-year salary (sets income ceiling)</div>
+          <div class="form-hint">Kevin's expected final-year salary (sets income ceiling)</div>
         </div>
         <div class="form-group">
-          <label>BNH Annual Terminal Salary ($)</label>
+          <label>Brenna's Annual Terminal Salary ($)</label>
           <input type="number" id="bnh-terminal-salary-display" readonly style="background:var(--bg);color:var(--muted);" />
           <div class="form-hint">Auto: pension final salary &times; 12 (from Pension tab)</div>
         </div>
@@ -452,7 +452,7 @@
         <strong style="color:var(--text);">Income rules:</strong>
         DC withdrawal &le; 4% of total DC balance &bull;
         Pension + DC &le; combined terminal salaries &bull;
-        Early retirement supplement added to pension if BNH retires before age 62, until she turns 62
+        Early retirement supplement added to pension if Brenna retires before age 62, until she turns 62
       </div>
     </div>
 
@@ -481,7 +481,7 @@
         </table>
       </div>
       <div style="font-size:0.75rem;color:var(--muted);margin-top:0.5rem;">
-        Supp. = early retirement supplement (ends when BNH turns 62). DC balance is start-of-year before withdrawal.
+        Supp. = early retirement supplement (ends when Brenna turns 62). DC balance is start-of-year before withdrawal.
       </div>
     </div>
   </div>
@@ -532,7 +532,7 @@
   <div id="tab-settings" class="tab-content">
     <div class="card">
       <div class="section-title">Personal Information</div>
-      <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;">BNH (You)</div>
+      <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;">Brenna</div>
       <div class="form-row">
         <div class="form-group">
           <label>Date of Birth</label>
@@ -544,7 +544,7 @@
         </div>
       </div>
       <div class="divider"></div>
-      <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;">KH (Husband)</div>
+      <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;">Kevin</div>
       <div class="form-row">
         <div class="form-group">
           <label>Date of Birth</label>
@@ -562,12 +562,12 @@
       <div class="section-title">Retirement Dates</div>
       <div class="form-row">
         <div class="form-group">
-          <label>BNH (Your) Retirement Date</label>
+          <label>Brenna's Retirement Date</label>
           <input type="date" id="s-bnh-retire" onchange="saveAndRender()" />
           <div class="form-hint" id="s-bnh-retire-hint"></div>
         </div>
         <div class="form-group">
-          <label>KH (Husband) Retirement Date</label>
+          <label>Kevin's Retirement Date</label>
           <input type="date" id="s-kh-retire" onchange="saveAndRender()" />
           <div class="form-hint" id="s-kh-retire-hint"></div>
         </div>
@@ -1740,15 +1740,15 @@ function renderIncome() {
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;font-size:0.82rem;margin-bottom:0.75rem;">
           <div>
-            <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">BNH Age at Retirement</div>
+            <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Brenna's Age at Retirement</div>
             <div style="font-weight:600;">${data.bnhAgeAtRetire} &nbsp;·&nbsp; Rule of 80: ${fmtDec(data.bnhRule80,2)}</div>
           </div>
           <div>
-            <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">BNH Service Years</div>
+            <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Brenna's Service Years</div>
             <div style="font-weight:600;">${fmtDec(data.bnhServiceYrs,2)} yrs</div>
           </div>
           <div>
-            <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">BNH Pension</div>
+            <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Brenna's Pension</div>
             <div style="font-weight:700;color:var(--primary);">${fmt$(data.bnhPensionMo)}/mo &nbsp;·&nbsp; ${fmt$(data.bnhPensionAnnual)}/yr</div>
           </div>
           <div>
@@ -1825,14 +1825,14 @@ function renderIncome() {
       </div>
       <div class="form-row">
         <div class="form-group" style="margin-bottom:0;">
-          <label>BNH Retirement Date</label>
+          <label>Brenna's Retirement Date</label>
           <input type="date" value="${s.bnhRetireDate||''}" onchange="updateIncomeScenario('${s.id}','bnhRetireDate',this.value)" />
-          ${data ? `<div class="form-hint">Age ${data.bnhAgeAtRetire} · Rule of 80: ${fmtDec(data.bnhRule80,2)}${data.bnhRule80 >= state.ruleTarget ? ' ✓' : ''}</div>` : ''}
+          ${data ? `<div class="form-hint">Brenna age ${data.bnhAgeAtRetire} · Rule of 80: ${fmtDec(data.bnhRule80,2)}${data.bnhRule80 >= state.ruleTarget ? ' ✓' : ''}</div>` : ''}
         </div>
         <div class="form-group" style="margin-bottom:0;">
-          <label>KH Retirement Date</label>
+          <label>Kevin's Retirement Date</label>
           <input type="date" value="${s.khRetireDate||''}" onchange="updateIncomeScenario('${s.id}','khRetireDate',this.value)" />
-          ${data ? `<div class="form-hint">KH age ${data.khAgeAtRetire !== null ? data.khAgeAtRetire : '—'} · Full retirement: ${data.fullRetDate.toLocaleDateString('en-US',dateOpts)}</div>` : ''}
+          ${data ? `<div class="form-hint">Kevin age ${data.khAgeAtRetire !== null ? data.khAgeAtRetire : '—'} · Full retirement: ${data.fullRetDate.toLocaleDateString('en-US',dateOpts)}</div>` : ''}
         </div>
       </div>
       ${bodyHTML}
