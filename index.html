@@ -587,10 +587,11 @@
       <div class="form-group">
         <label>Pay Periods per Year</label>
         <select id="s-pay-periods" onchange="saveAndRender()">
-          <option value="24" selected>24 (Semi-Monthly)</option>
-          <option value="26">26 (Bi-Weekly)</option>
-          <option value="12">12 (Monthly)</option>
+          <option value="24" selected>24 — Semi-Monthly (15th &amp; last day of month)</option>
+          <option value="26">26 — Bi-Weekly</option>
+          <option value="12">12 — Monthly</option>
         </select>
+        <div class="form-hint" id="next-pay-dates-hint"></div>
       </div>
     </div>
 
@@ -605,7 +606,7 @@
         <div class="form-group">
           <label>Early Retirement Supplement Multiplier</label>
           <input type="number" id="s-supp-multiplier" step="0.0001" min="0" onchange="saveAndRender()" />
-          <div class="form-hint">Default: 0.0008 (0.08%) — applies before age 62</div>
+          <div class="form-hint">Default: 0.008 (0.8%) — applies before age 62</div>
         </div>
       </div>
     </div>
@@ -682,7 +683,7 @@ const DEFAULT_STATE = {
   khPrimaryRetireDate: '',
   khRetireAge: 62,
   khTerminalSalary: 0,
-  pensionSupplementMultiplier: 0.0008,
+  pensionSupplementMultiplier: 0.008,
 };
 
 let state = {};
@@ -697,7 +698,7 @@ function loadState() {
       if (!state.purchaseScenarios) state.purchaseScenarios = [];
       if (!state.incomeScenarios) state.incomeScenarios = JSON.parse(JSON.stringify(DEFAULT_STATE.incomeScenarios));
       if (state.khTerminalSalary === undefined) state.khTerminalSalary = 0;
-      if (state.pensionSupplementMultiplier === undefined) state.pensionSupplementMultiplier = 0.0008;
+      if (state.pensionSupplementMultiplier === undefined) state.pensionSupplementMultiplier = 0.008;
       if (!state.khDob) state.khDob = '1987-10-08';
       if (!state.bnhPrimaryRetireDate) state.bnhPrimaryRetireDate = '';
       if (!state.khPrimaryRetireDate) state.khPrimaryRetireDate = '';
@@ -1042,6 +1043,25 @@ function render() {
   document.getElementById('s-multiplier').value = state.pensionMultiplier;
   document.getElementById('s-supp-multiplier').value = state.pensionSupplementMultiplier;
   document.getElementById('s-pay-periods').value = state.payPeriodsPerYear;
+
+  // Next two pay dates hint (semi-monthly: 15th and last day)
+  const payHint = document.getElementById('next-pay-dates-hint');
+  if (payHint && state.payPeriodsPerYear === 24) {
+    const t = today();
+    const candidates = [];
+    for (let m = 0; m <= 1; m++) {
+      const mo = t.getMonth() + m;
+      const yr = t.getFullYear() + Math.floor((t.getMonth() + m) / 12);
+      const fifteenth = new Date(yr, mo % 12, 15);
+      const lastDay = new Date(yr, (mo % 12) + 1, 0);
+      if (fifteenth > t) candidates.push(fifteenth);
+      if (lastDay > t) candidates.push(lastDay);
+    }
+    candidates.sort((a, b) => a - b);
+    const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const next2 = candidates.slice(0, 2).map(fmt).join(' · ');
+    payHint.textContent = 'Next pay dates: ' + next2;
+  }
   renderBalanceInputs();
 
   // Income tab shared fields
@@ -1084,11 +1104,11 @@ function renderDCPlans() {
           <div class="plan-stat-value" style="color:var(--accent)">${fmt$(projected)}</div>
         </div>
         <div>
-          <div class="plan-stat-label">Contribution / Period</div>
+          <div class="plan-stat-label">Per 15th &amp; Last Day</div>
           <div class="plan-stat-value">${fmt$(parseFloat(plan.contribPerPeriod)||0)}</div>
         </div>
         <div>
-          <div class="plan-stat-label">Annual Contribution</div>
+          <div class="plan-stat-label">Annual Total</div>
           <div class="plan-stat-value">${fmt$(annualContrib)}</div>
         </div>
       </div>
@@ -1099,7 +1119,7 @@ function renderDCPlans() {
           <input type="number" id="dcbal-${plan.id}" value="${plan.balance}" step="100" min="0" onchange="updatePlanBalance('${plan.id}', this.value)" />
         </div>
         <div class="form-group" style="margin-bottom:0">
-          <label>Contribution / Pay Period ($)</label>
+          <label>Contribution (15th &amp; last day, $)</label>
           <input type="number" id="dccontrib-${plan.id}" value="${plan.contribPerPeriod}" step="10" min="0" onchange="updatePlanContrib('${plan.id}', this.value)" />
         </div>
       </div>
@@ -1120,7 +1140,7 @@ function renderBalanceInputs() {
         <input type="number" id="bal-${plan.id}" value="${plan.balance}" step="100" min="0" onchange="updatePlanBalance('${plan.id}', this.value)" />
       </div>
       <div class="form-group">
-        <label>${plan.name} Contrib / Period ($)</label>
+        <label>${plan.name} Contrib (15th &amp; last day, $)</label>
         <input type="number" id="contrib-${plan.id}" value="${plan.contribPerPeriod}" step="10" min="0" onchange="updatePlanContrib('${plan.id}', this.value)" />
       </div>
     `;
