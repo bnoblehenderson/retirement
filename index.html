@@ -393,6 +393,26 @@
         Total purchased: <strong id="total-purchased-display">—</strong> years
       </div>
     </div>
+
+    <!-- Scenario Planner -->
+    <div class="card">
+      <div class="flex-between mb-1">
+        <div class="section-title" style="margin-bottom:0">Purchase Scenario Planner</div>
+      </div>
+      <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.75rem;line-height:1.5;">
+        Model future 457B transfers to buy service years. Each purchase window runs <strong>Oct 1 – Sep 30</strong>; the cost is based on your salary from <strong>Jul 1 – Jun 30</strong> of the same year.
+        Cost per year = annual salary &times; 13.72%. Projections use your 457B balance, contributions, and rate of return.
+      </div>
+      <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap;">
+        <div style="flex:1;min-width:120px;">
+          <label style="font-size:0.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:0.25rem;">Purchase Window Starting Oct 1…</label>
+          <select id="scenario-year-select" style="width:100%;padding:0.6rem 0.75rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.9rem;color:var(--text);background:#fff;outline:none;"></select>
+        </div>
+        <button class="btn btn-accent btn-sm" style="align-self:flex-end;white-space:nowrap;" onclick="addScenarioWindow()">+ Add Window</button>
+      </div>
+      <div id="scenario-list"></div>
+      <div id="scenario-summary"></div>
+    </div>
   </div>
 
   <!-- ── DC Plans ─────────────────────────────────────── -->
@@ -557,6 +577,7 @@ const DEFAULT_STATE = {
   servicePurchases: [
     { id: 'init', date: '2020-09-15', years: 1.21416, cost: 0, notes: 'Initial purchased service credit' }
   ],
+  purchaseScenarios: [],
 };
 
 let state = {};
@@ -568,6 +589,7 @@ function loadState() {
       state = JSON.parse(raw);
       // Merge any missing keys from defaults
       state.plans = state.plans || DEFAULT_STATE.plans;
+      if (!state.purchaseScenarios) state.purchaseScenarios = [];
     } else {
       state = JSON.parse(JSON.stringify(DEFAULT_STATE));
     }
@@ -843,6 +865,9 @@ function render() {
   });
   document.getElementById('total-purchased-display').textContent = fmtDec(purchased, 5) + ' years';
 
+  // Scenario planner
+  renderScenarios();
+
   // DC Plans tab
   renderDCPlans();
 
@@ -1111,6 +1136,218 @@ function renderProjectionChart() {
     ctx.textAlign = 'left';
     ctx.fillText(label, lx + 24, ly + 3);
   });
+}
+
+// ══════════════════════════════════════════════════════════════
+//  PURCHASE SCENARIO PLANNER
+// ══════════════════════════════════════════════════════════════
+
+function populateScenarioYearSelect() {
+  const sel = document.getElementById('scenario-year-select');
+  if (!sel) return;
+  const usedYears = new Set((state.purchaseScenarios || []).map(s => s.windowYear));
+  const thisYear = new Date().getFullYear();
+  sel.innerHTML = '';
+  // Offer the next 15 window years
+  for (let yr = thisYear; yr <= thisYear + 15; yr++) {
+    if (!usedYears.has(yr)) {
+      const opt = document.createElement('option');
+      opt.value = yr;
+      opt.textContent = `Oct ${yr} – Sep ${yr + 1}`;
+      sel.appendChild(opt);
+    }
+  }
+}
+
+function addScenarioWindow() {
+  const sel = document.getElementById('scenario-year-select');
+  const yr = parseInt(sel.value);
+  if (!yr) return;
+  if ((state.purchaseScenarios || []).find(s => s.windowYear === yr)) return;
+
+  if (!state.purchaseScenarios) state.purchaseScenarios = [];
+  // Default annual salary from current monthly salary setting
+  const defaultAnnual = (parseFloat(state.pensionCurrentSalary) || 0) * 12;
+  state.purchaseScenarios.push({ id: Date.now().toString(), windowYear: yr, annualSalary: defaultAnnual, yearsToPurchase: 1 });
+  state.purchaseScenarios.sort((a, b) => a.windowYear - b.windowYear);
+  saveState();
+  render();
+}
+
+function deleteScenario(id) {
+  state.purchaseScenarios = (state.purchaseScenarios || []).filter(s => s.id !== id);
+  saveState();
+  render();
+}
+
+function updateScenario(id, field, value) {
+  const s = (state.purchaseScenarios || []).find(s => s.id === id);
+  if (!s) return;
+  s[field] = parseFloat(value) || 0;
+  saveState();
+  renderScenarios();
+}
+
+function computeScenarios() {
+  const sorted = [...(state.purchaseScenarios || [])].sort((a, b) => a.windowYear - b.windowYear);
+  const plan457 = state.plans.find(p => p.id === 'bnh457b') || {};
+  let balance457 = parseFloat(plan457.balance) || 0;
+  const annualContrib457 = (parseFloat(plan457.contribPerPeriod) || 0) * 24;
+  let prevDate = today();
+  let cumulativePurchased = getTotalPurchasedYears();
+
+  return sorted.map(scenario => {
+    const purchaseDate = new Date(scenario.windowYear, 9, 1); // Oct 1
+    const yearsSpan = Math.max(0, (purchaseDate - prevDate) / (365.25 * 24 * 3600 * 1000));
+
+    // Project 457B from previous milestone to this purchase date
+    const balanceBefore = projectDC(balance457, annualContrib457, yearsSpan, state.rateOfReturn);
+
+    const costPerYear = (parseFloat(scenario.annualSalary) || 0) * 0.1372;
+    const totalCost = (parseFloat(scenario.yearsToPurchase) || 0) * costPerYear;
+    const canAfford = balanceBefore >= totalCost;
+    const balanceAfter = balanceBefore - totalCost;
+
+    cumulativePurchased += parseFloat(scenario.yearsToPurchase) || 0;
+
+    // Rule of 80 at the purchase date with cumulative purchased years
+    const serviceAtPurchase = getServiceYears(state.pensionStartDate, purchaseDate, cumulativePurchased);
+    const ageAtPurchase = getAgeDecimal(state.dob, purchaseDate);
+    const rule80AtPurchase = ageAtPurchase + serviceAtPurchase;
+
+    // New projected retirement date given all purchases through this scenario
+    const newRetDate = retirementDate(state.dob, state.pensionStartDate, cumulativePurchased);
+    const serviceAtRetirement = getServiceYears(state.pensionStartDate, newRetDate, cumulativePurchased);
+    const pensionAtRetirement = pensionMonthly(serviceAtRetirement, state.pensionFinalSalary);
+
+    // Salary basis period label
+    const salaryBasis = `Jul 1, ${scenario.windowYear} – Jun 30, ${scenario.windowYear + 1}`;
+    const windowLabel = `Oct 1, ${scenario.windowYear} – Sep 30, ${scenario.windowYear + 1}`;
+
+    // Advance state for next iteration
+    balance457 = Math.max(0, balanceAfter);
+    prevDate = purchaseDate;
+
+    return {
+      scenario, purchaseDate, salaryBasis, windowLabel,
+      balanceBefore, costPerYear, totalCost, canAfford, balanceAfter,
+      cumulativePurchased, serviceAtPurchase, ageAtPurchase, rule80AtPurchase,
+      newRetDate, serviceAtRetirement, pensionAtRetirement,
+    };
+  });
+}
+
+function renderScenarios() {
+  populateScenarioYearSelect();
+  const container = document.getElementById('scenario-list');
+  const summary = document.getElementById('scenario-summary');
+  if (!container) return;
+
+  const scenarios = state.purchaseScenarios || [];
+  if (scenarios.length === 0) {
+    container.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;text-align:center;padding:1rem 0;">No scenarios yet. Choose a window above and click "+ Add Window".</div>';
+    summary.innerHTML = '';
+    return;
+  }
+
+  const results = computeScenarios();
+  const retOpts = { year: 'numeric', month: 'short', day: 'numeric' };
+
+  container.innerHTML = '';
+  results.forEach(r => {
+    const s = r.scenario;
+    const eligible = r.rule80AtPurchase >= state.ruleTarget;
+    const affordColor = r.canAfford ? 'var(--accent)' : 'var(--danger)';
+    const affordWarn = r.canAfford ? '' : ' ⚠ Insufficient funds';
+
+    const div = document.createElement('div');
+    div.style.cssText = 'border:1.5px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:0.75rem;';
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem;">
+        <div>
+          <div style="font-weight:700;font-size:0.95rem;color:var(--primary);">${r.windowLabel}</div>
+          <div style="font-size:0.73rem;color:var(--muted);">Salary basis: ${r.salaryBasis}</div>
+        </div>
+        <button class="btn btn-sm" style="background:var(--danger);color:#fff;padding:0.2rem 0.5rem;font-size:0.7rem;flex-shrink:0;margin-left:0.5rem;" onclick="deleteScenario('${s.id}')">✕</button>
+      </div>
+
+      <div class="form-row" style="margin-bottom:0.75rem;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label>Annual Salary ($)</label>
+          <input type="number" value="${s.annualSalary}" step="500" min="0"
+            onchange="updateScenario('${s.id}', 'annualSalary', this.value)" />
+          <div class="form-hint">Jul ${s.windowYear} – Jun ${s.windowYear + 1}</div>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label>Years to Purchase</label>
+          <input type="number" value="${s.yearsToPurchase}" step="0.1" min="0" max="10"
+            onchange="updateScenario('${s.id}', 'yearsToPurchase', this.value)" />
+          <div class="form-hint">Max purchasable in one window varies</div>
+        </div>
+      </div>
+
+      <div style="background:var(--bg);border-radius:8px;padding:0.75rem;display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;font-size:0.82rem;">
+        <div>
+          <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">Cost / Year</div>
+          <div style="font-weight:600;">${fmt$(r.costPerYear)}</div>
+        </div>
+        <div>
+          <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">Total Purchase Cost</div>
+          <div style="font-weight:700;color:${affordColor};">${fmt$(r.totalCost)}${affordWarn}</div>
+        </div>
+        <div>
+          <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">457B Before Transfer</div>
+          <div style="font-weight:600;">${fmt$(r.balanceBefore)}</div>
+        </div>
+        <div>
+          <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">457B After Transfer</div>
+          <div style="font-weight:600;color:${affordColor};">${fmt$(r.balanceAfter)}</div>
+        </div>
+        <div>
+          <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">Total Svc Yrs at Purchase</div>
+          <div style="font-weight:600;">${fmtDec(r.serviceAtPurchase, 4)}</div>
+        </div>
+        <div>
+          <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">Rule of 80 at Purchase</div>
+          <div style="font-weight:700;color:${eligible ? 'var(--success)' : 'var(--primary)'};">${fmtDec(r.rule80AtPurchase, 2)}${eligible ? ' ✓ Eligible!' : ` / ${state.ruleTarget}`}</div>
+        </div>
+        <div>
+          <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">Est. Retirement Date</div>
+          <div style="font-weight:700;">${r.newRetDate.toLocaleDateString('en-US', retOpts)}</div>
+        </div>
+        <div>
+          <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">Pension at Retirement</div>
+          <div style="font-weight:700;color:var(--accent);">${fmt$(r.pensionAtRetirement)}/mo</div>
+        </div>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+
+  // Summary banner comparing baseline vs. full scenario
+  const last = results[results.length - 1];
+  const baseRetDate = retirementDate(state.dob, state.pensionStartDate, getTotalPurchasedYears());
+  const baseService = getServiceYears(state.pensionStartDate, baseRetDate, getTotalPurchasedYears());
+  const basePension = pensionMonthly(baseService, state.pensionFinalSalary);
+  const daysSaved = (baseRetDate - last.newRetDate) / (24 * 3600 * 1000);
+  const monthsSaved = daysSaved / 30.44;
+  const pensionGain = last.pensionAtRetirement - basePension;
+  const totalSpent = results.reduce((s, r) => s + r.totalCost, 0);
+  const retOpts2 = { year: 'numeric', month: 'short', day: 'numeric' };
+
+  summary.innerHTML = `
+    <div style="background:var(--primary);color:#fff;border-radius:10px;padding:1.1rem;margin-top:0.5rem;">
+      <div style="font-weight:700;font-size:0.9rem;margin-bottom:0.6rem;opacity:0.85;text-transform:uppercase;letter-spacing:0.04em;">Scenario Summary vs. No Purchases</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;font-size:0.83rem;">
+        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Baseline Retirement</div><div style="font-weight:700;">${baseRetDate.toLocaleDateString('en-US', retOpts2)}</div></div>
+        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Scenario Retirement</div><div style="font-weight:700;">${last.newRetDate.toLocaleDateString('en-US', retOpts2)}</div></div>
+        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Time Saved</div><div style="font-weight:700;">${monthsSaved > 0.5 ? fmtDec(monthsSaved / 12, 1) + ' yrs (' + Math.round(monthsSaved) + ' mo)' : '< 1 month'}</div></div>
+        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Pension Gain / mo</div><div style="font-weight:700;">${fmt$(pensionGain)}</div></div>
+        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Total 457B Spent</div><div style="font-weight:700;">${fmt$(totalSpent)}</div></div>
+        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Added Pension (Annual)</div><div style="font-weight:700;">${fmt$(pensionGain * 12)}/yr</div></div>
+      </div>
+    </div>
+  `;
 }
 
 // ══════════════════════════════════════════════════════════════
