@@ -596,6 +596,35 @@
     </div>
 
     <div class="card">
+      <div class="section-title">Salary &amp; Annual Raises</div>
+      <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;">Brenna — raises effective July 1</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Current Monthly Salary ($)</label>
+          <input type="number" id="s-brenna-salary" step="100" min="0" onchange="saveAndRender()" />
+        </div>
+        <div class="form-group">
+          <label>Annual Raise (%)</label>
+          <input type="number" id="s-brenna-raise" step="0.1" min="0" max="20" onchange="saveAndRender()" />
+        </div>
+      </div>
+      <div class="form-hint mb-2" id="s-brenna-salary-hint"></div>
+      <div class="divider"></div>
+      <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;">Kevin — raises effective January 1</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Current Monthly Salary ($)</label>
+          <input type="number" id="s-kevin-salary" step="100" min="0" onchange="saveAndRender()" />
+        </div>
+        <div class="form-group">
+          <label>Annual Raise (%)</label>
+          <input type="number" id="s-kevin-raise" step="0.1" min="0" max="20" onchange="saveAndRender()" />
+        </div>
+      </div>
+      <div class="form-hint" id="s-kevin-salary-hint"></div>
+    </div>
+
+    <div class="card">
       <div class="section-title">Pension Multipliers</div>
       <div class="form-row">
         <div class="form-group">
@@ -682,6 +711,10 @@ const DEFAULT_STATE = {
   bnhPrimaryRetireDate: '',
   khPrimaryRetireDate: '',
   khRetireAge: 62,
+  brennaCurrentSalary: 5000,
+  brennaAnnualRaisePct: 3,
+  kevinCurrentSalary: 5000,
+  kevinAnnualRaisePct: 3,
   khTerminalSalary: 0,
   pensionSupplementMultiplier: 0.008,
 };
@@ -700,6 +733,10 @@ function loadState() {
       if (state.khTerminalSalary === undefined) state.khTerminalSalary = 0;
       if (state.pensionSupplementMultiplier === undefined) state.pensionSupplementMultiplier = 0.008;
       if (!state.khDob) state.khDob = '1987-10-08';
+      if (state.brennaCurrentSalary === undefined) state.brennaCurrentSalary = state.pensionCurrentSalary || 5000;
+      if (state.brennaAnnualRaisePct === undefined) state.brennaAnnualRaisePct = 3;
+      if (state.kevinCurrentSalary === undefined) state.kevinCurrentSalary = 5000;
+      if (state.kevinAnnualRaisePct === undefined) state.kevinAnnualRaisePct = 3;
       if (!state.bnhPrimaryRetireDate) state.bnhPrimaryRetireDate = '';
       if (!state.khPrimaryRetireDate) state.khPrimaryRetireDate = '';
       if (state.khRetireAge === undefined) state.khRetireAge = 62;
@@ -830,6 +867,39 @@ function projectDC(currentBalance, annualContrib, years, rate) {
   return currentBalance * growth + annualContrib * (growth - 1) / r;
 }
 
+// ── Salary Projection ──────────────────────────────────────
+// raiseMonth: 1=Jan (Kevin), 7=Jul (Brenna)
+function salaryAtDate(baseMonthlySalary, annualRaisePct, raiseMonth, targetDate) {
+  const now = today();
+  const target = new Date(targetDate);
+  let raises = 0;
+  for (let yr = now.getFullYear(); yr <= target.getFullYear(); yr++) {
+    const raiseDate = new Date(yr, raiseMonth - 1, 1);
+    if (raiseDate > now && raiseDate <= target) raises++;
+  }
+  return baseMonthlySalary * Math.pow(1 + annualRaisePct / 100, raises);
+}
+
+function avg36MonthSalary(baseMonthlySalary, annualRaisePct, raiseMonth, retirementDate) {
+  const retDate = new Date(retirementDate);
+  let total = 0;
+  for (let i = 35; i >= 0; i--) {
+    const d = new Date(retDate.getFullYear(), retDate.getMonth() - i, 1);
+    total += salaryAtDate(baseMonthlySalary, annualRaisePct, raiseMonth, d);
+  }
+  return total / 36;
+}
+
+function brennaSalaryAt(targetDate) {
+  return salaryAtDate(state.brennaCurrentSalary || state.pensionCurrentSalary || 0, state.brennaAnnualRaisePct || 0, 7, targetDate);
+}
+function brennaAvg36Month(retirementDate) {
+  return avg36MonthSalary(state.brennaCurrentSalary || state.pensionCurrentSalary || 0, state.brennaAnnualRaisePct || 0, 7, retirementDate);
+}
+function kevinSalaryAt(targetDate) {
+  return salaryAtDate(state.kevinCurrentSalary || 0, state.kevinAnnualRaisePct || 0, 1, targetDate);
+}
+
 // ══════════════════════════════════════════════════════════════
 //  FORM VALUE COLLECTION
 // ══════════════════════════════════════════════════════════════
@@ -838,6 +908,14 @@ function collectFormValues() {
   if (dob) state.dob = dob;
   const rule = document.getElementById('s-rule').value;
   if (rule) state.ruleTarget = parseFloat(rule);
+  const bSal = document.getElementById('s-brenna-salary').value;
+  if (bSal !== '') { state.brennaCurrentSalary = parseFloat(bSal) || 0; state.pensionCurrentSalary = state.brennaCurrentSalary; }
+  const bRaise = document.getElementById('s-brenna-raise').value;
+  if (bRaise !== '') state.brennaAnnualRaisePct = parseFloat(bRaise) || 0;
+  const kSal = document.getElementById('s-kevin-salary').value;
+  if (kSal !== '') state.kevinCurrentSalary = parseFloat(kSal) || 0;
+  const kRaise = document.getElementById('s-kevin-raise').value;
+  if (kRaise !== '') state.kevinAnnualRaisePct = parseFloat(kRaise) || 0;
   const khDob = document.getElementById('s-kh-dob').value;
   if (khDob) state.khDob = khDob;
   const khRetireAge = document.getElementById('s-kh-retire-age').value;
@@ -893,7 +971,10 @@ function render() {
   const eligible = rule80Now >= state.ruleTarget;
   const retDate = eligible ? now : retirementDate(state.dob, state.pensionStartDate, purchased);
   const serviceAtRet = getServiceYears(state.pensionStartDate, retDate, purchased);
-  const pensionAtRet = pensionMonthly(serviceAtRet, state.pensionFinalSalary);
+  const salaryForPension = (state.brennaCurrentSalary && state.brennaAnnualRaisePct !== undefined)
+    ? brennaAvg36Month(retDate)
+    : state.pensionFinalSalary;
+  const pensionAtRet = pensionMonthly(serviceAtRet, salaryForPension);
   const dcTotal = totalDCBalance();
 
   // Status banner
@@ -950,7 +1031,7 @@ function render() {
   // Dashboard pension & DC cards
   document.getElementById('pension-monthly-dash').textContent = fmt$(pensionAtRet) + '/mo';
   document.getElementById('pension-formula-dash').textContent =
-    `0.161 × ${fmtDec(serviceAtRet,2)} yrs × ${fmt$(state.pensionFinalSalary)} = ${fmt$(pensionAtRet)}/mo · Annual: ${fmt$(pensionAtRet*12)}`;
+    `0.161 × ${fmtDec(serviceAtRet,2)} yrs × ${fmt$(salaryForPension)} avg = ${fmt$(pensionAtRet)}/mo · Annual: ${fmt$(pensionAtRet*12)}`;
   document.getElementById('dc-total-dash').textContent = fmt$(dcTotal);
 
   // Pension tab
@@ -967,7 +1048,8 @@ function render() {
       </div>
       <div>
         <div style="font-size:0.75rem;color:var(--muted);font-weight:700;text-transform:uppercase;">Avg Salary</div>
-        <div style="font-size:1.3rem;font-weight:700;color:var(--primary);">${fmt$(state.pensionFinalSalary)}/mo</div>
+        <div style="font-size:1.3rem;font-weight:700;color:var(--primary);">${fmt$(salaryForPension)}/mo</div>
+        <div style="font-size:0.7rem;color:var(--muted);">avg last 36mo</div>
       </div>
       <div>
         <div style="font-size:0.75rem;color:var(--muted);font-weight:700;text-transform:uppercase;">Monthly Benefit</div>
@@ -999,6 +1081,27 @@ function render() {
   // Settings form
   document.getElementById('s-dob').value = state.dob;
   document.getElementById('s-rule').value = state.ruleTarget;
+
+  // Salary fields
+  document.getElementById('s-brenna-salary').value = state.brennaCurrentSalary || '';
+  document.getElementById('s-brenna-raise').value = state.brennaAnnualRaisePct ?? '';
+  document.getElementById('s-kevin-salary').value = state.kevinCurrentSalary || '';
+  document.getElementById('s-kevin-raise').value = state.kevinAnnualRaisePct ?? '';
+
+  // Salary projection hints
+  const brennaHint = document.getElementById('s-brenna-salary-hint');
+  if (brennaHint && state.bnhPrimaryRetireDate && state.brennaCurrentSalary) {
+    const salAtRet = brennaSalaryAt(state.bnhPrimaryRetireDate);
+    const avg36 = brennaAvg36Month(state.bnhPrimaryRetireDate);
+    brennaHint.textContent = `At retirement (${new Date(state.bnhPrimaryRetireDate).getFullYear()}): ${fmt$(salAtRet)}/mo · Avg last 36mo: ${fmt$(avg36)}/mo`;
+  } else if (brennaHint) { brennaHint.textContent = 'Set retirement date to see projection'; }
+
+  const kevinHint = document.getElementById('s-kevin-salary-hint');
+  if (kevinHint && state.khPrimaryRetireDate && state.kevinCurrentSalary) {
+    const kSalAtRet = kevinSalaryAt(state.khPrimaryRetireDate);
+    kevinHint.textContent = `At retirement (${new Date(state.khPrimaryRetireDate).getFullYear()}): ${fmt$(kSalAtRet)}/mo · Annual: ${fmt$(kSalAtRet * 12)}/yr`;
+  } else if (kevinHint) { kevinHint.textContent = 'Set retirement date to see projection'; }
+
   document.getElementById('s-kh-dob').value = state.khDob || '';
   document.getElementById('s-kh-retire-age').value = state.khRetireAge || 62;
 
@@ -1068,7 +1171,10 @@ function render() {
   const khSalEl = document.getElementById('kh-terminal-salary');
   if (khSalEl) khSalEl.value = state.khTerminalSalary || 0;
   const bnhSalEl = document.getElementById('bnh-terminal-salary-display');
-  if (bnhSalEl) bnhSalEl.value = ((parseFloat(state.pensionFinalSalary) || 0) * 12).toFixed(0);
+  const brennaTermAnnual = state.bnhPrimaryRetireDate && state.brennaCurrentSalary
+    ? brennaAvg36Month(state.bnhPrimaryRetireDate) * 12
+    : (parseFloat(state.pensionFinalSalary) || 0) * 12;
+  if (bnhSalEl) bnhSalEl.value = brennaTermAnnual.toFixed(0);
 
   renderIncome();
 }
@@ -1360,8 +1466,11 @@ function addScenarioWindow() {
   if ((state.purchaseScenarios || []).find(s => s.windowYear === yr)) return;
 
   if (!state.purchaseScenarios) state.purchaseScenarios = [];
-  // Default annual salary from current monthly salary setting
-  const defaultAnnual = (parseFloat(state.pensionCurrentSalary) || 0) * 12;
+  // Default annual salary from projected salary at purchase window
+  const windowDate = new Date(yr, 9, 1); // Oct 1 of window year
+  const defaultAnnual = state.brennaCurrentSalary
+    ? brennaSalaryAt(windowDate) * 12
+    : (parseFloat(state.pensionCurrentSalary) || 0) * 12;
   state.purchaseScenarios.push({ id: Date.now().toString(), windowYear: yr, annualSalary: defaultAnnual, yearsToPurchase: 1 });
   state.purchaseScenarios.sort((a, b) => a.windowYear - b.windowYear);
   saveState();
@@ -1397,7 +1506,11 @@ function computeScenarios() {
     // Project 457B from previous milestone to this purchase date
     const balanceBefore = projectDC(balance457, annualContrib457, yearsSpan, state.rateOfReturn);
 
-    const costPerYear = (parseFloat(scenario.annualSalary) || 0) * 0.1372;
+    // Use scenario's entered salary, but fall back to projected salary if 0
+    const effectiveAnnualSalary = (parseFloat(scenario.annualSalary) > 0)
+      ? parseFloat(scenario.annualSalary)
+      : brennaSalaryAt(purchaseDate) * 12;
+    const costPerYear = effectiveAnnualSalary * 0.1372;
     const totalCost = (parseFloat(scenario.yearsToPurchase) || 0) * costPerYear;
     const canAfford = balanceBefore >= totalCost;
     const balanceAfter = balanceBefore - totalCost;
@@ -1584,10 +1697,13 @@ function computeIncomeScenario(scenario) {
   const fullRetDate = new Date(Math.max(bnhRetDate.getTime(), khRetDate.getTime()));
   const now = today();
 
-  // BNH pension at her retirement date
+  // Brenna's pension — use projected avg 36-month salary if growth data available
   const purchased = getTotalPurchasedYears();
   const bnhServiceYrs  = getServiceYears(state.pensionStartDate, bnhRetDate, purchased);
-  const bnhPensionMo   = pensionMonthly(bnhServiceYrs, state.pensionFinalSalary);
+  const projAvgSalary  = (state.brennaCurrentSalary && state.brennaAnnualRaisePct !== undefined)
+    ? brennaAvg36Month(bnhRetDate)
+    : state.pensionFinalSalary;
+  const bnhPensionMo   = pensionMonthly(bnhServiceYrs, projAvgSalary);
   const bnhPensionAnnual = bnhPensionMo * 12;
   const bnhAgeAtRetire = getAge(state.dob, bnhRetDate);
   const khAgeAtRetire  = state.khDob ? getAge(state.khDob, khRetDate) : null;
@@ -1618,9 +1734,11 @@ function computeIncomeScenario(scenario) {
     totalDCAtFullRet += bal;
   });
 
-  // Income cap
-  const bnhTerminalAnnual = (parseFloat(state.pensionFinalSalary) || 0) * 12;
-  const khTerminalAnnual  = parseFloat(state.khTerminalSalary) || 0;
+  // Income cap — use projected terminal salaries where available
+  const bnhTerminalAnnual = projAvgSalary * 12;
+  const khTerminalAnnual  = (state.kevinCurrentSalary && state.kevinAnnualRaisePct !== undefined)
+    ? kevinSalaryAt(khRetDate) * 12
+    : parseFloat(state.khTerminalSalary) || 0;
   const combinedCap = bnhTerminalAnnual + khTerminalAnnual;
 
   // Year-1 income (supplement may apply)
