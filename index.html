@@ -532,6 +532,7 @@
   <div id="tab-settings" class="tab-content">
     <div class="card">
       <div class="section-title">Personal Information</div>
+      <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;">BNH (You)</div>
       <div class="form-row">
         <div class="form-group">
           <label>Date of Birth</label>
@@ -541,6 +542,38 @@
           <label>Retirement Target (Rule of 80)</label>
           <input type="number" id="s-rule" value="80" onchange="saveAndRender()" />
         </div>
+      </div>
+      <div class="divider"></div>
+      <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;">KH (Husband)</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date of Birth</label>
+          <input type="date" id="s-kh-dob" onchange="saveAndRender()" />
+        </div>
+        <div class="form-group">
+          <label>Target Retirement Age</label>
+          <input type="number" id="s-kh-retire-age" step="1" min="50" max="80" onchange="saveAndRender()" />
+          <div class="form-hint" id="s-kh-retire-age-hint"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Retirement Dates</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>BNH (Your) Retirement Date</label>
+          <input type="date" id="s-bnh-retire" onchange="saveAndRender()" />
+          <div class="form-hint" id="s-bnh-retire-hint"></div>
+        </div>
+        <div class="form-group">
+          <label>KH (Husband) Retirement Date</label>
+          <input type="date" id="s-kh-retire" onchange="saveAndRender()" />
+          <div class="form-hint" id="s-kh-retire-hint"></div>
+        </div>
+      </div>
+      <div style="background:var(--bg);border-radius:8px;padding:0.75rem;font-size:0.8rem;color:var(--muted);">
+        These dates are used as defaults in the Income tab. You can override them per scenario.
       </div>
     </div>
 
@@ -622,6 +655,7 @@
 // ══════════════════════════════════════════════════════════════
 const DEFAULT_STATE = {
   dob: '1987-11-07',
+  khDob: '1987-10-08',
   ruleTarget: 80,
   pensionStartDate: '2020-09-15',
   pensionMultiplier: 0.161,
@@ -644,6 +678,9 @@ const DEFAULT_STATE = {
   incomeScenarios: [
     { id: 'IS1', name: 'Scenario 1', bnhRetireDate: '', khRetireDate: '' }
   ],
+  bnhPrimaryRetireDate: '',
+  khPrimaryRetireDate: '',
+  khRetireAge: 62,
   khTerminalSalary: 0,
   pensionSupplementMultiplier: 0.0008,
 };
@@ -661,6 +698,10 @@ function loadState() {
       if (!state.incomeScenarios) state.incomeScenarios = JSON.parse(JSON.stringify(DEFAULT_STATE.incomeScenarios));
       if (state.khTerminalSalary === undefined) state.khTerminalSalary = 0;
       if (state.pensionSupplementMultiplier === undefined) state.pensionSupplementMultiplier = 0.0008;
+      if (!state.khDob) state.khDob = '1987-10-08';
+      if (!state.bnhPrimaryRetireDate) state.bnhPrimaryRetireDate = '';
+      if (!state.khPrimaryRetireDate) state.khPrimaryRetireDate = '';
+      if (state.khRetireAge === undefined) state.khRetireAge = 62;
     } else {
       state = JSON.parse(JSON.stringify(DEFAULT_STATE));
     }
@@ -796,6 +837,14 @@ function collectFormValues() {
   if (dob) state.dob = dob;
   const rule = document.getElementById('s-rule').value;
   if (rule) state.ruleTarget = parseFloat(rule);
+  const khDob = document.getElementById('s-kh-dob').value;
+  if (khDob) state.khDob = khDob;
+  const khRetireAge = document.getElementById('s-kh-retire-age').value;
+  if (khRetireAge) state.khRetireAge = parseInt(khRetireAge);
+  const bnhRetire = document.getElementById('s-bnh-retire').value;
+  state.bnhPrimaryRetireDate = bnhRetire;
+  const khRetire = document.getElementById('s-kh-retire').value;
+  state.khPrimaryRetireDate = khRetire;
   const mult = document.getElementById('s-multiplier').value;
   if (mult) state.pensionMultiplier = parseFloat(mult);
   const suppMult = document.getElementById('s-supp-multiplier').value;
@@ -949,6 +998,47 @@ function render() {
   // Settings form
   document.getElementById('s-dob').value = state.dob;
   document.getElementById('s-rule').value = state.ruleTarget;
+  document.getElementById('s-kh-dob').value = state.khDob || '';
+  document.getElementById('s-kh-retire-age').value = state.khRetireAge || 62;
+
+  // Auto-calculate KH retirement date from DOB + target age if not manually set
+  if (state.khDob && !state.khPrimaryRetireDate) {
+    const khBirth = new Date(state.khDob);
+    const autoKhRetire = new Date(khBirth);
+    autoKhRetire.setFullYear(autoKhRetire.getFullYear() + (state.khRetireAge || 62));
+    state.khPrimaryRetireDate = autoKhRetire.toISOString().slice(0, 10);
+  }
+
+  // KH age hint
+  const khAgeHintEl = document.getElementById('s-kh-retire-age-hint');
+  if (khAgeHintEl && state.khDob) {
+    const khRetireDate = new Date(state.khDob);
+    khRetireDate.setFullYear(khRetireDate.getFullYear() + (state.khRetireAge || 62));
+    khAgeHintEl.textContent = 'Retirement date: ' + khRetireDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    // Sync the KH retire date field if it's empty
+    const khRetireEl = document.getElementById('s-kh-retire');
+    if (khRetireEl && !khRetireEl.value) khRetireEl.value = state.khPrimaryRetireDate;
+  }
+
+  document.getElementById('s-bnh-retire').value = state.bnhPrimaryRetireDate || '';
+  document.getElementById('s-kh-retire').value = state.khPrimaryRetireDate || '';
+
+  // Hints for retirement dates
+  const bnhRetireHint = document.getElementById('s-bnh-retire-hint');
+  if (bnhRetireHint && state.bnhPrimaryRetireDate) {
+    const d = new Date(state.bnhPrimaryRetireDate);
+    const age = getAge(state.dob, d);
+    const svc = getServiceYears(state.pensionStartDate, d, getTotalPurchasedYears());
+    const r80 = ruleOf80Value(state.dob, state.pensionStartDate, getTotalPurchasedYears(), d);
+    bnhRetireHint.textContent = `Age ${age} · ${fmtDec(svc, 2)} service yrs · Rule of 80: ${fmtDec(r80, 2)}`;
+  }
+  const khRetireHint = document.getElementById('s-kh-retire-hint');
+  if (khRetireHint && state.khPrimaryRetireDate && state.khDob) {
+    const d = new Date(state.khPrimaryRetireDate);
+    const age = getAge(state.khDob, d);
+    khRetireHint.textContent = `KH age at retirement: ${age}`;
+  }
+
   document.getElementById('s-multiplier').value = state.pensionMultiplier;
   document.getElementById('s-supp-multiplier').value = state.pensionSupplementMultiplier;
   document.getElementById('s-pay-periods').value = state.payPeriodsPerYear;
@@ -1442,7 +1532,12 @@ function addIncomeScenario() {
   if ((state.incomeScenarios || []).length >= 4) { alert('Maximum 4 scenarios.'); return; }
   if (!state.incomeScenarios) state.incomeScenarios = [];
   const n = state.incomeScenarios.length + 1;
-  state.incomeScenarios.push({ id: 'IS' + Date.now(), name: 'Scenario ' + n, bnhRetireDate: '', khRetireDate: '' });
+  state.incomeScenarios.push({
+    id: 'IS' + Date.now(),
+    name: 'Scenario ' + n,
+    bnhRetireDate: state.bnhPrimaryRetireDate || '',
+    khRetireDate: state.khPrimaryRetireDate || '',
+  });
   saveState();
   renderIncome();
 }
@@ -1475,6 +1570,7 @@ function computeIncomeScenario(scenario) {
   const bnhPensionMo   = pensionMonthly(bnhServiceYrs, state.pensionFinalSalary);
   const bnhPensionAnnual = bnhPensionMo * 12;
   const bnhAgeAtRetire = getAge(state.dob, bnhRetDate);
+  const khAgeAtRetire  = state.khDob ? getAge(state.khDob, khRetDate) : null;
   const bnhRule80      = ruleOf80Value(state.dob, state.pensionStartDate, purchased, bnhRetDate);
 
   // Early retirement supplement (if retire before 62)
@@ -1518,7 +1614,7 @@ function computeIncomeScenario(scenario) {
   return {
     scenario, bnhRetDate, khRetDate, fullRetDate,
     bnhServiceYrs, bnhPensionMo, bnhPensionAnnual,
-    bnhAgeAtRetire, bnhRule80, hasSupp, suppMo, suppAnnual, age62Date,
+    bnhAgeAtRetire, khAgeAtRetire, bnhRule80, hasSupp, suppMo, suppAnnual, age62Date,
     totalDCAtFullRet, planDetails,
     bnhTerminalAnnual, khTerminalAnnual, combinedCap,
     maxDC4pct, remainingCap, dcWithdrawal,
@@ -1716,7 +1812,7 @@ function renderIncome() {
         <div class="form-group" style="margin-bottom:0;">
           <label>KH Retirement Date</label>
           <input type="date" value="${s.khRetireDate||''}" onchange="updateIncomeScenario('${s.id}','khRetireDate',this.value)" />
-          ${data ? `<div class="form-hint">Full retirement: ${data.fullRetDate.toLocaleDateString('en-US',dateOpts)}</div>` : ''}
+          ${data ? `<div class="form-hint">KH age ${data.khAgeAtRetire !== null ? data.khAgeAtRetire : '—'} · Full retirement: ${data.fullRetDate.toLocaleDateString('en-US',dateOpts)}</div>` : ''}
         </div>
       </div>
       ${bodyHTML}
@@ -1763,6 +1859,22 @@ function init() {
   loadState();
   if (!state.projectionStartYear) state.projectionStartYear = new Date().getFullYear();
   document.getElementById('proj-start-year').value = state.projectionStartYear;
+
+  // Auto-calculate KH retirement date from DOB + target age if not yet set
+  if (state.khDob && !state.khPrimaryRetireDate) {
+    const d = new Date(state.khDob);
+    d.setFullYear(d.getFullYear() + (state.khRetireAge || 62));
+    state.khPrimaryRetireDate = d.toISOString().slice(0, 10);
+    saveState();
+  }
+
+  // Pre-fill first income scenario with primary dates if it's still blank
+  if (state.incomeScenarios && state.incomeScenarios.length > 0) {
+    const first = state.incomeScenarios[0];
+    if (!first.bnhRetireDate && state.bnhPrimaryRetireDate) first.bnhRetireDate = state.bnhPrimaryRetireDate;
+    if (!first.khRetireDate && state.khPrimaryRetireDate) first.khRetireDate = state.khPrimaryRetireDate;
+  }
+
   render();
 }
 </script>
