@@ -298,44 +298,70 @@
     <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
   </div>
 
-  <!-- ── Dashboard ──────────────────────────────────── -->
+  <!-- ── Summary ──────────────────────────────────────── -->
   <div id="tab-dashboard" class="tab-content active">
-    <div id="status-banner" class="status-banner not-eligible">
-      <h2 id="status-title">Calculating…</h2>
-      <p id="status-desc"></p>
-    </div>
 
-    <div class="stat-grid" id="dashboard-stats"></div>
-
-    <div class="card">
-      <div class="card-title">Rule of 80 Progress</div>
-      <div class="progress-wrap">
-        <div class="progress-label">
-          <span id="rule80-label">Age + Service Years</span>
-          <span id="rule80-pct"></span>
+    <!-- Person cards -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
+      <div class="card" style="margin-bottom:0;">
+        <div style="font-weight:800;font-size:1.05rem;color:var(--primary);margin-bottom:0.6rem;">Brenna</div>
+        <div style="font-size:2.2rem;font-weight:700;line-height:1;color:var(--text);" id="dash-brenna-age">—</div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.75rem;" id="dash-brenna-bday"></div>
+        <div class="form-group" style="margin-bottom:0.5rem;">
+          <label style="font-size:0.72rem;">Retirement Date</label>
+          <input type="date" id="dash-brenna-retire" onchange="dashUpdateRetire('brenna',this.value)" />
+          <div class="form-hint" id="dash-brenna-retire-hint"></div>
         </div>
-        <div class="progress-bar"><div class="progress-fill primary" id="rule80-bar" style="width:0%"></div></div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label style="font-size:0.72rem;">Monthly Salary ($)</label>
+          <input type="number" id="dash-brenna-salary" step="100" min="0" onchange="dashUpdateSalary('brenna',this.value)" />
+        </div>
       </div>
 
-      <div class="progress-wrap">
-        <div class="progress-label">
-          <span>Service Years Accumulated</span>
-          <span id="service-pct"></span>
+      <div class="card" style="margin-bottom:0;">
+        <div style="font-weight:800;font-size:1.05rem;color:var(--primary);margin-bottom:0.6rem;">Kevin</div>
+        <div style="font-size:2.2rem;font-weight:700;line-height:1;color:var(--text);" id="dash-kevin-age">—</div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.75rem;" id="dash-kevin-bday"></div>
+        <div class="form-group" style="margin-bottom:0.5rem;">
+          <label style="font-size:0.72rem;">Retirement Date</label>
+          <input type="date" id="dash-kevin-retire" onchange="dashUpdateRetire('kevin',this.value)" />
+          <div class="form-hint" id="dash-kevin-retire-hint"></div>
         </div>
-        <div class="progress-bar"><div class="progress-fill accent" id="service-bar" style="width:0%"></div></div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label style="font-size:0.72rem;">Monthly Salary ($)</label>
+          <input type="number" id="dash-kevin-salary" step="100" min="0" onchange="dashUpdateSalary('kevin',this.value)" />
+        </div>
       </div>
     </div>
 
+    <!-- Account Balances -->
     <div class="card">
-      <div class="card-title">Estimated Monthly Pension at Retirement</div>
-      <div style="font-size:2rem; font-weight:700; color:var(--primary);" id="pension-monthly-dash">—</div>
-      <div style="font-size:0.82rem; color:var(--muted); margin-top:0.25rem;" id="pension-formula-dash"></div>
+      <div class="section-title">Account Balances</div>
+      <div id="dash-balances-list"></div>
+      <div class="divider"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:0.95rem;">
+        <span>Total</span>
+        <span id="dash-total-bal" style="color:var(--accent);font-size:1.15rem;">—</span>
+      </div>
     </div>
 
+    <!-- Income Timeline -->
     <div class="card">
-      <div class="card-title">Total DC Balance (Current)</div>
-      <div style="font-size:2rem; font-weight:700; color:var(--accent);" id="dc-total-dash">—</div>
-      <div style="font-size:0.82rem; color:var(--muted); margin-top:0.25rem;">Across all defined contribution plans</div>
+      <div class="flex-between mb-1">
+        <div class="section-title" style="margin-bottom:0;">Projected Income Timeline</div>
+        <button class="btn btn-outline btn-sm" id="dash-toggle-btn" onclick="dashToggleYearly()">Show Years</button>
+      </div>
+      <div id="dash-income-phases"></div>
+      <div id="dash-yearly-wrap" style="display:none;margin-top:0.75rem;">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Year</th><th>Brenna</th><th>Kevin</th><th>Pension/yr</th><th>Supp./yr</th><th>DC Draw</th><th>Total/yr</th></tr>
+            </thead>
+            <tbody id="dash-yearly-tbody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -977,62 +1003,8 @@ function render() {
   const pensionAtRet = pensionMonthly(serviceAtRet, salaryForPension);
   const dcTotal = totalDCBalance();
 
-  // Status banner
-  const banner = document.getElementById('status-banner');
-  const title = document.getElementById('status-title');
-  const desc = document.getElementById('status-desc');
-  if (eligible) {
-    banner.className = 'status-banner eligible';
-    title.textContent = 'You are eligible to retire!';
-    desc.textContent = `Rule of 80: ${fmtDec(rule80Now, 2)} / ${state.ruleTarget}`;
-  } else {
-    banner.className = 'status-banner not-eligible';
-    const opts = { year: 'numeric', month: 'long', day: 'numeric' };
-    title.textContent = `Estimated Retirement: ${retDate.toLocaleDateString('en-US', opts)}`;
-    const yearsLeft = (retDate - now) / (365.25 * 24 * 3600 * 1000);
-    desc.textContent = `${fmtDec(yearsLeft, 1)} years away · Rule of 80: ${fmtDec(rule80Now, 2)} / ${state.ruleTarget}`;
-  }
-
-  // Stat grid
-  const ageInt = getAge(state.dob, now);
-  document.getElementById('dashboard-stats').innerHTML = `
-    <div class="stat-box">
-      <div class="label">Current Age</div>
-      <div class="value">${ageInt}</div>
-      <div class="sub">${fmtDec(ageNow, 2)} decimal</div>
-    </div>
-    <div class="stat-box">
-      <div class="label">Service Years</div>
-      <div class="value">${fmtDec(serviceNow, 2)}</div>
-      <div class="sub">incl. ${fmtDec(purchased, 5)} purchased</div>
-    </div>
-    <div class="stat-box">
-      <div class="label">Rule of 80</div>
-      <div class="value">${fmtDec(rule80Now, 1)}</div>
-      <div class="sub">need ${state.ruleTarget}</div>
-    </div>
-    <div class="stat-box">
-      <div class="label">Pension at Ret.</div>
-      <div class="value">${fmt$(pensionAtRet)}<span style="font-size:1rem">/mo</span></div>
-      <div class="sub">${fmtDec(serviceAtRet, 2)} service yrs</div>
-    </div>
-  `;
-
-  // Rule of 80 progress bar
-  const r80pct = Math.min(100, (rule80Now / state.ruleTarget) * 100);
-  document.getElementById('rule80-bar').style.width = r80pct + '%';
-  document.getElementById('rule80-pct').textContent = fmtDec(rule80Now, 2) + ' / ' + state.ruleTarget;
-
-  const svcTarget = state.ruleTarget - ageNow; // service years needed if retiring today
-  const svcPct = Math.min(100, (serviceNow / Math.max(svcTarget, serviceNow)) * 100);
-  document.getElementById('service-bar').style.width = svcPct + '%';
-  document.getElementById('service-pct').textContent = fmtDec(serviceNow, 2) + ' yrs';
-
-  // Dashboard pension & DC cards
-  document.getElementById('pension-monthly-dash').textContent = fmt$(pensionAtRet) + '/mo';
-  document.getElementById('pension-formula-dash').textContent =
-    `0.161 × ${fmtDec(serviceAtRet,2)} yrs × ${fmt$(salaryForPension)} avg = ${fmt$(pensionAtRet)}/mo · Annual: ${fmt$(pensionAtRet*12)}`;
-  document.getElementById('dc-total-dash').textContent = fmt$(dcTotal);
+  // Summary tab
+  renderSummaryTab();
 
   // Pension tab
   document.getElementById('p-start-date').value = state.pensionStartDate;
@@ -1988,6 +1960,321 @@ function resetData() {
   if (!confirm('Reset ALL data to defaults? This cannot be undone.')) return;
   state = JSON.parse(JSON.stringify(DEFAULT_STATE));
   saveState(); render();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  SUMMARY TAB
+// ══════════════════════════════════════════════════════════════
+
+function computeSummaryTimeline() {
+  const bnhRetireDate = state.bnhPrimaryRetireDate ? new Date(state.bnhPrimaryRetireDate) : null;
+  const khRetireDate  = state.khPrimaryRetireDate  ? new Date(state.khPrimaryRetireDate)  : null;
+  if (!bnhRetireDate && !khRetireDate) return null;
+
+  const now = today();
+  const ror = state.rateOfReturn / 100;
+
+  // Brenna age-62 (supplement expires)
+  const age62Date = new Date(state.dob);
+  age62Date.setFullYear(age62Date.getFullYear() + 62);
+
+  // Pension & supplement at Brenna's retirement
+  const purchased = getTotalPurchasedYears();
+  let bnhPensionAnnual = 0, suppAnnual = 0, hasSupp = false;
+  if (bnhRetireDate) {
+    const bnhSvcYrs = getServiceYears(state.pensionStartDate, bnhRetireDate, purchased);
+    const avgSal = (state.brennaCurrentSalary && state.brennaAnnualRaisePct !== undefined)
+      ? brennaAvg36Month(bnhRetireDate) : state.pensionFinalSalary;
+    bnhPensionAnnual = pensionMonthly(bnhSvcYrs, avgSal) * 12;
+    hasSupp = getAge(state.dob, bnhRetireDate) < 62;
+    if (hasSupp) suppAnnual = state.pensionSupplementMultiplier * bnhSvcYrs * avgSal * 12;
+  }
+
+  // DC pools by owner
+  const brennaDCIds = ['bnh457b', 'bnh401a', 'bnhira'];
+  const brennaPlans = state.plans.filter(p => brennaDCIds.includes(p.id));
+  const kevinPlans  = state.plans.filter(p => p.id === 'kh401k');
+
+  const brennaAnnualContrib = brennaPlans.reduce((s, p) =>
+    s + (parseFloat(p.contribPerPeriod) || 0) * (p.semiMonthly ? 24 : state.payPeriodsPerYear), 0);
+  const kevinAnnualContrib = kevinPlans.reduce((s, p) =>
+    s + (parseFloat(p.contribPerPeriod) || 0) * (p.semiMonthly ? 24 : state.payPeriodsPerYear), 0);
+
+  let brennaDC = brennaPlans.reduce((s, p) => s + (parseFloat(p.balance) || 0), 0);
+  let kevinDC  = kevinPlans.reduce((s,  p) => s + (parseFloat(p.balance) || 0), 0);
+
+  const bnhRetYear = bnhRetireDate ? bnhRetireDate.getFullYear() : Infinity;
+  const khRetYear  = khRetireDate  ? khRetireDate.getFullYear()  : Infinity;
+  const firstRetYear = Math.min(bnhRetYear, khRetYear);
+  const lastRetYear  = Math.max(
+    bnhRetYear === Infinity ? firstRetYear : bnhRetYear,
+    khRetYear  === Infinity ? firstRetYear : khRetYear
+  );
+
+  // Income cap (combined terminal salaries, used when both retired)
+  const bnhTermAnnual = bnhRetireDate
+    ? ((state.brennaCurrentSalary && state.brennaAnnualRaisePct !== undefined)
+        ? brennaAvg36Month(bnhRetireDate) * 12 : state.pensionFinalSalary * 12) : 0;
+  const khTermAnnual  = khRetireDate
+    ? ((state.kevinCurrentSalary && state.kevinAnnualRaisePct !== undefined)
+        ? kevinSalaryAt(khRetireDate) * 12 : parseFloat(state.khTerminalSalary) || 0) : 0;
+  const combinedCap = bnhTermAnnual + khTermAnnual;
+
+  const startYear  = now.getFullYear();
+  const recordFrom = Math.max(firstRetYear, startYear);
+  const endYear    = (lastRetYear === Infinity ? startYear + 5 : lastRetYear) + 30;
+  const rows = [];
+
+  for (let yr = startYear; yr <= endYear; yr++) {
+    const brennaRetired = yr >= bnhRetYear;
+    const kevinRetired  = yr >= khRetYear;
+
+    const beginBrenna = brennaDC;
+    const beginKevin  = kevinDC;
+
+    const midYear = new Date(yr, 6, 1);
+    const brennaSalIncome = (!brennaRetired && bnhRetireDate) ? brennaSalaryAt(midYear) * 12 : 0;
+    const kevinSalIncome  = (!kevinRetired  && khRetireDate)  ? kevinSalaryAt(midYear)  * 12 : 0;
+
+    const pensionIncome = brennaRetired ? bnhPensionAnnual : 0;
+    const suppThisYear  = (brennaRetired && hasSupp && midYear < age62Date) ? suppAnnual : 0;
+
+    const availBrenna = brennaRetired ? beginBrenna : 0;
+    const availKevin  = kevinRetired  ? beginKevin  : 0;
+    const availDC     = availBrenna + availKevin;
+
+    let dcDraw = availDC * 0.04;
+    if (brennaRetired && kevinRetired) {
+      dcDraw = Math.min(dcDraw, Math.max(0, combinedCap - pensionIncome - suppThisYear));
+    }
+    dcDraw = Math.max(0, dcDraw);
+
+    // Apportion draw proportionally; update end-of-year balances
+    const brennaShare = availDC > 0 ? availBrenna / availDC : 0;
+    const kevinShare  = availDC > 0 ? availKevin  / availDC : 0;
+
+    if (brennaRetired) {
+      brennaDC = Math.max(0, (beginBrenna - dcDraw * brennaShare) * (1 + ror));
+    } else {
+      brennaDC = beginBrenna * (1 + ror) + brennaAnnualContrib;
+    }
+    if (kevinRetired) {
+      kevinDC = Math.max(0, (beginKevin - dcDraw * kevinShare) * (1 + ror));
+    } else {
+      kevinDC = beginKevin * (1 + ror) + kevinAnnualContrib;
+    }
+
+    if (yr >= recordFrom) {
+      rows.push({
+        yr, brennaRetired, kevinRetired,
+        brennaSalIncome, kevinSalIncome,
+        pensionIncome, suppIncome: suppThisYear,
+        dcDraw,
+        totalIncome: pensionIncome + suppThisYear + brennaSalIncome + kevinSalIncome + dcDraw,
+      });
+    }
+  }
+
+  return { rows, bnhRetireDate, khRetireDate, age62Date, bnhPensionAnnual, suppAnnual, hasSupp, combinedCap };
+}
+
+function renderSummaryTab() {
+  const now = today();
+
+  // Ages
+  const bAgeEl = document.getElementById('dash-brenna-age');
+  if (bAgeEl) bAgeEl.textContent = getAge(state.dob, now);
+  const bBdayEl = document.getElementById('dash-brenna-bday');
+  if (bBdayEl) bBdayEl.textContent = new Date(state.dob).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+  const kAgeEl = document.getElementById('dash-kevin-age');
+  if (kAgeEl) kAgeEl.textContent = getAge(state.khDob || state.dob, now);
+  const kBdayEl = document.getElementById('dash-kevin-bday');
+  if (kBdayEl) kBdayEl.textContent = new Date(state.khDob || state.dob).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+  // Retirement date inputs + hints
+  const bRetEl = document.getElementById('dash-brenna-retire');
+  if (bRetEl) bRetEl.value = state.bnhPrimaryRetireDate || '';
+  const bRetHint = document.getElementById('dash-brenna-retire-hint');
+  if (bRetHint) {
+    if (state.bnhPrimaryRetireDate) {
+      const d = new Date(state.bnhPrimaryRetireDate);
+      const svc = getServiceYears(state.pensionStartDate, d, getTotalPurchasedYears());
+      const r80 = ruleOf80Value(state.dob, state.pensionStartDate, getTotalPurchasedYears(), d);
+      bRetHint.textContent = `Age ${getAge(state.dob, d)} · ${fmtDec(svc, 2)} svc yrs · Rule of 80: ${fmtDec(r80, 2)}`;
+    } else { bRetHint.textContent = ''; }
+  }
+
+  const kRetEl = document.getElementById('dash-kevin-retire');
+  if (kRetEl) kRetEl.value = state.khPrimaryRetireDate || '';
+  const kRetHint = document.getElementById('dash-kevin-retire-hint');
+  if (kRetHint) {
+    if (state.khPrimaryRetireDate && state.khDob) {
+      kRetHint.textContent = `Age ${getAge(state.khDob, new Date(state.khPrimaryRetireDate))} at retirement`;
+    } else { kRetHint.textContent = ''; }
+  }
+
+  // Salary inputs
+  const bSalEl = document.getElementById('dash-brenna-salary');
+  if (bSalEl) bSalEl.value = state.brennaCurrentSalary || '';
+  const kSalEl = document.getElementById('dash-kevin-salary');
+  if (kSalEl) kSalEl.value = state.kevinCurrentSalary || '';
+
+  // Account balances (editable)
+  const balList = document.getElementById('dash-balances-list');
+  if (balList) {
+    balList.innerHTML = '';
+    let total = 0;
+    state.plans.forEach(plan => {
+      const bal = parseFloat(plan.balance) || 0;
+      total += bal;
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;gap:0.75rem;';
+      row.innerHTML = `
+        <span style="font-size:0.85rem;color:var(--muted);font-weight:600;min-width:90px;">${plan.name}</span>
+        <input type="number" value="${bal}" step="100" min="0"
+          style="flex:1;padding:0.4rem 0.65rem;border:1.5px solid var(--border);border-radius:6px;font-size:0.88rem;color:var(--text);background:#fff;outline:none;text-align:right;max-width:170px;"
+          onchange="dashUpdateBalance('${plan.id}',this.value)"
+          onfocus="this.style.borderColor='var(--primary)'"
+          onblur="this.style.borderColor='var(--border)'" />
+      `;
+      balList.appendChild(row);
+    });
+    const totEl = document.getElementById('dash-total-bal');
+    if (totEl) totEl.textContent = fmt$(total);
+  }
+
+  renderSummaryTimeline();
+}
+
+function renderSummaryTimeline() {
+  const phasesEl = document.getElementById('dash-income-phases');
+  const tbodyEl  = document.getElementById('dash-yearly-tbody');
+  if (!phasesEl) return;
+
+  const timeline = computeSummaryTimeline();
+  if (!timeline) {
+    phasesEl.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:0.5rem 0;">Set retirement dates above to see projected income.</div>';
+    if (tbodyEl) tbodyEl.innerHTML = '';
+    return;
+  }
+
+  const { rows } = timeline;
+
+  // Group consecutive rows by retirement/supplement state into phases
+  const phases = [];
+  let cur = null;
+  rows.forEach(row => {
+    const key = `${row.brennaRetired}|${row.kevinRetired}|${row.suppIncome > 0}`;
+    if (!cur || cur.key !== key) {
+      cur = { key, startYear: row.yr, endYear: row.yr, firstRow: row,
+              brennaRetired: row.brennaRetired, kevinRetired: row.kevinRetired,
+              suppActive: row.suppIncome > 0 };
+      phases.push(cur);
+    } else {
+      cur.endYear = row.yr;
+    }
+  });
+
+  // Phase summary cards
+  phasesEl.innerHTML = '';
+  phases.forEach(phase => {
+    const r = phase.firstRow;
+    let label = '';
+    if  (phase.brennaRetired && !phase.kevinRetired)  label = 'Brenna retired · Kevin working';
+    else if (!phase.brennaRetired && phase.kevinRetired) label = 'Kevin retired · Brenna working';
+    else if  (phase.brennaRetired && phase.kevinRetired) label = 'Both retired';
+    if (phase.suppActive) label += ' + Supplement';
+
+    const yearRange = phase.startYear === phase.endYear
+      ? String(phase.startYear) : `${phase.startYear}–${phase.endYear}`;
+
+    const parts = [];
+    if (phase.brennaRetired && r.pensionIncome > 0)    parts.push(`Pension ${fmt$(r.pensionIncome)}/yr`);
+    if (phase.suppActive)                               parts.push(`Supp. ${fmt$(r.suppIncome)}/yr`);
+    if (!phase.brennaRetired && r.brennaSalIncome > 0) parts.push(`Brenna ${fmt$(r.brennaSalIncome)}/yr`);
+    if (!phase.kevinRetired  && r.kevinSalIncome  > 0) parts.push(`Kevin ${fmt$(r.kevinSalIncome)}/yr`);
+    if (r.dcDraw > 0)                                  parts.push(`DC ${fmt$(r.dcDraw)}/yr`);
+
+    const card = document.createElement('div');
+    card.style.cssText = 'border:1.5px solid var(--border);border-radius:10px;padding:0.85rem 1rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:flex-start;gap:0.75rem;';
+    card.innerHTML = `
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:0.88rem;color:var(--primary);margin-bottom:0.1rem;">${label}</div>
+        <div style="font-size:0.73rem;color:var(--muted);margin-bottom:${parts.length ? '0.35rem' : '0'};">${yearRange}</div>
+        ${parts.length ? `<div style="font-size:0.75rem;color:var(--muted);line-height:1.5;">${parts.join(' · ')}</div>` : ''}
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:1.1rem;font-weight:700;color:var(--accent);">${fmt$(r.totalIncome)}/yr</div>
+        <div style="font-size:0.72rem;color:var(--muted);">${fmt$(r.totalIncome / 12)}/mo</div>
+      </div>
+    `;
+    phasesEl.appendChild(card);
+  });
+
+  // Year-by-year table
+  if (tbodyEl) {
+    tbodyEl.innerHTML = '';
+    rows.forEach(r => {
+      const bCol = r.brennaRetired
+        ? '<span style="color:var(--muted);font-size:0.75rem;">Retired</span>'
+        : fmt$(r.brennaSalIncome);
+      const kCol = r.kevinRetired
+        ? '<span style="color:var(--muted);font-size:0.75rem;">Retired</span>'
+        : fmt$(r.kevinSalIncome);
+      const suppCell = r.suppIncome > 0
+        ? `<span style="color:var(--accent);">${fmt$(r.suppIncome)}</span>`
+        : '<span style="color:var(--muted);">—</span>';
+      const dashSpan = v => v > 0 ? fmt$(v) : '<span style="color:var(--muted);">—</span>';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${r.yr}</td>
+        <td style="font-size:0.8rem;">${bCol}</td>
+        <td style="font-size:0.8rem;">${kCol}</td>
+        <td>${dashSpan(r.pensionIncome)}</td>
+        <td>${suppCell}</td>
+        <td>${dashSpan(r.dcDraw)}</td>
+        <td style="font-weight:700;">${fmt$(r.totalIncome)}</td>
+      `;
+      tbodyEl.appendChild(tr);
+    });
+  }
+}
+
+function dashUpdateRetire(person, value) {
+  if (person === 'brenna') {
+    state.bnhPrimaryRetireDate = value;
+    if (state.incomeScenarios && state.incomeScenarios[0] && !state.incomeScenarios[0].bnhRetireDate)
+      state.incomeScenarios[0].bnhRetireDate = value;
+  } else {
+    state.khPrimaryRetireDate = value;
+    if (state.incomeScenarios && state.incomeScenarios[0] && !state.incomeScenarios[0].khRetireDate)
+      state.incomeScenarios[0].khRetireDate = value;
+  }
+  saveState();
+  render();
+}
+
+function dashUpdateSalary(person, value) {
+  const v = parseFloat(value) || 0;
+  if (person === 'brenna') { state.brennaCurrentSalary = v; state.pensionCurrentSalary = v; }
+  else { state.kevinCurrentSalary = v; }
+  saveState();
+  render();
+}
+
+function dashUpdateBalance(planId, value) {
+  const plan = state.plans.find(p => p.id === planId);
+  if (plan) { plan.balance = parseFloat(value) || 0; saveState(); render(); }
+}
+
+function dashToggleYearly() {
+  const wrap = document.getElementById('dash-yearly-wrap');
+  const btn  = document.getElementById('dash-toggle-btn');
+  if (!wrap || !btn) return;
+  const showing = wrap.style.display !== 'none';
+  wrap.style.display = showing ? 'none' : 'block';
+  btn.textContent = showing ? 'Show Years' : 'Hide Years';
 }
 
 // ══════════════════════════════════════════════════════════════
