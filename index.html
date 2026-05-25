@@ -312,9 +312,14 @@
           <input type="date" id="dash-brenna-retire" onchange="dashUpdateRetire('brenna',this.value)" />
           <div class="form-hint" id="dash-brenna-retire-hint"></div>
         </div>
-        <div class="form-group" style="margin-bottom:0;">
+        <div class="form-group" style="margin-bottom:0.5rem;">
           <label style="font-size:0.72rem;">Annual Salary ($)</label>
           <input type="number" id="dash-brenna-salary" step="1000" min="0" onchange="dashUpdateSalary('brenna',this.value)" />
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label style="font-size:0.72rem;">Annual Growth (%)</label>
+          <input type="number" id="dash-brenna-growth" step="0.1" min="0" max="20" onchange="dashUpdateGrowth('brenna',this.value)" />
+          <div class="form-hint" id="dash-brenna-terminal"></div>
         </div>
       </div>
 
@@ -327,9 +332,14 @@
           <input type="date" id="dash-kevin-retire" onchange="dashUpdateRetire('kevin',this.value)" />
           <div class="form-hint" id="dash-kevin-retire-hint"></div>
         </div>
-        <div class="form-group" style="margin-bottom:0;">
+        <div class="form-group" style="margin-bottom:0.5rem;">
           <label style="font-size:0.72rem;">Annual Salary ($)</label>
           <input type="number" id="dash-kevin-salary" step="1000" min="0" onchange="dashUpdateSalary('kevin',this.value)" />
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label style="font-size:0.72rem;">Annual Growth (%)</label>
+          <input type="number" id="dash-kevin-growth" step="0.1" min="0" max="20" onchange="dashUpdateGrowth('kevin',this.value)" />
+          <div class="form-hint" id="dash-kevin-terminal"></div>
         </div>
       </div>
     </div>
@@ -2122,11 +2132,30 @@ function renderSummaryTab() {
     } else { kRetHint.textContent = ''; }
   }
 
-  // Salary inputs
+  // Salary & growth inputs
   const bSalEl = document.getElementById('dash-brenna-salary');
   if (bSalEl) bSalEl.value = state.brennaCurrentSalary ? Math.round(state.brennaCurrentSalary * 12) : '';
+  const bGrowthEl = document.getElementById('dash-brenna-growth');
+  if (bGrowthEl) bGrowthEl.value = state.brennaAnnualRaisePct ?? '';
+  const bTermEl = document.getElementById('dash-brenna-terminal');
+  if (bTermEl) {
+    if (state.bnhPrimaryRetireDate && state.brennaCurrentSalary) {
+      const termSal = brennaSalaryAt(state.bnhPrimaryRetireDate) * 12;
+      bTermEl.textContent = `Projected at retirement: ${fmt$(termSal)}/yr`;
+    } else { bTermEl.textContent = ''; }
+  }
+
   const kSalEl = document.getElementById('dash-kevin-salary');
   if (kSalEl) kSalEl.value = state.kevinCurrentSalary ? Math.round(state.kevinCurrentSalary * 12) : '';
+  const kGrowthEl = document.getElementById('dash-kevin-growth');
+  if (kGrowthEl) kGrowthEl.value = state.kevinAnnualRaisePct ?? '';
+  const kTermEl = document.getElementById('dash-kevin-terminal');
+  if (kTermEl) {
+    if (state.khPrimaryRetireDate && state.kevinCurrentSalary) {
+      const kTermSal = kevinSalaryAt(state.khPrimaryRetireDate) * 12;
+      kTermEl.textContent = `Projected at retirement: ${fmt$(kTermSal)}/yr`;
+    } else { kTermEl.textContent = ''; }
+  }
 
   // Balance date
   const balDateEl = document.getElementById('dash-balance-date');
@@ -2271,6 +2300,14 @@ function dashUpdateSalary(person, value) {
   const v = (parseFloat(value) || 0) / 12;
   if (person === 'brenna') { state.brennaCurrentSalary = v; state.pensionCurrentSalary = v; }
   else { state.kevinCurrentSalary = v; }
+  saveState();
+  render();
+}
+
+function dashUpdateGrowth(person, value) {
+  const v = parseFloat(value) || 0;
+  if (person === 'brenna') state.brennaAnnualRaisePct = v;
+  else state.kevinAnnualRaisePct = v;
   saveState();
   render();
 }
