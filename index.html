@@ -398,15 +398,21 @@
       </div>
 
       <div class="form-group">
-        <label>Assumed Final Avg Monthly Salary (last 36 months)</label>
-        <input type="number" id="p-final-salary" step="100" min="0" onchange="saveAndRender()" />
-        <div class="form-hint">Used to project pension benefit. Update as salary changes.</div>
+        <label>Projected Avg Monthly Salary (last 36 months)</label>
+        <input type="number" id="p-final-salary" readonly style="background:var(--bg);color:var(--muted);" />
+        <div class="form-hint" id="p-final-salary-hint">Set current salary and growth rate on the Summary tab.</div>
+      </div>
+
+      <div class="form-group">
+        <label>Salary Cap for Pension Calculation ($/mo)</label>
+        <input type="number" id="p-salary-cap" step="500" min="0" onchange="saveAndRender()" />
+        <div class="form-hint">If projected avg salary exceeds this cap, the cap is used instead. Current limit: $30,000/mo.</div>
       </div>
 
       <div class="form-group">
         <label>Current Monthly Salary</label>
-        <input type="number" id="p-current-salary" step="100" min="0" onchange="saveAndRender()" />
-        <div class="form-hint">Used to estimate 457B transfers for service purchases.</div>
+        <input type="number" id="p-current-salary" readonly style="background:var(--bg);color:var(--muted);" />
+        <div class="form-hint">Synced from Summary tab.</div>
       </div>
 
       <div class="divider"></div>
@@ -759,6 +765,7 @@ const DEFAULT_STATE = {
   kevinAnnualRaisePct: 3,
   khTerminalSalary: 0,
   pensionSupplementMultiplier: 0.008,
+  pensionSalaryCap: 30000,
   balanceAsOf: '',
 };
 
@@ -775,6 +782,7 @@ function loadState() {
       if (!state.incomeScenarios) state.incomeScenarios = JSON.parse(JSON.stringify(DEFAULT_STATE.incomeScenarios));
       if (state.khTerminalSalary === undefined) state.khTerminalSalary = 0;
       if (state.pensionSupplementMultiplier === undefined) state.pensionSupplementMultiplier = 0.008;
+      if (state.pensionSalaryCap === undefined) state.pensionSalaryCap = 30000;
       if (!state.balanceAsOf) state.balanceAsOf = '';
       if (!state.khDob) state.khDob = '1987-10-08';
       if (state.brennaCurrentSalary === undefined) state.brennaCurrentSalary = state.pensionCurrentSalary || 5000;
@@ -972,6 +980,8 @@ function collectFormValues() {
   if (mult) state.pensionMultiplier = parseFloat(mult);
   const suppMult = document.getElementById('s-supp-multiplier').value;
   if (suppMult !== '') state.pensionSupplementMultiplier = parseFloat(suppMult);
+  const salaryCap = document.getElementById('p-salary-cap').value;
+  if (salaryCap !== '') state.pensionSalaryCap = parseFloat(salaryCap) || 0;
   const khSal = document.getElementById('kh-terminal-salary').value;
   if (khSal !== '') state.khTerminalSalary = parseFloat(khSal) || 0;
   const payPeriods = document.getElementById('s-pay-periods').value;
@@ -980,10 +990,7 @@ function collectFormValues() {
   if (pStart) state.pensionStartDate = pStart;
   const pPurch = document.getElementById('p-purchased').value;
   if (pPurch !== '') state.pensionPurchased = parseFloat(pPurch);
-  const pSalary = document.getElementById('p-final-salary').value;
-  if (pSalary) state.pensionFinalSalary = parseFloat(pSalary);
-  const pCurrSal = document.getElementById('p-current-salary').value;
-  if (pCurrSal) state.pensionCurrentSalary = parseFloat(pCurrSal);
+  // p-final-salary and p-current-salary are auto-computed in render()
   const projYears = document.getElementById('proj-years').value;
   if (projYears) state.projectionYears = parseInt(projYears);
   const projStart = document.getElementById('proj-start-year').value;
@@ -1027,8 +1034,24 @@ function render() {
   // Pension tab
   document.getElementById('p-start-date').value = state.pensionStartDate;
   document.getElementById('p-purchased').value = state.pensionPurchased;
-  document.getElementById('p-final-salary').value = state.pensionFinalSalary;
-  document.getElementById('p-current-salary').value = state.pensionCurrentSalary;
+  document.getElementById('p-salary-cap').value = state.pensionSalaryCap ?? 30000;
+  // Auto-compute projected avg 36-month salary (capped by pensionSalaryCap if set)
+  const pensionRetDate = state.bnhPrimaryRetireDate ? new Date(state.bnhPrimaryRetireDate) : retDate;
+  const projAvg36 = (state.brennaCurrentSalary && state.brennaAnnualRaisePct !== undefined)
+    ? brennaAvg36Month(pensionRetDate) : (state.brennaCurrentSalary || state.pensionFinalSalary || 0);
+  const capVal = parseFloat(state.pensionSalaryCap) || 0;
+  const cappedAvg36 = capVal > 0 ? Math.min(projAvg36, capVal) : projAvg36;
+  state.pensionFinalSalary = cappedAvg36;
+  state.pensionCurrentSalary = state.brennaCurrentSalary || 0;
+  document.getElementById('p-final-salary').value = Math.round(cappedAvg36);
+  document.getElementById('p-current-salary').value = Math.round(state.pensionCurrentSalary);
+  const finalHintEl = document.getElementById('p-final-salary-hint');
+  if (finalHintEl && state.brennaCurrentSalary) {
+    const projStr = `${fmt$(state.brennaCurrentSalary)}/mo × ${state.brennaAnnualRaisePct ?? 0}% growth → ${fmt$(projAvg36)}/mo avg`;
+    finalHintEl.textContent = capVal > 0 && projAvg36 > capVal
+      ? projStr + ` (capped at ${fmt$(capVal)}/mo)`
+      : projStr;
+  }
 
   document.getElementById('pension-calc-display').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;text-align:center;">
