@@ -313,8 +313,8 @@
           <div class="form-hint" id="dash-brenna-retire-hint"></div>
         </div>
         <div class="form-group" style="margin-bottom:0;">
-          <label style="font-size:0.72rem;">Monthly Salary ($)</label>
-          <input type="number" id="dash-brenna-salary" step="100" min="0" onchange="dashUpdateSalary('brenna',this.value)" />
+          <label style="font-size:0.72rem;">Annual Salary ($)</label>
+          <input type="number" id="dash-brenna-salary" step="1000" min="0" onchange="dashUpdateSalary('brenna',this.value)" />
         </div>
       </div>
 
@@ -328,15 +328,21 @@
           <div class="form-hint" id="dash-kevin-retire-hint"></div>
         </div>
         <div class="form-group" style="margin-bottom:0;">
-          <label style="font-size:0.72rem;">Monthly Salary ($)</label>
-          <input type="number" id="dash-kevin-salary" step="100" min="0" onchange="dashUpdateSalary('kevin',this.value)" />
+          <label style="font-size:0.72rem;">Annual Salary ($)</label>
+          <input type="number" id="dash-kevin-salary" step="1000" min="0" onchange="dashUpdateSalary('kevin',this.value)" />
         </div>
       </div>
     </div>
 
     <!-- Account Balances -->
     <div class="card">
-      <div class="section-title">Account Balances</div>
+      <div class="flex-between mb-1">
+        <div class="section-title" style="margin-bottom:0;">Account Balances</div>
+        <div style="display:flex;align-items:center;gap:0.4rem;">
+          <label style="font-size:0.72rem;color:var(--muted);font-weight:600;white-space:nowrap;">As of</label>
+          <input type="date" id="dash-balance-date" style="padding:0.3rem 0.5rem;border:1.5px solid var(--border);border-radius:6px;font-size:0.8rem;color:var(--text);background:#fff;outline:none;" onchange="dashUpdateBalanceDate(this.value)" />
+        </div>
+      </div>
       <div id="dash-balances-list"></div>
       <div class="divider"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:0.95rem;">
@@ -743,6 +749,7 @@ const DEFAULT_STATE = {
   kevinAnnualRaisePct: 3,
   khTerminalSalary: 0,
   pensionSupplementMultiplier: 0.008,
+  balanceAsOf: '',
 };
 
 let state = {};
@@ -758,6 +765,7 @@ function loadState() {
       if (!state.incomeScenarios) state.incomeScenarios = JSON.parse(JSON.stringify(DEFAULT_STATE.incomeScenarios));
       if (state.khTerminalSalary === undefined) state.khTerminalSalary = 0;
       if (state.pensionSupplementMultiplier === undefined) state.pensionSupplementMultiplier = 0.008;
+      if (!state.balanceAsOf) state.balanceAsOf = '';
       if (!state.khDob) state.khDob = '1987-10-08';
       if (state.brennaCurrentSalary === undefined) state.brennaCurrentSalary = state.pensionCurrentSalary || 5000;
       if (state.brennaAnnualRaisePct === undefined) state.brennaAnnualRaisePct = 3;
@@ -2116,9 +2124,13 @@ function renderSummaryTab() {
 
   // Salary inputs
   const bSalEl = document.getElementById('dash-brenna-salary');
-  if (bSalEl) bSalEl.value = state.brennaCurrentSalary || '';
+  if (bSalEl) bSalEl.value = state.brennaCurrentSalary ? Math.round(state.brennaCurrentSalary * 12) : '';
   const kSalEl = document.getElementById('dash-kevin-salary');
-  if (kSalEl) kSalEl.value = state.kevinCurrentSalary || '';
+  if (kSalEl) kSalEl.value = state.kevinCurrentSalary ? Math.round(state.kevinCurrentSalary * 12) : '';
+
+  // Balance date
+  const balDateEl = document.getElementById('dash-balance-date');
+  if (balDateEl) balDateEl.value = state.balanceAsOf || '';
 
   // Account balances (editable)
   const balList = document.getElementById('dash-balances-list');
@@ -2256,7 +2268,7 @@ function dashUpdateRetire(person, value) {
 }
 
 function dashUpdateSalary(person, value) {
-  const v = parseFloat(value) || 0;
+  const v = (parseFloat(value) || 0) / 12;
   if (person === 'brenna') { state.brennaCurrentSalary = v; state.pensionCurrentSalary = v; }
   else { state.kevinCurrentSalary = v; }
   saveState();
@@ -2266,6 +2278,11 @@ function dashUpdateSalary(person, value) {
 function dashUpdateBalance(planId, value) {
   const plan = state.plans.find(p => p.id === planId);
   if (plan) { plan.balance = parseFloat(value) || 0; saveState(); render(); }
+}
+
+function dashUpdateBalanceDate(value) {
+  state.balanceAsOf = value;
+  saveState();
 }
 
 function dashToggleYearly() {
