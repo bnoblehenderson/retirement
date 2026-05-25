@@ -697,7 +697,7 @@
 <!-- ══ SERVICE PURCHASE MODAL ═══════════════════════════════ -->
 <div class="modal-overlay" id="purchase-modal">
   <div class="modal">
-    <h3>Add Service Year Purchase</h3>
+    <h3 id="purchase-modal-title">Add Service Year Purchase</h3>
     <div class="form-group">
       <label>Date of Transfer</label>
       <input type="date" id="m-date" />
@@ -1057,7 +1057,10 @@ function render() {
   state.servicePurchases.forEach((p, i) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${p.date}</td><td>${fmtDec(parseFloat(p.years),5)}</td><td>${p.cost ? fmt$(p.cost) : '—'}</td><td>${p.notes || ''}</td>
-      <td><button class="btn btn-sm" style="background:var(--danger);color:#fff;padding:0.2rem 0.5rem;font-size:0.7rem;" onclick="deletePurchase(${i})">✕</button></td>`;
+      <td style="white-space:nowrap;">
+        <button class="btn btn-sm" style="background:var(--primary);color:#fff;padding:0.2rem 0.5rem;font-size:0.7rem;margin-right:0.25rem;" onclick="openEditPurchaseModal(${i})">Edit</button>
+        <button class="btn btn-sm" style="background:var(--danger);color:#fff;padding:0.2rem 0.5rem;font-size:0.7rem;" onclick="deletePurchase(${i})">✕</button>
+      </td>`;
     tbody.appendChild(tr);
   });
   document.getElementById('total-purchased-display').textContent = fmtDec(purchased, 5) + ' years';
@@ -1264,7 +1267,11 @@ function updateROR(val) {
 // ══════════════════════════════════════════════════════════════
 //  SERVICE PURCHASES
 // ══════════════════════════════════════════════════════════════
+let _editPurchaseIndex = null;
+
 function openPurchaseModal() {
+  _editPurchaseIndex = null;
+  document.getElementById('purchase-modal-title').textContent = 'Add Service Year Purchase';
   document.getElementById('m-date').value = new Date().toISOString().slice(0,10);
   document.getElementById('m-years').value = '';
   document.getElementById('m-cost').value = '';
@@ -1272,21 +1279,39 @@ function openPurchaseModal() {
   document.getElementById('purchase-modal').classList.add('open');
 }
 
+function openEditPurchaseModal(index) {
+  const p = state.servicePurchases[index];
+  if (!p) return;
+  _editPurchaseIndex = index;
+  document.getElementById('purchase-modal-title').textContent = 'Edit Service Year Purchase';
+  document.getElementById('m-date').value = p.date || '';
+  document.getElementById('m-years').value = p.years || '';
+  document.getElementById('m-cost').value = p.cost || '';
+  document.getElementById('m-notes').value = p.notes || '';
+  document.getElementById('purchase-modal').classList.add('open');
+}
+
 function closePurchaseModal() {
   document.getElementById('purchase-modal').classList.remove('open');
+  _editPurchaseIndex = null;
 }
 
 function savePurchase() {
   const years = parseFloat(document.getElementById('m-years').value);
   if (!years || years <= 0) { alert('Please enter valid years purchased.'); return; }
-  state.servicePurchases.push({
-    id: Date.now().toString(),
+  const entry = {
     date: document.getElementById('m-date').value,
     years: years,
     cost: parseFloat(document.getElementById('m-cost').value) || 0,
     notes: document.getElementById('m-notes').value,
-  });
-  // Keep legacy field in sync (sum of all purchases)
+  };
+  if (_editPurchaseIndex !== null) {
+    entry.id = state.servicePurchases[_editPurchaseIndex].id;
+    state.servicePurchases[_editPurchaseIndex] = entry;
+  } else {
+    entry.id = Date.now().toString();
+    state.servicePurchases.push(entry);
+  }
   state.pensionPurchased = getTotalPurchasedYears();
   saveState();
   render();
