@@ -1,3017 +1,949 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Retirement Planner</title>
-  <style>
-    :root {
-      --primary: #2c5f8a;
-      --primary-dark: #1a3d5c;
-      --accent: #3d9e73;
-      --bg: #f2f5f8;
-      --card: #ffffff;
-      --text: #1a2533;
-      --muted: #6b7a8d;
-      --border: #dde4ed;
-      --danger: #b83232;
-      --warning: #c97010;
-      --success: #238a52;
-      --shadow: 0 1px 6px rgba(0,0,0,0.07);
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: 0.9rem;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retirement Planner</title>
+<style>
+:root {
+  --primary: #2c5f8a;
+  --primary-dark: #1e4a70;
+  --bg: #f2f5f8;
+  --card: #fff;
+  --text: #1a2533;
+  --muted: #6b7a8d;
+  --border: #dde4ed;
+  --success: #238a52;
+  --danger: #b83232;
+  --warning: #c97010;
+  --shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:0.9rem;color:var(--text);background:var(--bg);min-height:100vh;}
 
-    /* ── Login ─────────────────────────────────────── */
-    #login-screen {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 1rem;
-    }
-    .login-card {
-      background: var(--card);
-      border-radius: 12px;
-      box-shadow: 0 2px 16px rgba(0,0,0,0.1);
-      padding: 2.5rem 2rem;
-      width: 100%;
-      max-width: 380px;
-      text-align: center;
-    }
-    .login-card h1 { font-size: 1.5rem; color: var(--text); margin-bottom: 0.25rem; font-weight: 700; }
-    .login-card p { color: var(--muted); font-size: 0.875rem; margin-bottom: 1.75rem; }
-    .login-card input[type="password"] {
-      width: 100%;
-      padding: 0.7rem 1rem;
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
-      font-size: 0.9rem;
-      margin-bottom: 1rem;
-      outline: none;
-      transition: border-color .2s;
-    }
-    .login-card input[type="password"]:focus { border-color: var(--primary); }
-    .login-error { color: var(--danger); font-size: 0.8rem; margin-bottom: 0.75rem; display: none; }
-    .btn {
-      display: inline-block;
-      padding: 0.65rem 1.25rem;
-      border-radius: 7px;
-      border: none;
-      cursor: pointer;
-      font-size: 0.875rem;
-      font-weight: 600;
-      transition: background .15s, opacity .15s;
-    }
-    .btn:active { opacity: 0.85; }
-    .btn-primary { background: var(--primary); color: #fff; width: 100%; }
-    .btn-primary:hover { background: var(--primary-dark); }
-    .btn-accent { background: var(--accent); color: #fff; }
-    .btn-accent:hover { opacity: 0.88; }
-    .btn-sm { padding: 0.35rem 0.8rem; font-size: 0.8rem; }
-    .btn-outline {
-      background: transparent;
-      border: 1.5px solid var(--border);
-      color: var(--text);
-    }
-    .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+/* Login */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem;}
+.login-card{background:var(--card);border-radius:12px;padding:2.5rem 2rem;width:100%;max-width:360px;text-align:center;box-shadow:0 2px 16px rgba(0,0,0,0.09);}
+.login-card h1{font-size:1.3rem;font-weight:700;margin-bottom:0.25rem;}
+.login-card p{font-size:0.8rem;color:var(--muted);margin-bottom:1.5rem;}
+.login-card input{width:100%;padding:0.65rem 0.875rem;border:1.5px solid var(--border);border-radius:7px;font-size:0.9rem;margin-bottom:0.75rem;outline:none;}
+.login-card input:focus{border-color:var(--primary);}
+.login-error{color:var(--danger);font-size:0.8rem;margin-bottom:0.5rem;display:none;}
 
-    /* ── App Layout ─────────────────────────────────── */
-    #app { display: none; }
-    .top-bar {
-      background: var(--text);
-      color: #fff;
-      padding: 0.8rem 1.25rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .top-bar h1 { font-size: 0.95rem; font-weight: 600; letter-spacing: 0.01em; }
-    .top-bar button { background: rgba(255,255,255,0.12); color: #fff; border: none; border-radius: 6px; padding: 0.35rem 0.7rem; cursor: pointer; font-size: 0.8rem; }
-    .top-bar button:hover { background: rgba(255,255,255,0.2); }
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:0.3rem;padding:0.5rem 1rem;border:none;border-radius:6px;cursor:pointer;font-size:0.875rem;font-weight:500;transition:opacity .15s;}
+.btn:hover{opacity:0.82;}
+.btn-primary{background:var(--primary);color:#fff;width:100%;justify-content:center;}
+.btn-secondary{background:var(--bg);color:var(--text);border:1px solid var(--border);}
+.btn-danger{background:var(--danger);color:#fff;}
+.btn-sm{padding:0.3rem 0.65rem;font-size:0.8rem;}
+.btn-xs{padding:0.18rem 0.45rem;font-size:0.72rem;}
 
-    /* ── Tabs ───────────────────────────────────────── */
-    .tabs {
-      display: flex;
-      background: var(--card);
-      border-bottom: 1px solid var(--border);
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-    .tab-btn {
-      flex: 1 0 auto;
-      min-width: 80px;
-      padding: 0.7rem 0.5rem;
-      border: none;
-      background: transparent;
-      color: var(--muted);
-      font-size: 0.8rem;
-      font-weight: 500;
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: color .15s, border-color .15s;
-      white-space: nowrap;
-    }
-    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+/* App shell */
+#app{display:none;}
+.top-bar{background:var(--text);color:#fff;padding:0.7rem 1rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+.top-bar-title{font-size:0.875rem;font-weight:600;}
+.top-bar-sync{font-size:0.72rem;color:rgba(255,255,255,0.55);}
+.top-bar-btn{background:rgba(255,255,255,0.1);color:#fff;border:none;padding:0.28rem 0.6rem;border-radius:5px;cursor:pointer;font-size:0.8rem;}
+.top-bar-btn:hover{background:rgba(255,255,255,0.2);}
 
-    .tab-content { display: none; padding: 1rem; max-width: 900px; margin: 0 auto; }
-    .tab-content.active { display: block; }
+/* Tabs */
+.tab-nav{background:var(--card);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;}
+.tab-btn{flex:1 0 auto;min-width:70px;padding:0.7rem 0.5rem;border:none;background:transparent;color:var(--muted);font-size:0.8rem;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;}
+.tab-btn.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600;}
+.tab-panel{display:none;padding:1rem;max-width:860px;margin:0 auto;}
+.tab-panel.active{display:block;}
 
-    /* ── Cards ──────────────────────────────────────── */
-    .card {
-      background: var(--card);
-      border-radius: 10px;
-      box-shadow: var(--shadow);
-      padding: 1.25rem;
-      margin-bottom: 0.875rem;
-    }
-    .card-title {
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--muted);
-      margin-bottom: 0.75rem;
-    }
+/* Cards */
+.card{background:var(--card);border-radius:10px;padding:1.25rem;margin-bottom:0.875rem;box-shadow:var(--shadow);}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
+.card-title{font-size:0.95rem;font-weight:700;color:var(--text);}
 
-    /* ── Status Banner ──────────────────────────────── */
-    .status-banner {
-      border-radius: 10px;
-      padding: 1.1rem 1.25rem;
-      margin-bottom: 0.875rem;
-      color: #fff;
-    }
-    .status-banner.eligible { background: var(--success); }
-    .status-banner.not-eligible { background: var(--primary); }
-    .status-banner h2 { font-size: 1rem; margin-bottom: 0.2rem; font-weight: 700; }
-    .status-banner p { font-size: 0.8rem; opacity: 0.88; }
+/* Stat grid */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:0.625rem;margin-bottom:0.875rem;}
+.stat-box{background:var(--card);border-radius:8px;padding:0.875rem;text-align:center;box-shadow:var(--shadow);}
+.stat-label{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);font-weight:600;margin-bottom:0.25rem;}
+.stat-value{font-size:1.35rem;font-weight:700;color:var(--primary);line-height:1.1;}
+.stat-sub{font-size:0.72rem;color:var(--muted);margin-top:0.2rem;}
 
-    /* ── Stat Grid ──────────────────────────────────── */
-    .stat-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 0.625rem;
-      margin-bottom: 0.875rem;
-    }
-    .stat-box {
-      background: var(--card);
-      border-radius: 8px;
-      box-shadow: var(--shadow);
-      padding: 0.875rem;
-      text-align: center;
-    }
-    .stat-box .label { font-size: 0.72rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.25rem; }
-    .stat-box .value { font-size: 1.35rem; font-weight: 700; color: var(--primary); }
-    .stat-box .sub { font-size: 0.75rem; color: var(--muted); margin-top: 0.15rem; }
+/* Progress */
+.progress-wrap{margin:0.75rem 0;}
+.progress-labels{display:flex;justify-content:space-between;font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem;}
+.progress-track{height:8px;background:var(--border);border-radius:99px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:99px;background:var(--primary);transition:width 0.3s;}
+.progress-fill.success{background:var(--success);}
 
-    /* ── Progress Bar ───────────────────────────────── */
-    .progress-wrap { margin: 0.5rem 0 0.875rem; }
-    .progress-label { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted); margin-bottom: 0.3rem; }
-    .progress-bar { height: 8px; background: var(--border); border-radius: 99px; overflow: hidden; }
-    .progress-fill { height: 100%; border-radius: 99px; transition: width 0.4s ease; }
-    .progress-fill.primary { background: var(--primary); }
-    .progress-fill.accent { background: var(--accent); }
-    .progress-fill.warning { background: var(--warning); }
+/* Forms */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;}
+@media(max-width:520px){.form-grid{grid-template-columns:1fr;}}
+.field{display:flex;flex-direction:column;gap:0.2rem;}
+.field label{font-size:0.8rem;font-weight:600;color:var(--text);}
+.field input,.field select{padding:0.55rem 0.75rem;border:1.5px solid var(--border);border-radius:6px;font-size:0.9rem;color:var(--text);outline:none;background:#fff;}
+.field input:focus,.field select:focus{border-color:var(--primary);}
+.field-hint{font-size:0.72rem;color:var(--muted);}
+.section-sep{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin:1rem 0 0.625rem;padding-top:0.875rem;border-top:1px solid var(--border);}
+.section-sep:first-child{margin-top:0;padding-top:0;border-top:none;}
 
-    /* ── Form Elements ──────────────────────────────── */
-    .form-group { margin-bottom: 0.875rem; }
-    .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text); margin-bottom: 0.25rem; }
-    .form-group input, .form-group select {
-      width: 100%;
-      padding: 0.6rem 0.875rem;
-      border: 1.5px solid var(--border);
-      border-radius: 7px;
-      font-size: 0.9rem;
-      color: var(--text);
-      background: #fff;
-      outline: none;
-      transition: border-color .15s;
-    }
-    .form-group input:focus, .form-group select:focus { border-color: var(--primary); }
-    .form-hint { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-    @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
+/* Tables */
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);font-weight:600;padding:0.5rem 0.75rem;text-align:left;background:var(--bg);white-space:nowrap;}
+td{font-size:0.875rem;padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--bg);}
 
-    /* ── DC Plan List ───────────────────────────────── */
-    .plan-item {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.875rem;
-      margin-bottom: 0.625rem;
-    }
-    .plan-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.625rem; }
-    .plan-name { font-weight: 600; font-size: 0.9rem; }
-    .plan-badge {
-      font-size: 0.72rem;
-      font-weight: 600;
-      padding: 0.15rem 0.5rem;
-      border-radius: 99px;
-      background: var(--primary);
-      color: #fff;
-    }
-    .plan-badge.ira { background: var(--accent); }
-    .plan-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.375rem; font-size: 0.8rem; }
-    .plan-stat-label { color: var(--muted); }
-    .plan-stat-value { font-weight: 600; }
+/* Plan rows */
+.plan-row{padding:0.875rem 0;border-bottom:1px solid var(--border);}
+.plan-row:last-child{border-bottom:none;}
+.plan-header{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.625rem;}
+.plan-name{font-weight:600;font-size:0.9rem;}
+.plan-badge{font-size:0.72rem;font-weight:600;padding:0.15rem 0.45rem;border-radius:99px;background:var(--primary);color:#fff;}
 
-    /* ── Service Purchase Modal ─────────────────────── */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.4);
-      z-index: 200;
-      align-items: center;
-      justify-content: center;
-      padding: 1rem;
-    }
-    .modal-overlay.open { display: flex; }
-    .modal {
-      background: var(--card);
-      border-radius: 12px;
-      padding: 1.5rem;
-      width: 100%;
-      max-width: 420px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-    }
-    .modal h3 { font-size: 1rem; margin-bottom: 1rem; color: var(--text); font-weight: 700; }
-    .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; }
+/* Phase cards */
+.phase-cards{display:flex;flex-direction:column;gap:0.5rem;}
+.phase-card{border-radius:8px;padding:0.875rem 1rem;}
+.phase-card.pre{background:var(--bg);border:1px solid var(--border);}
+.phase-card.partial{background:#e8f4fd;border:1px solid #b8d9f0;}
+.phase-card.full{background:#e8f7ee;border:1px solid #b0ddc0;}
+.phase-top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:0.25rem;}
+.phase-yr{font-size:0.72rem;color:var(--muted);}
+.phase-label{font-size:0.8rem;font-weight:600;}
+.phase-total{font-size:1.05rem;font-weight:700;color:var(--primary);}
+.phase-detail{font-size:0.72rem;color:var(--muted);}
 
-    /* ── Table ──────────────────────────────────────── */
-    .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; }
-    th { background: var(--bg); color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.05em; padding: 0.55rem 0.75rem; text-align: left; }
-    td { font-size: 0.875rem; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text); }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: var(--bg); }
+/* Modal */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;padding:1rem;}
+.overlay.open{display:flex;}
+.modal{background:var(--card);border-radius:12px;padding:1.5rem;width:100%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,0.12);}
+.modal h3{font-size:1rem;font-weight:700;margin-bottom:1.25rem;}
+.modal-fields{display:flex;flex-direction:column;gap:0.75rem;}
+.modal-actions{display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1.25rem;}
 
-    /* ── Projection Chart ───────────────────────────── */
-    .chart-container { position: relative; width: 100%; overflow-x: auto; }
-    canvas { display: block; max-width: 100%; }
-
-    /* ── Misc ───────────────────────────────────────── */
-    .divider { height: 1px; background: var(--border); margin: 0.875rem 0; }
-    .text-success { color: var(--success); }
-    .text-warning { color: var(--warning); }
-    .text-danger { color: var(--danger); }
-    .flex-between { display: flex; align-items: center; justify-content: space-between; }
-    .mb-1 { margin-bottom: 0.5rem; }
-    .mb-2 { margin-bottom: 1rem; }
-    .section-title { font-size: 0.95rem; font-weight: 700; color: var(--text); margin-bottom: 0.75rem; }
-  </style>
+/* Misc */
+.flex-row{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;}
+.text-muted{color:var(--muted);}
+.text-success{color:var(--success);}
+.text-danger{color:var(--danger);}
+.fw6{font-weight:600;}
+.fw7{font-weight:700;}
+.mt1{margin-top:0.5rem;}
+</style>
 </head>
 <body>
 
-<!-- ══ LOGIN ══════════════════════════════════════════════ -->
 <div id="login-screen">
   <div class="login-card">
     <h1>Retirement Planner</h1>
-    <p>Enter your password to continue</p>
-    <div class="login-error" id="login-error">Incorrect password. Please try again.</div>
-    <input type="password" id="password-input" placeholder="Password" autocomplete="current-password" />
-    <div id="pat-field-wrapper" style="display:none;text-align:left;margin-bottom:1rem;">
-      <input type="password" id="gh-pat-input" placeholder="GitHub Personal Access Token (gist scope)" autocomplete="off" style="width:100%;padding:0.75rem 1rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.875rem;outline:none;box-sizing:border-box;" />
-      <div style="font-size:0.72rem;color:var(--muted);margin-top:0.3rem;">Needed once per browser for automatic data sync. Create one at GitHub → Settings → Developer settings → Personal access tokens → select <strong>gist</strong> scope.</div>
+    <p>Your personal retirement projection tool</p>
+    <div class="login-error" id="login-error">Incorrect password.</div>
+    <input type="password" id="pw-input" placeholder="Password" />
+    <div id="pat-wrapper" style="display:none;margin-bottom:0.75rem;text-align:left;">
+      <input type="password" id="pat-input" placeholder="GitHub Personal Access Token (gist scope)" style="width:100%;padding:0.55rem 0.75rem;border:1.5px solid var(--border);border-radius:6px;font-size:0.875rem;outline:none;margin-bottom:0.3rem;" />
+      <div style="font-size:0.72rem;color:var(--muted);">Enter once per browser to enable automatic data sync. Needs <strong>gist</strong> scope — GitHub → Settings → Developer settings → Personal access tokens.</div>
     </div>
     <button class="btn btn-primary" onclick="checkPassword()">Sign In</button>
   </div>
 </div>
 
-<!-- ══ APP ════════════════════════════════════════════════ -->
 <div id="app">
   <div class="top-bar">
-    <h1>Retirement Planner</h1>
-    <button onclick="logout()">Sign Out</button>
+    <div>
+      <div class="top-bar-title">Retirement Planner</div>
+      <div class="top-bar-sync" id="sync-status"></div>
+    </div>
+    <button class="top-bar-btn" onclick="logout()">Sign Out</button>
   </div>
-
-  <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('dashboard')">Dashboard</button>
-    <button class="tab-btn" onclick="switchTab('pension')">Pension</button>
-    <button class="tab-btn" onclick="switchTab('dc-plans')">DC Plans</button>
-    <button class="tab-btn" onclick="switchTab('income')">Income</button>
-    <button class="tab-btn" onclick="switchTab('projection')">Projection</button>
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+    <button class="tab-btn" onclick="switchTab('brenna')">Brenna</button>
+    <button class="tab-btn" onclick="switchTab('kevin')">Kevin</button>
     <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
   </div>
+  <div class="tab-panel active" id="tab-overview"><div id="ov-content"></div></div>
+  <div class="tab-panel" id="tab-brenna"><div id="br-content"></div></div>
+  <div class="tab-panel" id="tab-kevin"><div id="kv-content"></div></div>
+  <div class="tab-panel" id="tab-settings"><div id="st-content"></div></div>
+</div>
 
-  <!-- ── Summary ──────────────────────────────────────── -->
-  <div id="tab-dashboard" class="tab-content active">
-
-    <!-- Person cards -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
-      <div class="card" style="margin-bottom:0;">
-        <div style="font-weight:800;font-size:1rem;color:var(--primary);margin-bottom:0.6rem;">Brenna</div>
-        <div style="font-size:2.2rem;font-weight:700;line-height:1;color:var(--text);" id="dash-brenna-age">—</div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.75rem;" id="dash-brenna-bday"></div>
-        <div style="min-height:2.6rem;margin-bottom:0.2rem;">
-          <div style="font-size:0.72rem;color:var(--accent);font-weight:600;line-height:1.4;" id="dash-brenna-purchases"></div>
-          <div style="font-size:0.72rem;color:var(--muted);font-weight:600;" id="dash-brenna-earliest"></div>
-        </div>
-        <div class="form-group" style="margin-bottom:0.5rem;">
-          <label style="font-size:0.72rem;">Retirement Date</label>
-          <input type="date" id="dash-brenna-retire" onblur="dashUpdateRetire('brenna',this.value)" />
-          <div class="form-hint" id="dash-brenna-retire-hint"></div>
-        </div>
-        <div class="form-group" style="margin-bottom:0.5rem;">
-          <label style="font-size:0.72rem;">Current Annual Salary ($)</label>
-          <input type="text" id="dash-brenna-salary"
-            onfocus="onCurrencyFocus(this)"
-            onblur="onCurrencyBlur(this);dashUpdateSalary('brenna',parseCurrencyStr(this.value))" />
-        </div>
-        <div class="form-group" style="margin-bottom:0;">
-          <label style="font-size:0.72rem;">Annual Growth (%)</label>
-          <input type="number" id="dash-brenna-growth" step="0.1" min="0" max="20" onchange="dashUpdateGrowth('brenna',this.value)" />
-          <div class="form-hint" id="dash-brenna-terminal"></div>
-        </div>
-      </div>
-
-      <div class="card" style="margin-bottom:0;">
-        <div style="font-weight:800;font-size:1rem;color:var(--primary);margin-bottom:0.6rem;">Kevin</div>
-        <div style="font-size:2.2rem;font-weight:700;line-height:1;color:var(--text);" id="dash-kevin-age">—</div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.75rem;" id="dash-kevin-bday"></div>
-        <div style="min-height:2.6rem;margin-bottom:0.2rem;"></div>
-        <div class="form-group" style="margin-bottom:0.5rem;">
-          <label style="font-size:0.72rem;">Retirement Date</label>
-          <input type="date" id="dash-kevin-retire" onblur="dashUpdateRetire('kevin',this.value)" />
-          <div class="form-hint" id="dash-kevin-retire-hint"></div>
-        </div>
-        <div class="form-group" style="margin-bottom:0.5rem;">
-          <label style="font-size:0.72rem;">Current Annual Salary ($)</label>
-          <input type="text" id="dash-kevin-salary"
-            onfocus="onCurrencyFocus(this)"
-            onblur="onCurrencyBlur(this);dashUpdateSalary('kevin',parseCurrencyStr(this.value))" />
-        </div>
-        <div class="form-group" style="margin-bottom:0;">
-          <label style="font-size:0.72rem;">Annual Growth (%)</label>
-          <input type="number" id="dash-kevin-growth" step="0.1" min="0" max="20" onchange="dashUpdateGrowth('kevin',this.value)" />
-          <div class="form-hint" id="dash-kevin-terminal"></div>
-        </div>
-      </div>
+<!-- Purchase modal -->
+<div class="overlay" id="purchase-modal">
+  <div class="modal">
+    <h3 id="pm-title">Add Service Purchase</h3>
+    <div class="modal-fields">
+      <div class="field"><label>Date of Transfer</label><input type="date" id="pm-date" /></div>
+      <div class="field"><label>Years Purchased</label><input type="number" id="pm-years" step="0.00001" min="0" placeholder="e.g. 1.21416" /></div>
+      <div class="field"><label>Cost (optional)</label><input type="text" id="pm-cost" placeholder="e.g. 12,500" /></div>
+      <div class="field"><label>Notes</label><input type="text" id="pm-notes" placeholder="Optional" /></div>
     </div>
-
-    <!-- Account Balances -->
-    <div class="card">
-      <div class="flex-between mb-1">
-        <div class="section-title" style="margin-bottom:0;">Account Balances</div>
-        <div style="display:flex;align-items:center;gap:0.4rem;">
-          <label style="font-size:0.72rem;color:var(--muted);font-weight:600;white-space:nowrap;">As of</label>
-          <input type="date" id="dash-balance-date" style="padding:0.3rem 0.5rem;border:1.5px solid var(--border);border-radius:6px;font-size:0.8rem;color:var(--text);background:#fff;outline:none;" onchange="dashUpdateBalanceDate(this.value)" />
-        </div>
-      </div>
-      <div id="dash-balances-list"></div>
-      <div class="divider"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:1rem;">
-        <span>Total</span>
-        <span id="dash-total-bal" style="color:var(--accent);font-size:1rem;">—</span>
-      </div>
-    </div>
-
-    <!-- Income Timeline -->
-    <div class="card">
-      <div class="flex-between mb-1">
-        <div class="section-title" style="margin-bottom:0;">Projected Income Timeline</div>
-        <button class="btn btn-outline btn-sm" id="dash-toggle-btn" onclick="dashToggleYearly()">Show Years</button>
-      </div>
-      <div id="dash-income-phases"></div>
-      <div id="dash-yearly-wrap" style="display:none;margin-top:0.75rem;overflow-x:auto;">
-        <table style="min-width:620px;font-size:0.8rem;width:100%;border-collapse:collapse;">
-          <thead>
-            <tr>
-              <th style="padding:0.5rem 0.4rem;">Yr</th>
-              <th style="padding:0.5rem 0.4rem;">Brenna</th>
-              <th style="padding:0.5rem 0.4rem;">Kevin</th>
-              <th style="padding:0.5rem 0.4rem;">Pension</th>
-              <th style="padding:0.5rem 0.4rem;">Supp.</th>
-              <th style="padding:0.5rem 0.4rem;">DC Draw</th>
-              <th style="padding:0.5rem 0.4rem;">Total/yr</th>
-              <th style="padding:0.5rem 0.4rem;">Replace%</th>
-            </tr>
-          </thead>
-          <tbody id="dash-yearly-tbody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── Pension ─────────────────────────────────────── -->
-  <div id="tab-pension" class="tab-content">
-    <div class="card">
-      <div class="section-title">BNH PEERS Pension</div>
-
-      <div class="form-row mb-2">
-        <div class="form-group">
-          <label>Brenna's Start Date at BNH</label>
-          <input type="date" id="p-start-date" onblur="saveAndRender()" />
-        </div>
-        <div class="form-group">
-          <label>Previously Purchased Service (yrs)</label>
-          <input type="number" id="p-purchased" step="0.00001" min="0" onchange="saveAndRender()" />
-        </div>
-      </div>
-      <div class="form-row mb-2">
-        <div class="form-group">
-          <label>Maximum Eligible Purchase (yrs total, incl. purchased)</label>
-          <input type="number" id="p-max-purchasable" step="0.00001" min="0" onchange="saveAndRender()" />
-          <div class="form-hint">Total service years eligible to purchase, including already-purchased years. PEERS limit.</div>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>Projected Avg Monthly Salary (last 36 months)</label>
-        <input type="number" id="p-final-salary" readonly style="background:var(--bg);color:var(--muted);" />
-        <div class="form-hint" id="p-final-salary-hint">Set current salary and growth rate on the Summary tab.</div>
-      </div>
-
-      <div class="form-group">
-        <label>Salary Cap for Pension Calculation ($/mo)</label>
-        <input type="text" id="p-salary-cap"
-          onfocus="onCurrencyFocus(this)"
-          onblur="onCurrencyBlur(this);saveAndRender()" />
-        <div class="form-hint">If projected avg salary exceeds this cap, the cap is used instead. Cap grows $500/yr.</div>
-      </div>
-
-      <div class="form-group">
-        <label>Excess Salary → 401A Contribution Rate (%)</label>
-        <input type="number" id="p-excess401a-rate" step="1" min="0" max="100" onchange="saveAndRender()" />
-        <div class="form-hint">% of salary above the cap automatically contributed to BNH 401A.</div>
-      </div>
-
-      <div class="form-group">
-        <label>Current Monthly Salary</label>
-        <input type="number" id="p-current-salary" readonly style="background:var(--bg);color:var(--muted);" />
-        <div class="form-hint">Synced from Summary tab.</div>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="card-title">Pension Formula</div>
-      <div style="font-size:0.875rem; color:var(--muted); margin-bottom:0.75rem;">
-        1.61% &times; <strong>Years of Service</strong> &times; <strong>Avg Last 36mo Salary</strong>
-      </div>
-
-      <div id="pension-calc-display"></div>
-    </div>
-
-    <div class="card">
-      <div class="flex-between mb-1">
-        <div class="section-title" style="margin-bottom:0">Service Year Purchases</div>
-        <button class="btn btn-accent btn-sm" onclick="openPurchaseModal()">+ Add Purchase</button>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>Date</th><th>Years Bought</th><th>Cost ($)</th><th>Notes</th><th></th></tr>
-          </thead>
-          <tbody id="purchase-table-body"></tbody>
-        </table>
-      </div>
-      <div style="margin-top:0.75rem; font-size:0.8rem; color:var(--muted);">
-        Total purchased: <strong id="total-purchased-display">—</strong> years
-      </div>
-    </div>
-
-    <!-- Scenario Planner -->
-    <div class="card">
-      <div class="flex-between mb-1">
-        <div class="section-title" style="margin-bottom:0">Purchase Scenario Planner</div>
-      </div>
-      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.75rem;line-height:1.5;">
-        Model future 457B transfers to buy service years. Each purchase window runs <strong>Oct 1 – Sep 30</strong>; the cost is based on your salary from <strong>Jul 1 – Jun 30</strong> of the same year.
-        Cost per year = annual salary &times; 13.72%. Projections use your 457B balance, contributions, and rate of return.
-      </div>
-      <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap;">
-        <div style="flex:1;min-width:120px;">
-          <label style="font-size:0.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:0.25rem;">Purchase Window Starting Oct 1…</label>
-          <select id="scenario-year-select" style="width:100%;padding:0.6rem 0.75rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.875rem;color:var(--text);background:#fff;outline:none;"></select>
-        </div>
-        <button class="btn btn-accent btn-sm" style="align-self:flex-end;white-space:nowrap;" onclick="addScenarioWindow()">+ Add Window</button>
-      </div>
-      <div id="scenario-list"></div>
-      <div id="scenario-summary"></div>
-    </div>
-  </div>
-
-  <!-- ── DC Plans ─────────────────────────────────────── -->
-  <div id="tab-dc" class="tab-content">
-    <div class="card">
-      <div class="section-title">Pre-Retirement Rate of Return</div>
-      <div class="form-group">
-        <input type="range" id="ror-slider" min="1" max="15" step="0.25" value="7" oninput="updateROR(this.value)" style="width:100%;" />
-        <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:var(--muted);">
-          <span>1%</span><span id="ror-display" style="font-weight:700;color:var(--primary);">7%</span><span>15%</span>
-        </div>
-        <div class="form-hint">Applied while contributions are being made (before retirement).</div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="section-title">Post-Retirement Rate of Return</div>
-      <div class="form-group">
-        <input type="range" id="ret-ror-slider" min="1" max="12" step="0.25" value="4" oninput="updateRetirementROR(this.value)" style="width:100%;" />
-        <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:var(--muted);">
-          <span>1%</span><span id="ret-ror-display" style="font-weight:700;color:var(--primary);">4%</span><span>12%</span>
-        </div>
-        <div class="form-hint">Applied to DC balances during retirement (after withdrawals begin).</div>
-      </div>
-    </div>
-
-    <div id="dc-plan-list"></div>
-  </div>
-
-  <!-- ── Income ────────────────────────────────────── -->
-  <div id="tab-income" class="tab-content">
-
-    <div class="card">
-      <div class="section-title">Shared Income Settings</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Kevin's Annual Terminal Salary ($)</label>
-          <input type="number" id="kh-terminal-salary" readonly style="background:var(--bg);color:var(--muted);" />
-          <div class="form-hint">Auto: Kevin's projected salary at his retirement date (from Dashboard)</div>
-        </div>
-        <div class="form-group">
-          <label>Brenna's Annual Terminal Salary ($)</label>
-          <input type="number" id="bnh-terminal-salary-display" readonly style="background:var(--bg);color:var(--muted);" />
-          <div class="form-hint">Auto: Brenna's projected avg 36-month salary at retirement (capped)</div>
-        </div>
-      </div>
-      <div style="background:var(--bg);border-radius:8px;padding:0.75rem;font-size:0.8rem;color:var(--muted);line-height:1.55;">
-        <strong style="color:var(--text);">Income rules:</strong>
-        DC withdrawal &le; 4% of total DC balance &bull;
-        Pension + DC &le; combined terminal salaries &bull;
-        Early retirement supplement added to pension if Brenna retires before age 62, until she turns 62
-      </div>
-    </div>
-
-    <div id="income-results"></div>
-
-    <div class="card" id="yearly-income-card" style="display:none;padding:1rem 0.5rem;">
-      <div style="padding:0 0.75rem;margin-bottom:0.75rem;">
-        <div class="section-title" style="margin-bottom:0;">30-Year Year-by-Year</div>
-      </div>
-      <div style="overflow-x:auto;width:100%;">
-        <table style="min-width:600px;font-size:0.8rem;">
-          <thead>
-            <tr>
-              <th style="padding:0.5rem 0.5rem;">Yr</th>
-              <th style="padding:0.5rem 0.5rem;">DC Bal.</th>
-              <th style="padding:0.5rem 0.5rem;">DC Draw</th>
-              <th style="padding:0.5rem 0.5rem;">Pension</th>
-              <th style="padding:0.5rem 0.5rem;">Supp.</th>
-              <th style="padding:0.5rem 0.5rem;">Total/yr</th>
-              <th style="padding:0.5rem 0.5rem;">vs Cap</th>
-            </tr>
-          </thead>
-          <tbody id="yearly-income-tbody"></tbody>
-        </table>
-      </div>
-      <div style="font-size:0.8rem;color:var(--muted);margin-top:0.5rem;padding:0 0.75rem;">
-        Supp. = early retirement supplement (ends when Brenna turns 62). DC balance is start-of-year before withdrawal.
-      </div>
-    </div>
-  </div>
-
-  <!-- ── Projection ──────────────────────────────────── -->
-  <div id="tab-projection" class="tab-content">
-    <div class="card">
-      <div class="section-title">Retirement Projection</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Projection Start Year</label>
-          <input type="number" id="proj-start-year" value="" onchange="saveAndRender()" />
-        </div>
-        <div class="form-group">
-          <label>Years to Project</label>
-          <select id="proj-years" onchange="saveAndRender()">
-            <option value="10">10 years</option>
-            <option value="15">15 years</option>
-            <option value="20" selected>20 years</option>
-            <option value="25">25 years</option>
-            <option value="30">30 years</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">Projected DC Balance Over Time</div>
-      <div class="chart-container">
-        <canvas id="projection-chart" height="280"></canvas>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">Year-by-Year Breakdown</div>
-      <div class="table-wrap" style="overflow-x:visible;">
-        <table style="table-layout:fixed;width:100%;">
-          <thead>
-            <tr>
-              <th style="white-space:nowrap;width:50px;">Year</th>
-              <th style="white-space:nowrap;width:38px;">Age</th>
-              <th style="white-space:nowrap;width:62px;">Svc Yrs</th>
-              <th style="white-space:nowrap;width:80px;">Rule of 80</th>
-              <th style="white-space:nowrap;width:88px;">Pension/yr</th>
-              <th style="white-space:nowrap;width:88px;">BNH DC</th>
-              <th style="white-space:nowrap;width:88px;">KH DC</th>
-              <th style="white-space:nowrap;width:88px;">4% DC/yr</th>
-              <th style="white-space:nowrap;width:96px;">Combined Sal.</th>
-              <th style="white-space:nowrap;">Goal Met?</th>
-            </tr>
-          </thead>
-          <tbody id="proj-table-body"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── Settings ─────────────────────────────────────── -->
-  <div id="tab-settings" class="tab-content">
-    <div class="card">
-      <div class="section-title">Personal Information</div>
-      <div style="font-size:0.8rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;">Brenna</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Date of Birth</label>
-          <input type="date" id="s-dob" onblur="saveAndRender()" />
-        </div>
-        <div class="form-group">
-          <label>Retirement Target (Rule of 80)</label>
-          <input type="number" id="s-rule" value="80" onchange="saveAndRender()" />
-          <div class="form-hint" id="s-bnh-retire-target-hint"></div>
-        </div>
-      </div>
-      <div class="divider"></div>
-      <div style="font-size:0.8rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;">Kevin</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Date of Birth</label>
-          <input type="date" id="s-kh-dob" onblur="saveAndRender()" />
-        </div>
-        <div class="form-group">
-          <label>Target Retirement Age</label>
-          <input type="number" id="s-kh-retire-age" step="1" min="50" max="80" onchange="saveAndRender()" />
-          <div class="form-hint" id="s-kh-retire-age-hint"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="section-title">Retirement Dates</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Brenna's Retirement Date</label>
-          <input type="date" id="s-bnh-retire" onblur="saveAndRender()" />
-          <div class="form-hint" id="s-bnh-retire-hint"></div>
-        </div>
-        <div class="form-group">
-          <label>Kevin's Retirement Date</label>
-          <input type="date" id="s-kh-retire" onblur="saveAndRender()" />
-          <div class="form-hint" id="s-kh-retire-hint"></div>
-        </div>
-      </div>
-      <div style="background:var(--bg);border-radius:8px;padding:0.75rem;font-size:0.8rem;color:var(--muted);">
-        These dates are used as defaults in the Income tab. You can override them per scenario.
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="section-title">Plan Balances (Current)</div>
-      <div id="balance-inputs"></div>
-    </div>
-
-    <div class="card">
-      <div class="section-title">Contribution Frequency</div>
-      <div class="form-group">
-        <label>Pay Periods per Year</label>
-        <select id="s-pay-periods" onchange="saveAndRender()">
-          <option value="24" selected>24 — Semi-Monthly (15th &amp; last day of month)</option>
-          <option value="26">26 — Bi-Weekly</option>
-          <option value="12">12 — Monthly</option>
-        </select>
-        <div class="form-hint" id="next-pay-dates-hint"></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="section-title">Salary &amp; Annual Raises</div>
-      <div style="font-size:0.8rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;">Brenna — raises effective July 1</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Current Monthly Salary ($)</label>
-          <input type="text" id="s-brenna-salary"
-            onfocus="onCurrencyFocus(this)"
-            onblur="onCurrencyBlur(this);saveAndRender()" />
-        </div>
-        <div class="form-group">
-          <label>Annual Raise (%)</label>
-          <input type="number" id="s-brenna-raise" step="0.1" min="0" max="20" onchange="saveAndRender()" />
-        </div>
-      </div>
-      <div class="form-hint mb-2" id="s-brenna-salary-hint"></div>
-      <div class="divider"></div>
-      <div style="font-size:0.8rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;">Kevin — raises effective January 1</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Current Monthly Salary ($)</label>
-          <input type="text" id="s-kevin-salary"
-            onfocus="onCurrencyFocus(this)"
-            onblur="onCurrencyBlur(this);saveAndRender()" />
-        </div>
-        <div class="form-group">
-          <label>Annual Raise (%)</label>
-          <input type="number" id="s-kevin-raise" step="0.1" min="0" max="20" onchange="saveAndRender()" />
-        </div>
-      </div>
-      <div class="form-hint" id="s-kevin-salary-hint"></div>
-    </div>
-
-    <div class="card">
-      <div class="section-title">Pension Multipliers</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Pension Benefit Multiplier</label>
-          <input type="number" id="s-multiplier" step="0.001" min="0" onchange="saveAndRender()" />
-          <div class="form-hint">Default: 0.0161 = 1.61% per year of service (PEERS formula)</div>
-        </div>
-        <div class="form-group">
-          <label>Early Retirement Supplement Multiplier</label>
-          <input type="number" id="s-supp-multiplier" step="0.0001" min="0" onchange="saveAndRender()" />
-          <div class="form-hint">Default: 0.008 (0.8%) — applies before age 62</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="section-title">GitHub Sync</div>
-      <div id="gist-sync-status" style="font-size:0.8rem;color:var(--muted);margin-bottom:0.6rem;">Not configured</div>
-      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
-        <button class="btn btn-outline btn-sm" onclick="syncNow()">Sync Now</button>
-        <button class="btn btn-outline btn-sm" onclick="updateGithubPAT()">Update PAT</button>
-        <button class="btn btn-sm" style="background:var(--danger);color:#fff;" onclick="disconnectGist()">Disconnect</button>
-      </div>
-      <div style="font-size:0.72rem;color:var(--muted);">Data is automatically pushed to a private GitHub Gist after every change and pulled on every login.</div>
-    </div>
-
-    <div class="card">
-      <div class="section-title">Data Backup</div>
-      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-        <button class="btn btn-outline btn-sm" onclick="exportData()">Export JSON</button>
-        <button class="btn btn-outline btn-sm" onclick="document.getElementById('import-file').click()">Import JSON</button>
-        <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)" />
-        <button class="btn btn-outline btn-sm" onclick="copyDataToClipboard()">Copy to Clipboard</button>
-        <button class="btn btn-outline btn-sm" onclick="pasteDataFromClipboard()">Paste from Clipboard</button>
-        <button class="btn btn-sm" style="background:var(--danger);color:#fff;" onclick="resetData()">Reset All Data</button>
-      </div>
-      <div id="data-mgmt-msg" style="font-size:0.8rem;color:var(--primary);margin-top:0.4rem;display:none;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closePurchaseModal()">Cancel</button>
+      <button class="btn btn-primary" style="width:auto" onclick="savePurchase()">Save</button>
     </div>
   </div>
 </div>
 
-<!-- ══ SERVICE PURCHASE MODAL ═══════════════════════════════ -->
-<div class="modal-overlay" id="purchase-modal">
+<!-- Scenario modal -->
+<div class="overlay" id="scenario-modal">
   <div class="modal">
-    <h3 id="purchase-modal-title">Add Service Year Purchase</h3>
-    <div class="form-group">
-      <label>Date of Transfer</label>
-      <input type="date" id="m-date" />
-    </div>
-    <div class="form-group">
-      <label>Years of Service Purchased</label>
-      <input type="number" id="m-years" step="0.00001" min="0" placeholder="e.g. 1.21416" />
-    </div>
-    <div class="form-group">
-      <label>Cost / Amount Transferred ($)</label>
-      <input type="number" id="m-cost" step="0.01" min="0" placeholder="e.g. 12500.00" />
-    </div>
-    <div class="form-group">
-      <label>Notes (optional)</label>
-      <input type="text" id="m-notes" placeholder="e.g. Transfer from 457B" />
+    <h3 id="sm-title">Add Purchase Scenario</h3>
+    <div class="modal-fields">
+      <div class="field"><label>Purchase Window Year</label><input type="number" id="sm-year" step="1" placeholder="e.g. 2025" /><div class="field-hint">Oct 1 of this year – Sep 30 of next year. Purchase date is Sep 30 of next year.</div></div>
+      <div class="field"><label>Years to Purchase</label><input type="number" id="sm-yrs" step="0.5" min="0.5" placeholder="e.g. 1.0" /></div>
+      <div class="field"><label>Annual Salary Override (optional)</label><input type="text" id="sm-sal" placeholder="Leave blank to use projected salary" /></div>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-outline btn-sm" onclick="closePurchaseModal()">Cancel</button>
-      <button class="btn btn-accent btn-sm" onclick="savePurchase()">Save</button>
+      <button class="btn btn-secondary" onclick="closeScenarioModal()">Cancel</button>
+      <button class="btn btn-primary" style="width:auto" onclick="saveScenario()">Save</button>
     </div>
   </div>
 </div>
 
 <script>
-// ══════════════════════════════════════════════════════════════
-//  DATA MODEL
-// ══════════════════════════════════════════════════════════════
-const DEFAULT_STATE = {
-  dob: '1987-11-07',
-  khDob: '1987-10-08',
-  ruleTarget: 80,
-  pensionStartDate: '2020-09-15',
-  pensionMultiplier: 0.0161,
-  pensionPurchased: 1.21416,
-  pensionFinalSalary: 5000,
-  pensionCurrentSalary: 5000,
-  maxPurchasableYears: 11.50274,
-  payPeriodsPerYear: 24,
-  rateOfReturn: 7,
-  retirementROR: 4,
-  projectionYears: 20,
-  plans: [
-    { id: 'kh401k',  name: 'KH 401K',  type: '401K', balance: 0, contribPerPeriod: 0, semiMonthly: true  },
-    { id: 'bnh457b', name: 'BNH 457B', type: '457B', balance: 0, contribPerPeriod: 0, semiMonthly: true  },
-    { id: 'bnh401a', name: 'BNH 401A', type: '401A', balance: 0, contribPerPeriod: 0, semiMonthly: true  },
-    { id: 'bnhira',  name: 'BNH IRA',  type: 'IRA',  balance: 0, contribPerPeriod: 0, semiMonthly: false },
-  ],
-  servicePurchases: [
-    { id: 'init', date: '2020-09-15', years: 1.21416, cost: 0, notes: 'Initial purchased service credit' }
-  ],
-  purchaseScenarios: [],
-  incomeScenarios: [
-    { id: 'IS1', name: 'Scenario 1', bnhRetireDate: '', khRetireDate: '' }
-  ],
-  bnhPrimaryRetireDate: '',
-  khPrimaryRetireDate: '',
-  khRetireAge: 62,
-  brennaCurrentSalary: 5000,
-  brennaAnnualRaisePct: 3,
-  kevinCurrentSalary: 5000,
-  kevinAnnualRaisePct: 3,
-  khTerminalSalary: 0,
-  pensionSupplementMultiplier: 0.008,
-  pensionSalaryCap: 30000,
-  pensionCashBalance: 0,
-  balanceAsOf: '',
-  excess401ARate: 0.20,
+// ── Constants ────────────────────────────────────────────────
+const PWD = 'Henderson2022';
+const PENSION_MULT  = 1.61 / 100;
+const SUPP_MULT     = 0.8  / 100;
+const COST_FACTOR   = 0.1372;
+const RULE_TARGET   = 80;
+const CAP_GROW      = 500;
+
+// ── Default state ────────────────────────────────────────────
+const DEFAULT = {
+  brenna: {
+    dob: '', pensionStart: '', salary: 0, raisePct: 2.5,
+    salaryCap: 0, excess401aPct: 20, retireDate: '',
+    servicePurchases: [
+      { id: 'init', date: '2020-09-15', years: 1.21416, cost: 0, notes: 'Initial purchased service credit' }
+    ],
+    purchaseScenarios: [],
+    plans: [
+      { id: 'b457b', name: '457B', type: '457B', balance: 0, contrib: 0, periods: 24 },
+      { id: 'b401a', name: '401A', type: '401A', balance: 0, contrib: 0, periods: 24 },
+      { id: 'bira',  name: 'IRA',  type: 'IRA',  balance: 0, contrib: 0, periods: 12 },
+    ],
+  },
+  kevin: {
+    dob: '', salary: 0, raisePct: 2.5, retireAge: 62, retireDate: '',
+    plans: [
+      { id: 'k401k', name: '401K', type: '401K', balance: 0, contrib: 0, periods: 26 },
+    ],
+  },
+  ror: 7, retRor: 5, incomeGoal: 0,
 };
 
-let state = {};
+let state = JSON.parse(JSON.stringify(DEFAULT));
+let _pmIdx = null, _smIdx = null;
 
+// ── State persistence ────────────────────────────────────────
 function loadState() {
   try {
-    const raw = localStorage.getItem('retirementState');
-    if (raw) {
-      state = JSON.parse(raw);
-      // Merge any missing keys from defaults
-      state.plans = state.plans || DEFAULT_STATE.plans;
-      if (!state.purchaseScenarios) state.purchaseScenarios = [];
-      if (!state.incomeScenarios) state.incomeScenarios = JSON.parse(JSON.stringify(DEFAULT_STATE.incomeScenarios));
-      if (state.khTerminalSalary === undefined) state.khTerminalSalary = 0;
-      if (state.pensionSupplementMultiplier === undefined) state.pensionSupplementMultiplier = 0.008;
-      if (state.pensionSalaryCap === undefined) state.pensionSalaryCap = 30000;
-      if (state.pensionCashBalance === undefined) state.pensionCashBalance = 0;
-      if (!state.balanceAsOf) state.balanceAsOf = '';
-      if (!state.khDob) state.khDob = '1987-10-08';
-      if (state.brennaCurrentSalary === undefined) state.brennaCurrentSalary = state.pensionCurrentSalary || 5000;
-      if (state.brennaAnnualRaisePct === undefined) state.brennaAnnualRaisePct = 3;
-      if (state.kevinCurrentSalary === undefined) state.kevinCurrentSalary = 5000;
-      if (state.kevinAnnualRaisePct === undefined) state.kevinAnnualRaisePct = 3;
-      if (!state.bnhPrimaryRetireDate) state.bnhPrimaryRetireDate = '';
-      if (!state.khPrimaryRetireDate) state.khPrimaryRetireDate = '';
-      if (state.khRetireAge === undefined) state.khRetireAge = 62;
-      if (state.maxPurchasableYears === undefined) state.maxPurchasableYears = 11.50274;
-      if (state.retirementROR === undefined) state.retirementROR = 4;
-      if (state.excess401ARate === undefined) state.excess401ARate = 0.20;
-      // Migrate old multiplier values to correct 1.61%
-      if (state.pensionMultiplier === 0.161 || state.pensionMultiplier === 0.00161) state.pensionMultiplier = 0.0161;
-    } else {
-      state = JSON.parse(JSON.stringify(DEFAULT_STATE));
-    }
-  } catch(e) {
-    state = JSON.parse(JSON.stringify(DEFAULT_STATE));
-  }
+    const raw = localStorage.getItem('rp2_state');
+    if (raw) state = deepMerge(JSON.parse(JSON.stringify(DEFAULT)), JSON.parse(raw));
+  } catch { state = JSON.parse(JSON.stringify(DEFAULT)); }
 }
-
 function saveState() {
-  localStorage.setItem('retirementState', JSON.stringify(state));
-  scheduleGistSync();
+  localStorage.setItem('rp2_state', JSON.stringify(state));
+  scheduleSync();
 }
-
-function saveAndRender() {
-  collectFormValues();
-  saveState();
-  render();
-}
-
-// ══════════════════════════════════════════════════════════════
-//  AUTH
-// ══════════════════════════════════════════════════════════════
-const PWD_HASH = 'Henderson2022';
-
-function checkPassword() {
-  const val = document.getElementById('password-input').value;
-  const patInput = document.getElementById('gh-pat-input');
-  const pat = patInput ? patInput.value.trim() : '';
-  if (val === PWD_HASH) {
-    if (pat) storePAT(pat);
-    localStorage.setItem('rp_auth', '1');
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    document.getElementById('login-error').style.display = 'none';
-    init();
-    const storedPat = getStoredPAT();
-    if (storedPat) initialGistSync(storedPat);
-    else setSyncStatus('Not configured — add a GitHub PAT in Settings to enable sync');
-  } else {
-    document.getElementById('login-error').style.display = 'block';
-    document.getElementById('password-input').value = '';
+function deepMerge(t, s) {
+  if (typeof s !== 'object' || s === null) return s;
+  const o = { ...t };
+  for (const k of Object.keys(s)) {
+    if (Array.isArray(s[k])) o[k] = s[k];
+    else if (typeof s[k] === 'object' && s[k] !== null && typeof t[k] === 'object') o[k] = deepMerge(t[k], s[k]);
+    else o[k] = s[k];
   }
+  return o;
 }
 
-document.getElementById('password-input').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') checkPassword();
-});
+// ── Formatting ───────────────────────────────────────────────
+const fmt$ = n => isFinite(n) ? '$' + Math.round(n).toLocaleString() : '—';
+const fmtD = (n, d=1) => isFinite(n) ? Number(n).toFixed(d) : '—';
+const fmtDate = d => d ? new Date(d).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}) : '—';
+const fmtMo   = d => d ? new Date(d).toLocaleDateString('en-US',{year:'numeric',month:'short'}) : '—';
+function fmtMoney(n) { return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0}); }
+function parseMoney(s) { return parseFloat(String(s||0).replace(/[,$]/g,'')) || 0; }
 
-function logout() {
-  localStorage.removeItem('rp_auth');
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('password-input').value = '';
+// ── Date utils ───────────────────────────────────────────────
+const today  = () => { const d=new Date(); d.setHours(0,0,0,0); return d; };
+const yFrac  = (a,b) => (new Date(b)-new Date(a))/(365.25*24*3600*1000);
+const ageAt  = (dob,at) => yFrac(dob, at);
+const ageDate = (dob,age) => new Date(new Date(dob).getTime() + age*365.25*24*3600*1000);
+
+// ── Salary ───────────────────────────────────────────────────
+function salaryAt(base, raisePct, atDate, raiseMonth=1) {
+  if (!base) return 0;
+  const r = (raisePct||0)/100;
+  if (!r) return base;
+  const now = today();
+  // Count July-1 boundaries crossed (raiseMonth=7 for Brenna, 1 for Kevin)
+  const nowBoundary = new Date(now.getFullYear(), raiseMonth-1, 1);
+  if (nowBoundary > now) nowBoundary.setFullYear(nowBoundary.getFullYear()-1);
+  const atBoundary  = new Date(new Date(atDate).getFullYear(), raiseMonth-1, 1);
+  if (atBoundary > new Date(atDate)) atBoundary.setFullYear(atBoundary.getFullYear()-1);
+  const raises = Math.max(0, Math.round(yFrac(nowBoundary, atBoundary)));
+  return base * Math.pow(1+r, raises);
 }
+const brennaSalAt = d => salaryAt(state.brenna.salary, state.brenna.raisePct, d, 7);
+const kevinSalAt  = d => salaryAt(state.kevin.salary,  state.kevin.raisePct,  d, 1);
 
-// ══════════════════════════════════════════════════════════════
-//  TABS
-// ══════════════════════════════════════════════════════════════
-function switchTab(name) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  const tabMap = { dashboard: 'tab-dashboard', pension: 'tab-pension', 'dc-plans': 'tab-dc', income: 'tab-income', projection: 'tab-projection', settings: 'tab-settings' };
-  document.getElementById(tabMap[name]).classList.add('active');
-  event.target.classList.add('active');
-  if (name === 'projection') renderProjectionChart();
+function pensionCapAt(d) {
+  const base = state.brenna.salaryCap||0;
+  if (!base) return Infinity;
+  return Math.max(0, base + (new Date(d).getFullYear()-today().getFullYear())*CAP_GROW);
 }
-
-// ══════════════════════════════════════════════════════════════
-//  CALCULATIONS
-// ══════════════════════════════════════════════════════════════
-function today() { return new Date(); }
-
-function getAge(dob, atDate) {
-  const d = atDate || today();
-  const birth = new Date(dob);
-  let age = d.getFullYear() - birth.getFullYear();
-  const m = d.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && d.getDate() < birth.getDate())) age--;
-  return age;
+function cappedBrennaSal(d) {
+  const s = brennaSalAt(d), c = pensionCapAt(d);
+  return c===Infinity ? s : Math.min(s,c);
 }
-
-function getAgeDecimal(dob, atDate) {
-  const d = atDate || today();
-  const birth = new Date(dob);
-  return (d - birth) / (365.25 * 24 * 3600 * 1000);
-}
-
-function getServiceYears(startDate, atDate, purchasedYears) {
-  const d = atDate || today();
-  const start = new Date(startDate);
-  const accrued = Math.max(0, (d - start) / (365.25 * 24 * 3600 * 1000));
-  return accrued + (purchasedYears || 0);
-}
-
-function getTotalPurchasedYears() {
-  return state.servicePurchases.reduce((s, p) => s + (parseFloat(p.years) || 0), 0);
-}
-
-function pensionMonthly(serviceYears, avgSalary) {
-  return state.pensionMultiplier * serviceYears * avgSalary;
-}
-
-function totalDCBalance() {
-  return state.plans.reduce((s, p) => s + (parseFloat(p.balance) || 0), 0);
-}
-
-function ruleOf80Value(dob, startDate, purchasedYears, atDate) {
-  return getAgeDecimal(dob, atDate) + getServiceYears(startDate, atDate, purchasedYears);
-}
-
-function retirementDate(dob, startDate, purchasedYears) {
-  // Binary search for when age + service = ruleTarget
-  let lo = new Date();
-  let hi = new Date(lo.getTime() + 40 * 365.25 * 24 * 3600 * 1000);
-  for (let i = 0; i < 50; i++) {
-    const mid = new Date((lo.getTime() + hi.getTime()) / 2);
-    const val = ruleOf80Value(dob, startDate, purchasedYears, mid);
-    if (val < state.ruleTarget) lo = mid; else hi = mid;
+function avg36Month(retDate) {
+  const ret = new Date(retDate);
+  let total = 0;
+  for (let i=35; i>=0; i--) {
+    const m = new Date(ret.getFullYear(), ret.getMonth()-i, 1);
+    total += cappedBrennaSal(m);
   }
-  return new Date((lo.getTime() + hi.getTime()) / 2);
+  return total/36;
 }
 
-function serviceYearsAtDate(startDate, purchasedYears, atDate) {
-  return getServiceYears(startDate, atDate, purchasedYears);
+// ── Service years & pension ──────────────────────────────────
+function totalPurchased() {
+  return (state.brenna.servicePurchases||[]).reduce((s,p)=>s+(parseFloat(p.years)||0),0);
 }
-
-// DC projection: future value with periodic contributions
-function projectDC(currentBalance, annualContrib, years, rate) {
-  const r = rate / 100;
-  if (r === 0) return currentBalance + annualContrib * years;
-  // FV = PV*(1+r)^n + PMT * ((1+r)^n - 1)/r
-  const n = years;
-  const growth = Math.pow(1 + r, n);
-  return currentBalance * growth + annualContrib * (growth - 1) / r;
+function plannedByDate(atDate) {
+  return (state.brenna.purchaseScenarios||[])
+    .filter(sc=>new Date(sc.windowYear+1,8,30)<=new Date(atDate))
+    .reduce((s,sc)=>s+(parseFloat(sc.yearsToPurchase)||0),0);
 }
-
-// Growing annuity: pmt grows at growthRate per year (decimal, e.g. 0.03)
-function projectDCGrowing(balance, annualContrib, years, rate, growthRate) {
-  const r = rate / 100;
-  const g = growthRate;
-  const n = years;
-  if (n <= 0) return balance;
-  const rv = Math.pow(1 + r, n);
-  if (annualContrib === 0) return balance * rv;
-  if (Math.abs(r - g) < 1e-9) return balance * rv + annualContrib * n * Math.pow(1 + r, n - 1);
-  const gv = Math.pow(1 + g, n);
-  return balance * rv + annualContrib * (rv - gv) / (r - g);
+function svcYrs(atDate, extra=0) {
+  if (!state.brenna.pensionStart) return 0;
+  return Math.max(0,yFrac(state.brenna.pensionStart,atDate)) + totalPurchased() + extra;
 }
-
-// Monthly salary cap at a given date, growing $500/year from base cap
-function pensionCapAt(date) {
-  const baseCap = parseFloat(state.pensionSalaryCap) || 0;
-  if (!baseCap) return 0;
-  const currentYear = new Date().getFullYear();
-  const targetYear = new Date(date).getFullYear();
-  return Math.max(0, baseCap + (targetYear - currentYear) * 500);
+function r80at(atDate, extra=0) {
+  if (!state.brenna.dob) return 0;
+  return ageAt(state.brenna.dob, atDate) + svcYrs(atDate, extra);
 }
-
-// Nice chart Y-axis: returns {maxVal, step} where maxVal is a round multiple of step
-function computeNiceAxis(rawMax) {
-  if (rawMax <= 0) return { maxVal: 4e6, step: 1e6 };
-  const rough = rawMax / 4;
-  const mag = Math.pow(10, Math.floor(Math.log10(rough)));
-  let step = mag;
-  for (const m of [1, 2, 5, 10]) { if (m * mag >= rough) { step = m * mag; break; } }
-  return { maxVal: Math.ceil(rawMax / step) * step, step };
+function projRetireDate(extra=0) {
+  if (!state.brenna.dob||!state.brenna.pensionStart) return null;
+  const now = today();
+  if (r80at(now,extra)>=RULE_TARGET) return now;
+  let lo=now, hi=new Date(now.getTime()+40*365.25*24*3600*1000);
+  for (let i=0;i<64;i++) {
+    const mid=new Date((lo.getTime()+hi.getTime())/2);
+    if (r80at(mid,extra)<RULE_TARGET) lo=mid; else hi=mid;
+  }
+  return hi;
 }
+const pensionMo  = (svc,avg) => PENSION_MULT*svc*avg;
+const suppMo     = (svc,avg) => SUPP_MULT*svc*avg;
 
-function fmtAxisY(v) {
-  if (v >= 1e6) return '$' + (v / 1e6).toFixed(v % 1e6 === 0 ? 0 : 1) + 'M';
-  if (v >= 1e3) return '$' + (v / 1e3).toFixed(v % 1e3 === 0 ? 0 : 1) + 'K';
-  return '$' + Math.round(v);
+// ── DC projection ─────────────────────────────────────────────
+function projectDC(bal, annContrib, yrs, ratePct, growPct=0) {
+  const r=ratePct/100, g=growPct/100, n=yrs;
+  if (n<=0) return bal;
+  const rv=Math.pow(1+r,n);
+  if (!annContrib) return bal*rv;
+  if (Math.abs(r-g)<1e-9) return bal*rv + annContrib*n*Math.pow(1+r,n-1);
+  return bal*rv + annContrib*(rv-Math.pow(1+g,n))/(r-g);
 }
-
-// Return the date when person born on dob turns targetAge years old
-function ageDate(dob, targetAge) {
-  const [y, m, d] = String(dob).split('-').map(Number);
-  return new Date(y + targetAge, (m || 1) - 1, d || 1);
-}
-
-// Age-59.5 dates: 6 months after 59th birthday
-function age595Date(dob) {
-  const base = ageDate(dob, 59);
-  return new Date(base.getFullYear(), base.getMonth() + 6, base.getDate());
-}
-
-// FV of extra 401A contributions (excess salary over pension cap * rate) to a target date
-// Contributions are computed year-by-year since cap grows $500/yr while salary grows at %
-function computeExtra401AFV(toDate, rorPct) {
-  const rate = (state.excess401ARate || 0);
-  if (!rate) return 0;
-  const r = rorPct / 100;
-  const toYear = new Date(toDate).getFullYear();
-  const fromYear = new Date().getFullYear();
-  let fv = 0;
-  for (let yr = fromYear; yr <= toYear; yr++) {
-    const date = new Date(yr, 11, 31);
-    const brennaAnnual = brennaSalaryAt(date) * 12;
-    const capAnnual = pensionCapAt(date) * 12;
-    const extra = Math.max(0, brennaAnnual - capAnnual) * rate;
-    const yearsLeft = Math.max(0, (new Date(toDate) - date) / (365.25 * 24 * 3600 * 1000));
-    fv += extra * Math.pow(1 + r, yearsLeft);
+function extra401aFV(toDate) {
+  const exPct=(state.brenna.excess401aPct||0)/100;
+  if (!exPct) return 0;
+  const r=state.ror/100, toYr=new Date(toDate).getFullYear();
+  let fv=0;
+  for (let yr=today().getFullYear(); yr<=toYr; yr++) {
+    const d=new Date(yr,11,31);
+    const cap=pensionCapAt(d), sal=brennaSalAt(d)*12;
+    const excess=Math.max(0, sal - (cap===Infinity?sal:cap*12));
+    fv += excess*exPct * Math.pow(1+r, Math.max(0,yFrac(d,toDate)));
   }
   return fv;
 }
-
-// ── Salary Projection ──────────────────────────────────────
-// raiseMonth: 1=Jan (Kevin), 7=Jul (Brenna)
-function salaryAtDate(baseMonthlySalary, annualRaisePct, raiseMonth, targetDate) {
-  const now = today();
-  const target = new Date(targetDate);
-  let raises = 0;
-  for (let yr = now.getFullYear(); yr <= target.getFullYear(); yr++) {
-    const raiseDate = new Date(yr, raiseMonth - 1, 1);
-    if (raiseDate > now && raiseDate <= target) raises++;
-  }
-  return baseMonthlySalary * Math.pow(1 + annualRaisePct / 100, raises);
+function brennaDCatDate(retDate) {
+  const ret=new Date(retDate), now=today();
+  const age65=state.brenna.dob?ageDate(state.brenna.dob,65):null;
+  return state.brenna.plans.reduce((tot,plan)=>{
+    const bal=parseFloat(plan.balance)||0;
+    const ac=(parseFloat(plan.contrib)||0)*(plan.periods||24);
+    const cutoff=age65&&age65<ret?age65:ret;
+    const yrs=Math.max(0,yFrac(now,cutoff));
+    let fv = plan.id==='b401a'
+      ? projectDC(bal,ac,yrs,state.ror,state.brenna.raisePct) + extra401aFV(cutoff)
+      : projectDC(bal,ac,yrs,state.ror,state.brenna.raisePct);
+    if (cutoff<ret) fv=projectDC(fv,0,yFrac(cutoff,ret),state.ror);
+    return tot+fv;
+  },0);
+}
+function kevinDCatDate(retDate) {
+  const ret=new Date(retDate), now=today();
+  const age65=state.kevin.dob?ageDate(state.kevin.dob,65):null;
+  return state.kevin.plans.reduce((tot,plan)=>{
+    const bal=parseFloat(plan.balance)||0;
+    const ac=(parseFloat(plan.contrib)||0)*(plan.periods||26);
+    const cutoff=age65&&age65<ret?age65:ret;
+    const yrs=Math.max(0,yFrac(now,cutoff));
+    let fv=projectDC(bal,ac,yrs,state.ror,state.kevin.raisePct);
+    if (cutoff<ret) fv=projectDC(fv,0,yFrac(cutoff,ret),state.ror);
+    return tot+fv;
+  },0);
 }
 
-function avg36MonthSalary(baseMonthlySalary, annualRaisePct, raiseMonth, retirementDate) {
-  const retDate = new Date(retirementDate);
-  let total = 0;
-  for (let i = 35; i >= 0; i--) {
-    const d = new Date(retDate.getFullYear(), retDate.getMonth() - i, 1);
-    total += salaryAtDate(baseMonthlySalary, annualRaisePct, raiseMonth, d);
-  }
-  return total / 36;
+// ── Purchase scenarios ────────────────────────────────────────
+function calcScenario(sc) {
+  const purchDate = new Date(sc.windowYear+1,8,30);
+  const rawAnn = sc.salaryOverride || (brennaSalAt(purchDate)*12);
+  const cap = pensionCapAt(purchDate);
+  const effAnn = cap===Infinity ? rawAnn : Math.min(rawAnn, cap*12);
+  const yrs = parseFloat(sc.yearsToPurchase)||0;
+  const cost = yrs*effAnn*COST_FACTOR;
+  const b457 = state.brenna.plans.find(p=>p.id==='b457b');
+  const bal457 = parseFloat(b457?.balance||0);
+  const ac457  = (parseFloat(b457?.contrib||0))*(b457?.periods||24);
+  const y2p = Math.max(0,yFrac(today(),purchDate));
+  const bal457atPurch = projectDC(bal457,ac457,y2p,state.ror,state.brenna.raisePct);
+  return { sc, cost, yrs, bal457atPurch, canAfford: bal457atPurch>=cost, purchDate };
 }
+function calcAllScenarios() {
+  if (!state.brenna.purchaseScenarios?.length) return null;
+  const items = state.brenna.purchaseScenarios.map(calcScenario);
+  const totalCost = items.reduce((s,i)=>s+i.cost,0);
+  const totalYrs  = items.reduce((s,i)=>s+i.yrs,0);
+  const baseRet   = projRetireDate(0);
+  const withRet   = projRetireDate(totalYrs);
+  const retDate   = state.brenna.retireDate ? new Date(state.brenna.retireDate) : withRet;
+  if (!retDate) return { items, totalCost, totalYrs, baseRet, withRet, pensionGain:0 };
 
-function brennaSalaryAt(targetDate) {
-  return salaryAtDate(state.brennaCurrentSalary || state.pensionCurrentSalary || 0, state.brennaAnnualRaisePct || 0, 7, targetDate);
-}
-function brennaAvg36Month(retirementDate) {
-  return avg36MonthSalary(state.brennaCurrentSalary || state.pensionCurrentSalary || 0, state.brennaAnnualRaisePct || 0, 7, retirementDate);
-}
-function kevinSalaryAt(targetDate) {
-  return salaryAtDate(state.kevinCurrentSalary || 0, state.kevinAnnualRaisePct || 0, 1, targetDate);
-}
+  const avgSal = avg36Month(retDate);
+  const allSvc  = svcYrs(retDate, totalYrs);
+  const noneSvc = svcYrs(retDate, -totalPurchased()); // accrued only
+  const totalPensionGainAnn = (pensionMo(allSvc,avgSal)-pensionMo(noneSvc,avgSal))*12;
+  const baseSvc = svcYrs(retDate, 0);
+  const pensionGain = pensionMo(allSvc,avgSal)-pensionMo(baseSvc,avgSal);
 
-function cappedPensionSalary(date) {
-  const avg36 = brennaAvg36Month(date);
-  const cap = pensionCapAt(date);
-  return cap > 0 ? Math.min(avg36, cap) : avg36;
-}
-
-// ══════════════════════════════════════════════════════════════
-//  FORM VALUE COLLECTION
-// ══════════════════════════════════════════════════════════════
-function collectFormValues() {
-  const dob = document.getElementById('s-dob').value;
-  if (dob) state.dob = dob;
-  const rule = document.getElementById('s-rule').value;
-  if (rule) state.ruleTarget = parseFloat(rule);
-  const bSal = document.getElementById('s-brenna-salary').value;
-  if (bSal !== '') { state.brennaCurrentSalary = parseCurrencyStr(bSal) || 0; state.pensionCurrentSalary = state.brennaCurrentSalary; }
-  const bRaise = document.getElementById('s-brenna-raise').value;
-  if (bRaise !== '') state.brennaAnnualRaisePct = parseFloat(bRaise) || 0;
-  const kSal = document.getElementById('s-kevin-salary').value;
-  if (kSal !== '') state.kevinCurrentSalary = parseCurrencyStr(kSal) || 0;
-  const kRaise = document.getElementById('s-kevin-raise').value;
-  if (kRaise !== '') state.kevinAnnualRaisePct = parseFloat(kRaise) || 0;
-  const khDob = document.getElementById('s-kh-dob').value;
-  if (khDob) state.khDob = khDob;
-  const khRetireAge = document.getElementById('s-kh-retire-age').value;
-  if (khRetireAge) state.khRetireAge = parseInt(khRetireAge);
-  const bnhRetire = document.getElementById('s-bnh-retire').value;
-  state.bnhPrimaryRetireDate = bnhRetire;
-  const khRetire = document.getElementById('s-kh-retire').value;
-  state.khPrimaryRetireDate = khRetire;
-  const mult = document.getElementById('s-multiplier').value;
-  if (mult) state.pensionMultiplier = parseFloat(mult);
-  const suppMult = document.getElementById('s-supp-multiplier').value;
-  if (suppMult !== '') state.pensionSupplementMultiplier = parseFloat(suppMult);
-  const salaryCap = document.getElementById('p-salary-cap').value;
-  if (salaryCap !== '') state.pensionSalaryCap = parseCurrencyStr(salaryCap) || 0;
-  const excess401aRateEl = document.getElementById('p-excess401a-rate');
-  if (excess401aRateEl && excess401aRateEl.value !== '') state.excess401ARate = parseFloat(excess401aRateEl.value) / 100;
-  const maxPurch = document.getElementById('p-max-purchasable').value;
-  if (maxPurch !== '') state.maxPurchasableYears = parseFloat(maxPurch) || 11.50274;
-  // kh-terminal-salary is now auto-computed from dashboard assumptions — not collected here
-  const payPeriods = document.getElementById('s-pay-periods').value;
-  if (payPeriods) state.payPeriodsPerYear = parseInt(payPeriods);
-  const pStart = document.getElementById('p-start-date').value;
-  if (pStart) state.pensionStartDate = pStart;
-  const pPurch = document.getElementById('p-purchased').value;
-  if (pPurch !== '') state.pensionPurchased = parseFloat(pPurch);
-  // p-final-salary and p-current-salary are auto-computed in render()
-  const projYears = document.getElementById('proj-years').value;
-  if (projYears) state.projectionYears = parseInt(projYears);
-  const projStart = document.getElementById('proj-start-year').value;
-  if (projStart) state.projectionStartYear = parseInt(projStart);
-
-  // Balances and contributions are now live-updated via onblur on their inputs
-}
-
-// ══════════════════════════════════════════════════════════════
-//  RENDER
-// ══════════════════════════════════════════════════════════════
-function fmt$(n) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
-}
-function fmtDec(n, d) { return n.toFixed(d || 2); }
-
-function parseCurrencyStr(str) {
-  if (str === null || str === undefined || str === '') return 0;
-  return parseFloat(String(str).replace(/[$,\s]/g, '')) || 0;
-}
-
-function fmtCurrencyStr(n) {
-  const v = parseFloat(n) || 0;
-  if (v === 0) return '';
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
-}
-
-function onCurrencyFocus(el) {
-  const raw = parseCurrencyStr(el.value);
-  el.value = raw ? raw.toFixed(2) : '';
-  el.select();
-}
-
-function onCurrencyBlur(el) {
-  const raw = parseCurrencyStr(el.value);
-  el.value = raw ? fmtCurrencyStr(raw) : '';
-}
-
-function render() {
-  const now = today();
-  const purchased = getTotalPurchasedYears();
-  const ageNow = getAgeDecimal(state.dob, now);
-  const serviceNow = getServiceYears(state.pensionStartDate, now, purchased);
-  const rule80Now = ageNow + serviceNow;
-  const eligible = rule80Now >= state.ruleTarget;
-  const retDate = eligible ? now : retirementDate(state.dob, state.pensionStartDate, purchased);
-  const serviceAtRet = getServiceYears(state.pensionStartDate, retDate, purchased);
-  const salaryForPension = (state.brennaCurrentSalary && state.brennaAnnualRaisePct !== undefined)
-    ? cappedPensionSalary(retDate)
-    : state.pensionFinalSalary;
-  const pensionAtRet = pensionMonthly(serviceAtRet, salaryForPension);
-  const dcTotal = totalDCBalance();
-
-  // Summary tab
-  renderSummaryTab();
-
-  // Pension tab
-  document.getElementById('p-start-date').value = state.pensionStartDate;
-  document.getElementById('p-purchased').value = state.pensionPurchased;
-  document.getElementById('p-salary-cap').value = fmtCurrencyStr(state.pensionSalaryCap ?? 30000);
-  document.getElementById('p-max-purchasable').value = state.maxPurchasableYears ?? 11.50274;
-  document.getElementById('p-excess401a-rate').value = Math.round((state.excess401ARate ?? 0.20) * 100);
-  // Auto-compute projected avg 36-month salary (capped by pensionSalaryCap if set)
-  const pensionRetDate = state.bnhPrimaryRetireDate ? new Date(state.bnhPrimaryRetireDate) : retDate;
-  const projAvg36 = (state.brennaCurrentSalary && state.brennaAnnualRaisePct !== undefined)
-    ? brennaAvg36Month(pensionRetDate) : (state.brennaCurrentSalary || state.pensionFinalSalary || 0);
-  const capVal = parseFloat(state.pensionSalaryCap) || 0;
-  const cappedAvg36 = capVal > 0 ? Math.min(projAvg36, capVal) : projAvg36;
-  state.pensionFinalSalary = cappedAvg36;
-  state.pensionCurrentSalary = state.brennaCurrentSalary || 0;
-  document.getElementById('p-final-salary').value = Math.round(cappedAvg36);
-  document.getElementById('p-current-salary').value = Math.round(state.pensionCurrentSalary);
-  const finalHintEl = document.getElementById('p-final-salary-hint');
-  if (finalHintEl && state.brennaCurrentSalary) {
-    const projStr = `${fmt$(state.brennaCurrentSalary)}/mo × ${state.brennaAnnualRaisePct ?? 0}% growth → ${fmt$(projAvg36)}/mo avg`;
-    finalHintEl.textContent = capVal > 0 && projAvg36 > capVal
-      ? projStr + ` (capped at ${fmt$(capVal)}/mo)`
-      : projStr;
-  }
-
-  // Include planned purchases from scenarios in formula
-  const plannedYears = (state.purchaseScenarios || []).reduce((s, sc) => s + (parseFloat(sc.yearsToPurchase) || 0), 0);
-  const totalPurchasedWithPlanned = purchased + plannedYears;
-
-  // Retirement date should reflect planned purchases too (unless primary date is set)
-  const formulaRetDate = state.bnhPrimaryRetireDate
-    ? new Date(state.bnhPrimaryRetireDate)
-    : retirementDate(state.dob, state.pensionStartDate, totalPurchasedWithPlanned);
-  const formulaAccrued = Math.max(0, (formulaRetDate - new Date(state.pensionStartDate)) / (365.25 * 24 * 3600 * 1000));
-  const formulaTotal = formulaAccrued + totalPurchasedWithPlanned;
-  const formulaSalary = cappedPensionSalary(formulaRetDate);
-  const formulaPension = pensionMonthly(formulaTotal, formulaSalary);
-
-  const purchasedBreakdown = plannedYears > 0
-    ? `${fmtDec(purchased,4)} actual + ${fmtDec(plannedYears,4)} planned = ${fmtDec(totalPurchasedWithPlanned,4)}`
-    : fmtDec(purchased, 5);
-
-  document.getElementById('pension-calc-display').innerHTML = `
-    <div style="background:var(--bg);border-radius:8px;padding:0.75rem;font-size:0.8rem;color:var(--muted);margin-bottom:0.75rem;line-height:1.7;">
-      <span style="color:var(--text);font-weight:600;">${fmtDec(formulaAccrued,2)} accrued</span>
-      + <span style="color:var(--text);font-weight:600;">${purchasedBreakdown} purchased yrs</span>
-      = <span style="color:var(--primary);font-weight:700;">${fmtDec(formulaTotal,2)} total service yrs</span>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;text-align:center;">
-      <div>
-        <div style="font-size:0.8rem;color:var(--muted);font-weight:700;text-transform:uppercase;">Total Service</div>
-        <div style="font-size:1.3rem;font-weight:700;color:var(--primary);">${fmtDec(formulaTotal,2)} yrs</div>
-        <div style="font-size:0.72rem;color:var(--muted);">accrued + purchased</div>
-      </div>
-      <div>
-        <div style="font-size:0.8rem;color:var(--muted);font-weight:700;text-transform:uppercase;">Avg Salary (capped)</div>
-        <div style="font-size:1.3rem;font-weight:700;color:var(--primary);">${fmt$(formulaSalary)}/mo</div>
-        <div style="font-size:0.72rem;color:var(--muted);">avg last 36mo</div>
-      </div>
-      <div>
-        <div style="font-size:0.8rem;color:var(--muted);font-weight:700;text-transform:uppercase;">Monthly Benefit</div>
-        <div style="font-size:1.3rem;font-weight:700;color:var(--accent);">${fmt$(formulaPension)}/mo</div>
-      </div>
-    </div>
-    <div style="margin-top:0.75rem;font-size:0.8rem;color:var(--muted);">
-      Annual benefit: <strong>${fmt$(formulaPension * 12)}</strong>
-      &nbsp;·&nbsp; 1.61% × ${fmtDec(formulaTotal,2)} yrs × ${fmt$(formulaSalary)}/mo
-    </div>
-  `;
-
-  // Purchase table
-  const tbody = document.getElementById('purchase-table-body');
-  tbody.innerHTML = '';
-  state.servicePurchases.forEach((p, i) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${p.date}</td><td>${fmtDec(parseFloat(p.years),5)}</td><td>${p.cost ? fmt$(p.cost) : '—'}</td><td>${p.notes || ''}</td>
-      <td style="white-space:nowrap;">
-        <button class="btn btn-sm" style="background:var(--primary);color:#fff;padding:0.2rem 0.5rem;font-size:0.72rem;margin-right:0.25rem;" onclick="openEditPurchaseModal(${i})">Edit</button>
-        <button class="btn btn-sm" style="background:var(--danger);color:#fff;padding:0.2rem 0.5rem;font-size:0.72rem;" onclick="deletePurchase(${i})">✕</button>
-      </td>`;
-    tbody.appendChild(tr);
+  const r=state.ror/100;
+  let oppFV=0;
+  items.forEach(i=>{ oppFV += i.cost*Math.pow(1+r,Math.max(0,yFrac(i.purchDate,retDate))); });
+  (state.brenna.servicePurchases||[]).forEach(p=>{
+    const c=parseMoney(p.cost); if(c>0) oppFV+=c*Math.pow(1+r,Math.max(0,yFrac(p.date,retDate)));
   });
-  document.getElementById('total-purchased-display').textContent = fmtDec(purchased, 5) + ' years';
+  const draw4 = oppFV*0.04;
+  const worthIt = totalPensionGainAnn>draw4;
+  const breakEven = totalPensionGainAnn>0 ? oppFV/totalPensionGainAnn : Infinity;
+  const mosSaved = baseRet&&withRet ? (baseRet-withRet)/(30.44*24*3600*1000) : 0;
 
-  // Scenario planner
-  renderScenarios();
+  return { items, totalCost, totalYrs, baseRet, withRet, retDate,
+    pensionGain, totalPensionGainAnn, oppFV, draw4, worthIt, breakEven, mosSaved, avgSal };
+}
 
-  // DC Plans tab
-  renderDCPlans();
+// ── Income timeline ───────────────────────────────────────────
+function calcTimeline() {
+  const bRet = state.brenna.retireDate ? new Date(state.brenna.retireDate) : null;
+  const kRet = state.kevin.retireDate  ? new Date(state.kevin.retireDate)  : null;
+  if (!bRet&&!kRet) return null;
 
-  // Settings form
-  document.getElementById('s-dob').value = state.dob;
-  document.getElementById('s-rule').value = state.ruleTarget;
+  const ror=state.ror/100, rRor=state.retRor/100, now=today();
+  let bPensionAnn=0, suppAnn=0;
+  if (bRet&&state.brenna.pensionStart) {
+    const svc=svcYrs(bRet,plannedByDate(bRet));
+    const avg=avg36Month(bRet);
+    bPensionAnn=pensionMo(svc,avg)*12;
+    if (state.brenna.dob&&ageAt(state.brenna.dob,bRet)<62) suppAnn=suppMo(svc,avg)*12;
+  }
+  const age62 = state.brenna.dob ? ageDate(state.brenna.dob,62) : null;
 
-  // Salary fields
-  document.getElementById('s-brenna-salary').value = state.brennaCurrentSalary ? fmtCurrencyStr(state.brennaCurrentSalary) : '';
-  document.getElementById('s-brenna-raise').value = state.brennaAnnualRaisePct ?? '';
-  document.getElementById('s-kevin-salary').value = state.kevinCurrentSalary ? fmtCurrencyStr(state.kevinCurrentSalary) : '';
-  document.getElementById('s-kevin-raise').value = state.kevinAnnualRaisePct ?? '';
+  // Starting DC balances
+  let bDC=0, bDC457=0, bDC457c=0, bDCc=0, kDC=0, kDCc=0;
+  state.brenna.plans.forEach(p=>{
+    const b=parseFloat(p.balance)||0, c=(parseFloat(p.contrib)||0)*(p.periods||24);
+    bDC+=b; bDCc+=c;
+    if (p.id==='b457b'){bDC457=b;bDC457c=c;}
+  });
+  state.kevin.plans.forEach(p=>{
+    kDC+=parseFloat(p.balance)||0;
+    kDCc+=(parseFloat(p.contrib)||0)*(p.periods||26);
+  });
 
-  // Salary projection hints
-  const brennaHint = document.getElementById('s-brenna-salary-hint');
-  if (brennaHint && state.bnhPrimaryRetireDate && state.brennaCurrentSalary) {
-    const salAtRet = brennaSalaryAt(state.bnhPrimaryRetireDate);
-    const avg36 = brennaAvg36Month(state.bnhPrimaryRetireDate);
-    brennaHint.textContent = `At retirement (${new Date(state.bnhPrimaryRetireDate).getFullYear()}): ${fmt$(salAtRet)}/mo · Avg last 36mo: ${fmt$(avg36)}/mo`;
-  } else if (brennaHint) { brennaHint.textContent = 'Set retirement date to see projection'; }
+  const bRetYr=bRet?bRet.getFullYear():Infinity;
+  const kRetYr=kRet?kRet.getFullYear():Infinity;
+  const startYr=now.getFullYear();
+  const endYr=Math.max(bRetYr===Infinity?startYr+5:bRetYr, kRetYr===Infinity?startYr+5:kRetYr)+30;
 
-  const kevinHint = document.getElementById('s-kevin-salary-hint');
-  if (kevinHint && state.khPrimaryRetireDate && state.kevinCurrentSalary) {
-    const kSalAtRet = kevinSalaryAt(state.khPrimaryRetireDate);
-    kevinHint.textContent = `At retirement (${new Date(state.khPrimaryRetireDate).getFullYear()}): ${fmt$(kSalAtRet)}/mo · Annual: ${fmt$(kSalAtRet * 12)}/yr`;
-  } else if (kevinHint) { kevinHint.textContent = 'Set retirement date to see projection'; }
-
-  // Brenna's projected retirement date hint (based on Rule of 80)
-  const bnhTargetHintEl = document.getElementById('s-bnh-retire-target-hint');
-  if (bnhTargetHintEl) {
-    const totalPurch = getTotalPurchasedYears();
-    const nowR80 = ruleOf80Value(state.dob, state.pensionStartDate, totalPurch, now);
-    if (nowR80 >= state.ruleTarget) {
-      bnhTargetHintEl.textContent = 'Eligible now';
-    } else {
-      const projRetDate = retirementDate(state.dob, state.pensionStartDate, totalPurch);
-      bnhTargetHintEl.textContent = 'Projected retirement: ' + projRetDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  const rows=[];
+  for (let yr=startYr; yr<=endYr; yr++) {
+    const bRet2=yr>=bRetYr, kRet2=yr>=kRetYr;
+    const bB=bDC, kB=kDC;
+    const avail=(bRet2?bB:0)+(kRet2?kB:0);
+    const mid=new Date(yr,6,1);
+    const pInc=bRet2?bPensionAnn:0;
+    const sInc=bRet2&&age62&&mid<age62?suppAnn:0;
+    const dcDraw=avail>0?avail*0.04:0;
+    const bSh=avail>0?bB/avail:0, kSh=avail>0?kB/avail:0;
+    const prev457=bDC457;
+    if (bRet2) {
+      const p457=bB>0?Math.min(bDC457/bB,1):0;
+      bDC457=Math.max(0,(bDC457-dcDraw*bSh*p457)*(1+rRor));
+      bDC=Math.max(0,(bB-dcDraw*bSh)*(1+rRor));
+    } else { bDC457=bDC457*(1+ror)+bDC457c; bDC=bB*(1+ror)+bDCc; }
+    if (kRet2) kDC=Math.max(0,(kB-dcDraw*kSh)*(1+rRor));
+    else kDC=kB*(1+ror)+kDCc;
+    const ex457=bRet2&&!kRet2&&bDC457===0&&prev457>0;
+    if (yr>=Math.min(bRetYr===Infinity?endYr:bRetYr, kRetYr===Infinity?endYr:kRetYr)) {
+      rows.push({ yr, bRet:bRet2, kRet:kRet2, pInc, sInc, dcDraw, ex457,
+        total:pInc+sInc+dcDraw });
     }
   }
+  return { rows, bPensionAnn, suppAnn, age62 };
+}
 
-  document.getElementById('s-kh-dob').value = state.khDob || '';
-  document.getElementById('s-kh-retire-age').value = state.khRetireAge || 62;
-
-  // Auto-calculate KH retirement date from DOB + target age if not manually set
-  if (state.khDob && !state.khPrimaryRetireDate) {
-    const khBirth = new Date(state.khDob);
-    const autoKhRetire = new Date(khBirth);
-    autoKhRetire.setFullYear(autoKhRetire.getFullYear() + (state.khRetireAge || 62));
-    state.khPrimaryRetireDate = autoKhRetire.toISOString().slice(0, 10);
+// ── Render: Overview ──────────────────────────────────────────
+function renderOverview() {
+  const el=document.getElementById('ov-content'); if(!el) return;
+  const bRet=state.brenna.retireDate?new Date(state.brenna.retireDate):projRetireDate();
+  const kRet=state.kevin.retireDate ?new Date(state.kevin.retireDate) :null;
+  const bDC=bRet?brennaDCatDate(bRet):0;
+  const kDC=kRet?kevinDCatDate(kRet):0;
+  let bPenMo=0;
+  if (bRet&&state.brenna.pensionStart) {
+    bPenMo=pensionMo(svcYrs(bRet,plannedByDate(bRet)),avg36Month(bRet));
   }
+  const tl=calcTimeline();
+  let h='';
 
-  // KH age hint
-  const khAgeHintEl = document.getElementById('s-kh-retire-age-hint');
-  if (khAgeHintEl && state.khDob) {
-    const khRetireDate = new Date(state.khDob);
-    khRetireDate.setFullYear(khRetireDate.getFullYear() + (state.khRetireAge || 62));
-    khAgeHintEl.textContent = 'Retirement date: ' + khRetireDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-    // Sync the KH retire date field if it's empty
-    const khRetireEl = document.getElementById('s-kh-retire');
-    if (khRetireEl && !khRetireEl.value) khRetireEl.value = state.khPrimaryRetireDate;
-  }
+  // Stat grid
+  h+=`<div class="stat-grid">`;
+  if (bRet) h+=`<div class="stat-box"><div class="stat-label">Brenna Retires</div><div class="stat-value" style="font-size:1rem;">${fmtMo(bRet)}</div><div class="stat-sub">${bPenMo>0?fmt$(bPenMo)+'/mo pension':'—'}</div></div>`;
+  if (kRet)  h+=`<div class="stat-box"><div class="stat-label">Kevin Retires</div><div class="stat-value" style="font-size:1rem;">${fmtMo(kRet)}</div><div class="stat-sub">${kDC>0?fmt$(kDC)+' DC at ret.':'—'}</div></div>`;
+  if (bDC||kDC) h+=`<div class="stat-box"><div class="stat-label">Combined DC</div><div class="stat-value">${fmt$(bDC+kDC)}</div><div class="stat-sub">at each retirement</div></div>`;
+  if (bPenMo||(bDC+kDC)) h+=`<div class="stat-box"><div class="stat-label">Est. Annual Income</div><div class="stat-value" style="font-size:1rem;">${fmt$(bPenMo*12+(bDC+kDC)*0.04)}/yr</div><div class="stat-sub">pension + 4% DC</div></div>`;
+  h+=`</div>`;
 
-  document.getElementById('s-bnh-retire').value = state.bnhPrimaryRetireDate || '';
-  document.getElementById('s-kh-retire').value = state.khPrimaryRetireDate || '';
-
-  // Hints for retirement dates
-  const bnhRetireHint = document.getElementById('s-bnh-retire-hint');
-  if (bnhRetireHint && state.bnhPrimaryRetireDate) {
-    const d = new Date(state.bnhPrimaryRetireDate);
-    const age = getAge(state.dob, d);
-    const svc = getServiceYears(state.pensionStartDate, d, getTotalPurchasedYears());
-    const r80 = ruleOf80Value(state.dob, state.pensionStartDate, getTotalPurchasedYears(), d);
-    bnhRetireHint.textContent = `Age ${age} · ${fmtDec(svc, 2)} service yrs · Rule of 80: ${fmtDec(r80, 2)}`;
-  }
-  const khRetireHint = document.getElementById('s-kh-retire-hint');
-  if (khRetireHint && state.khPrimaryRetireDate && state.khDob) {
-    const d = new Date(state.khPrimaryRetireDate);
-    const age = getAge(state.khDob, d);
-    khRetireHint.textContent = `KH age at retirement: ${age}`;
-  }
-
-  document.getElementById('s-multiplier').value = state.pensionMultiplier;
-  document.getElementById('s-supp-multiplier').value = state.pensionSupplementMultiplier;
-  document.getElementById('s-pay-periods').value = state.payPeriodsPerYear;
-
-  // Next two pay dates hint (semi-monthly: 15th and last day)
-  const payHint = document.getElementById('next-pay-dates-hint');
-  if (payHint && state.payPeriodsPerYear === 24) {
-    const t = today();
-    const candidates = [];
-    for (let m = 0; m <= 1; m++) {
-      const mo = t.getMonth() + m;
-      const yr = t.getFullYear() + Math.floor((t.getMonth() + m) / 12);
-      const fifteenth = new Date(yr, mo % 12, 15);
-      const lastDay = new Date(yr, (mo % 12) + 1, 0);
-      if (fifteenth > t) candidates.push(fifteenth);
-      if (lastDay > t) candidates.push(lastDay);
-    }
-    candidates.sort((a, b) => a - b);
-    const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const next2 = candidates.slice(0, 2).map(fmt).join(' · ');
-    payHint.textContent = 'Next pay dates: ' + next2;
-  }
-  renderBalanceInputs();
-
-  // Income tab shared fields — both terminal salaries auto-computed from dashboard assumptions
-  const khSalEl = document.getElementById('kh-terminal-salary');
-  if (khSalEl) {
-    const khTermComputed = state.khPrimaryRetireDate && state.kevinCurrentSalary
-      ? kevinSalaryAt(state.khPrimaryRetireDate) * 12
-      : 0;
-    khSalEl.value = khTermComputed.toFixed(0);
-    state.khTerminalSalary = khTermComputed;
-  }
-  const bnhSalEl = document.getElementById('bnh-terminal-salary-display');
-  const brennaTermAnnual = state.bnhPrimaryRetireDate && state.brennaCurrentSalary
-    ? cappedPensionSalary(state.bnhPrimaryRetireDate) * 12
-    : (parseFloat(state.pensionFinalSalary) || 0) * 12;
-  if (bnhSalEl) bnhSalEl.value = brennaTermAnnual.toFixed(0);
-
-  renderIncome();
-}
-
-function renderDCPlans() {
-  const container = document.getElementById('dc-plan-list');
-  container.innerHTML = '';
-  const ror = state.rateOfReturn;
-  document.getElementById('ror-slider').value = ror;
-  document.getElementById('ror-display').textContent = ror + '%';
-  const retROR = state.retirementROR !== undefined ? state.retirementROR : 4;
-  document.getElementById('ret-ror-slider').value = retROR;
-  document.getElementById('ret-ror-display').textContent = retROR + '%';
-
-  state.plans.forEach(plan => {
-    const annualContrib = (parseFloat(plan.contribPerPeriod) || 0) * (plan.semiMonthly ? 24 : state.payPeriodsPerYear);
-    const planGrowth = plan.id === 'kh401k' ? (state.kevinAnnualRaisePct || 3) / 100 : (state.brennaAnnualRaisePct || 3) / 100;
-    const khAge65dc = ageDate(state.khDob, 65);
-    const bnhAge65dc = ageDate(state.dob, 65);
-    const planRetDate = plan.id === 'kh401k'
-      ? new Date(Math.min((state.khPrimaryRetireDate ? new Date(state.khPrimaryRetireDate) : khAge65dc).getTime(), khAge65dc.getTime()))
-      : new Date(Math.min((state.bnhPrimaryRetireDate ? new Date(state.bnhPrimaryRetireDate) : retirementDate(state.dob, state.pensionStartDate, getTotalPurchasedYears())).getTime(), bnhAge65dc.getTime()));
-    const yearsToRet = Math.max(0, (planRetDate - today()) / (365.25 * 24 * 3600 * 1000));
-    let projected = projectDCGrowing(parseFloat(plan.balance) || 0, annualContrib, yearsToRet, ror, planGrowth);
-    if (plan.id === 'bnh401a') projected += computeExtra401AFV(planRetDate, ror);
-
-    const badge = plan.type === 'IRA' ? 'plan-badge ira' : 'plan-badge';
-    const div = document.createElement('div');
-    div.className = 'card';
-    div.innerHTML = `
-      <div class="plan-item-header">
-        <div class="plan-name">${plan.name}</div>
-        <div class="${badge}">${plan.type}</div>
-      </div>
-      <div class="plan-stats">
-        <div>
-          <div class="plan-stat-label">Current Balance</div>
-          <div class="plan-stat-value">${fmt$(parseFloat(plan.balance)||0)}</div>
-        </div>
-        <div>
-          <div class="plan-stat-label">Projected at Retirement</div>
-          <div class="plan-stat-value" style="color:var(--accent)">${fmt$(projected)}</div>
-        </div>
-        <div>
-          <div class="plan-stat-label">Per 15th &amp; Last Day</div>
-          <div class="plan-stat-value">${fmt$(parseFloat(plan.contribPerPeriod)||0)}</div>
-        </div>
-        <div>
-          <div class="plan-stat-label">Annual Total</div>
-          <div class="plan-stat-value">${fmt$(annualContrib)}</div>
-        </div>
-      </div>
-      <div class="divider"></div>
-      <div class="form-row" style="margin-bottom:0">
-        <div class="form-group" style="margin-bottom:0">
-          <label>Current Balance ($)</label>
-          <input type="text" id="dcbal-${plan.id}" value="${fmtCurrencyStr(plan.balance)}"
-            onfocus="onCurrencyFocus(this)"
-            onblur="onCurrencyBlur(this);updatePlanBalance('${plan.id}',parseCurrencyStr(this.value))" />
-        </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label>Contribution (15th &amp; last day, $)</label>
-          <input type="text" id="dccontrib-${plan.id}" value="${fmtCurrencyStr(plan.contribPerPeriod)}"
-            onfocus="onCurrencyFocus(this)"
-            onblur="onCurrencyBlur(this);updatePlanContrib('${plan.id}',parseCurrencyStr(this.value))" />
-        </div>
-      </div>
-    `;
-    container.appendChild(div);
-  });
-}
-
-function renderBalanceInputs() {
-  const container = document.getElementById('balance-inputs');
-  container.innerHTML = '';
-  state.plans.forEach(plan => {
-    const row = document.createElement('div');
-    row.className = 'form-row';
-    row.innerHTML = `
-      <div class="form-group">
-        <label>${plan.name} Balance ($)</label>
-        <input type="text" id="bal-${plan.id}" value="${fmtCurrencyStr(plan.balance)}"
-          onfocus="onCurrencyFocus(this)"
-          onblur="onCurrencyBlur(this);updatePlanBalance('${plan.id}',parseCurrencyStr(this.value))" />
-      </div>
-      <div class="form-group">
-        <label>${plan.name} Contrib (15th &amp; last day, $)</label>
-        <input type="text" id="contrib-${plan.id}" value="${fmtCurrencyStr(plan.contribPerPeriod)}"
-          onfocus="onCurrencyFocus(this)"
-          onblur="onCurrencyBlur(this);updatePlanContrib('${plan.id}',parseCurrencyStr(this.value))" />
-      </div>
-    `;
-    container.appendChild(row);
-  });
-}
-
-function updatePlanBalance(id, val) {
-  const plan = state.plans.find(p => p.id === id);
-  if (plan) { plan.balance = parseCurrencyStr(val); saveState(); render(); }
-}
-
-function updatePlanContrib(id, val) {
-  const plan = state.plans.find(p => p.id === id);
-  if (plan) { plan.contribPerPeriod = parseCurrencyStr(val); saveState(); render(); }
-}
-
-function updateROR(val) {
-  state.rateOfReturn = parseFloat(val);
-  document.getElementById('ror-display').textContent = val + '%';
-  saveState();
-  render();
-}
-
-function updateRetirementROR(val) {
-  state.retirementROR = parseFloat(val);
-  document.getElementById('ret-ror-display').textContent = val + '%';
-  saveState();
-  render();
-}
-
-// ══════════════════════════════════════════════════════════════
-//  SERVICE PURCHASES
-// ══════════════════════════════════════════════════════════════
-let _editPurchaseIndex = null;
-
-function openPurchaseModal() {
-  _editPurchaseIndex = null;
-  document.getElementById('purchase-modal-title').textContent = 'Add Service Year Purchase';
-  document.getElementById('m-date').value = new Date().toISOString().slice(0,10);
-  document.getElementById('m-years').value = '';
-  document.getElementById('m-cost').value = '';
-  document.getElementById('m-notes').value = '';
-  document.getElementById('purchase-modal').classList.add('open');
-}
-
-function openEditPurchaseModal(index) {
-  const p = state.servicePurchases[index];
-  if (!p) return;
-  _editPurchaseIndex = index;
-  document.getElementById('purchase-modal-title').textContent = 'Edit Service Year Purchase';
-  document.getElementById('m-date').value = p.date || '';
-  document.getElementById('m-years').value = p.years || '';
-  document.getElementById('m-cost').value = p.cost || '';
-  document.getElementById('m-notes').value = p.notes || '';
-  document.getElementById('purchase-modal').classList.add('open');
-}
-
-function closePurchaseModal() {
-  document.getElementById('purchase-modal').classList.remove('open');
-  _editPurchaseIndex = null;
-}
-
-function savePurchase() {
-  const years = parseFloat(document.getElementById('m-years').value);
-  if (!years || years <= 0) { alert('Please enter valid years purchased.'); return; }
-  const entry = {
-    date: document.getElementById('m-date').value,
-    years: years,
-    cost: parseFloat(document.getElementById('m-cost').value) || 0,
-    notes: document.getElementById('m-notes').value,
-  };
-  if (_editPurchaseIndex !== null) {
-    entry.id = state.servicePurchases[_editPurchaseIndex].id;
-    state.servicePurchases[_editPurchaseIndex] = entry;
+  if (tl) {
+    h+=`<div class="card"><div class="card-header"><div class="card-title">Income Timeline</div></div>`;
+    h+=renderPhases(tl);
+    h+=`</div>`;
   } else {
-    entry.id = Date.now().toString();
-    state.servicePurchases.push(entry);
+    h+=`<div class="card"><div style="color:var(--muted);font-size:0.8rem;text-align:center;padding:1rem 0;">Set retirement dates on the Brenna and Kevin tabs to see the income timeline.</div></div>`;
   }
-  state.pensionPurchased = getTotalPurchasedYears();
-  saveState();
-  render();
-  closePurchaseModal();
+  el.innerHTML=h;
 }
 
-function deletePurchase(index) {
-  if (!confirm('Delete this purchase record?')) return;
-  state.servicePurchases.splice(index, 1);
-  state.pensionPurchased = getTotalPurchasedYears();
-  saveState();
-  render();
+function renderPhases(tl) {
+  const {rows}=tl; if(!rows.length) return '';
+  const phases=[]; let cur=null;
+  rows.forEach(r=>{
+    const key=`${r.bRet}|${r.kRet}|${r.sInc>0}|${r.ex457}`;
+    if (!cur||cur.key!==key){cur={key,startYr:r.yr,endYr:r.yr,r};phases.push(cur);}
+    else cur.endYr=r.yr;
+  });
+  let h='<div class="phase-cards">';
+  phases.forEach(p=>{
+    const r=p.r, yr=p.startYr===p.endYr?`${p.startYr}`:`${p.startYr}–${p.endYr}`;
+    let label=!r.bRet&&!r.kRet?'Both Working':r.bRet&&r.kRet?'Both Retired':r.bRet?'Brenna Retired · Kevin Working':'Kevin Retired · Brenna Working';
+    if (r.sInc>0) label+=' · Supplement';
+    if (r.ex457) label+=' · 457B Exhausted';
+    const cls=!r.bRet&&!r.kRet?'pre':r.bRet&&r.kRet?'full':'partial';
+    const parts=[];
+    if(r.pInc) parts.push(`Pension ${fmt$(r.pInc)}/yr`);
+    if(r.sInc) parts.push(`Supplement ${fmt$(r.sInc)}/yr`);
+    if(r.dcDraw) parts.push(`4% DC ${fmt$(r.dcDraw)}/yr`);
+    h+=`<div class="phase-card ${cls}"><div class="phase-top"><div><div class="phase-yr">${yr}</div><div class="phase-label">${label}</div></div><div class="phase-total">${fmt$(r.total)}/yr</div></div>${parts.length?`<div class="phase-detail">${parts.join(' · ')}</div>`:''}</div>`;
+  });
+  h+='</div>';
+  return h;
 }
 
-// ══════════════════════════════════════════════════════════════
-//  PROJECTION CHART & TABLE
-// ══════════════════════════════════════════════════════════════
-let chartInstance = null;
+// ── Render: Brenna ────────────────────────────────────────────
+function renderBrenna() {
+  const el=document.getElementById('br-content'); if(!el) return;
+  const now=today();
+  let h='';
 
-function renderProjectionChart() {
-  const startYear = state.projectionStartYear || new Date().getFullYear();
-  const years = state.projectionYears || 20;
-  const purchased = getTotalPurchasedYears();
+  // Personal info
+  h+=`<div class="card"><div class="card-header"><div class="card-title">Brenna's Information</div></div>
+  <div class="form-grid">
+    <div class="field"><label>Date of Birth</label><input type="date" value="${state.brenna.dob||''}" oninput="state.brenna.dob=this.value;saveState();renderAll();" /></div>
+    <div class="field"><label>Pension Start Date</label><input type="date" value="${state.brenna.pensionStart||''}" oninput="state.brenna.pensionStart=this.value;saveState();renderAll();" /></div>
+    <div class="field"><label>Monthly Salary (current)</label><input type="text" value="${state.brenna.salary?fmtMoney(state.brenna.salary):''}" oninput="state.brenna.salary=parseMoney(this.value);saveState();renderAll();" /></div>
+    <div class="field"><label>Annual Raise %</label><input type="number" step="0.1" value="${state.brenna.raisePct??2.5}" oninput="state.brenna.raisePct=parseFloat(this.value)||0;saveState();renderAll();" /></div>
+    <div class="field"><label>Monthly Salary Cap (this year)</label><input type="text" value="${state.brenna.salaryCap?fmtMoney(state.brenna.salaryCap):''}" oninput="state.brenna.salaryCap=parseMoney(this.value);saveState();renderAll();" /><div class="field-hint">Grows $500/yr. Used to cap pension salary.</div></div>
+    <div class="field"><label>Excess Salary → 401A %</label><input type="number" step="1" value="${state.brenna.excess401aPct??20}" oninput="state.brenna.excess401aPct=parseFloat(this.value)||0;saveState();renderAll();" /><div class="field-hint">% of salary above cap contributed to 401A</div></div>
+    <div class="field"><label>Retirement Date</label><input type="date" value="${state.brenna.retireDate||''}" oninput="state.brenna.retireDate=this.value;saveState();renderAll();" /><div class="field-hint">Leave blank to auto-calculate from Rule of 80</div></div>
+  </div></div>`;
 
-  const labels = [], bnhDCData = [], khDCData = [], dcData = [], pensionData = [], rule80Data = [], dcDraw4pctData = [], meetsTargetData = [], combinedSalaryData = [];
-
-  const bnhGrowth = (state.brennaAnnualRaisePct || 3) / 100;
-  const khGrowth  = (state.kevinAnnualRaisePct  || 3) / 100;
-
-  // 59.5 unlock dates by account
-  const brennaUnlockDate = age595Date(state.dob);
-  const kevinUnlockDate  = age595Date(state.khDob);
-
-  // Age-65 hard retirement caps
-  const bnhAge65 = ageDate(state.dob, 65);
-  const khAge65  = ageDate(state.khDob, 65);
-
-  // Per-plan starting data (contributions stop at owner's retirement)
-  const planMeta = state.plans.map(p => ({
-    id: p.id,
-    bal: parseFloat(p.balance) || 0,
-    annualContrib: (parseFloat(p.contribPerPeriod) || 0) * (p.semiMonthly ? 24 : state.payPeriodsPerYear),
-    growth: p.id === 'kh401k' ? khGrowth : bnhGrowth,
-    isBrenna: p.id !== 'kh401k',
-    // Contributions stop at the owner's retirement (capped at 65)
-    contribStopDate: p.id === 'kh401k'
-      ? new Date(Math.min((state.khPrimaryRetireDate ? new Date(state.khPrimaryRetireDate) : khAge65).getTime(), khAge65.getTime()))
-      : new Date(Math.min((state.bnhPrimaryRetireDate ? new Date(state.bnhPrimaryRetireDate) : bnhAge65).getTime(), bnhAge65.getTime())),
-    unlockDate: (p.id === 'kh401k') ? kevinUnlockDate : (p.id === 'bnh457b' ? null : brennaUnlockDate),
-  }));
-
-  // Effective retirement dates (contributions stop here) — used for draw eligibility
-  const bnhEffRetireDate = planMeta.find(p => p.id === 'bnh457b').contribStopDate;
-  const khEffRetireDate  = planMeta.find(p => p.id === 'kh401k').contribStopDate;
-
-  for (let i = 0; i <= years; i++) {
-    const yr = startYear + i;
-    const atDate = new Date(yr, 11, 31); // 12/31 year-end
-    // Include planned purchases whose purchase date has passed by this year
-    const purchasedByYear = purchased + (state.purchaseScenarios || [])
-      .filter(sc => new Date(sc.windowYear + 1, 8, 30) <= atDate)
-      .reduce((s, sc) => s + (parseFloat(sc.yearsToPurchase) || 0), 0);
-    const svc = getServiceYears(state.pensionStartDate, atDate, purchasedByYear);
-    const ageDec = getAgeDecimal(state.dob, atDate);
-    const r80 = ageDec + svc;
-    const eligible = r80 >= state.ruleTarget;
-    const pensionSalAtDate = cappedPensionSalary(atDate);
-    const pension = eligible ? pensionMonthly(svc, pensionSalAtDate) : 0;
-
-    const yearsFromNow = Math.max(0, (atDate - today()) / (365.25 * 24 * 3600 * 1000));
-
-    // Project each plan, stopping contributions at owner retirement; add extra 401A from overage
-    let bnhDC = 0, khDC = 0;
-    for (const pm of planMeta) {
-      const yearsContrib = Math.max(0, Math.min(yearsFromNow, (pm.contribStopDate - today()) / (365.25 * 24 * 3600 * 1000)));
-      const yearsCoast   = Math.max(0, yearsFromNow - yearsContrib);
-      let bal = projectDCGrowing(pm.bal, pm.annualContrib, yearsContrib, state.rateOfReturn, pm.growth);
-      if (yearsCoast > 0) bal = projectDCGrowing(bal, 0, yearsCoast, state.rateOfReturn, 0);
-      if (pm.id === 'bnh401a') bal += computeExtra401AFV(atDate, state.rateOfReturn);
-      if (pm.isBrenna) bnhDC += bal; else khDC += bal;
+  // Pension status
+  if (state.brenna.dob&&state.brenna.pensionStart) {
+    const r80=r80at(now), pct=Math.min(100,r80/RULE_TARGET*100), elig=r80>=RULE_TARGET;
+    const retDate=state.brenna.retireDate?new Date(state.brenna.retireDate):projRetireDate();
+    h+=`<div class="card"><div class="card-header"><div class="card-title">Pension Status</div></div>
+    <div class="progress-wrap">
+      <div class="progress-labels"><span>Rule of ${RULE_TARGET} Progress</span><span>${fmtD(r80,2)} / ${RULE_TARGET}</span></div>
+      <div class="progress-track"><div class="progress-fill${elig?' success':''}" style="width:${pct}%"></div></div>
+    </div>`;
+    if (retDate) {
+      const svc=svcYrs(retDate,plannedByDate(retDate));
+      const avg=avg36Month(retDate);
+      const pen=pensionMo(svc,avg);
+      const sup=state.brenna.dob&&ageAt(state.brenna.dob,retDate)<62?suppMo(svc,avg):0;
+      const cap=pensionCapAt(retDate);
+      h+=`<div class="stat-grid" style="margin-top:0.75rem;">
+        <div class="stat-box"><div class="stat-label">Retirement Date</div><div class="stat-value" style="font-size:0.95rem;">${fmtDate(retDate)}</div><div class="stat-sub">${state.brenna.retireDate?'Manual':'Rule of 80'}</div></div>
+        <div class="stat-box"><div class="stat-label">Service Years</div><div class="stat-value">${fmtD(svc,2)}</div><div class="stat-sub">${fmtD(totalPurchased(),2)} purchased</div></div>
+        <div class="stat-box"><div class="stat-label">Avg 36-mo Salary</div><div class="stat-value" style="font-size:0.95rem;">${fmt$(avg)}/mo</div><div class="stat-sub">Cap: ${cap===Infinity?'None':fmt$(cap)+'/mo'}</div></div>
+        <div class="stat-box"><div class="stat-label">Pension</div><div class="stat-value" style="font-size:0.95rem;">${fmt$(pen)}/mo</div><div class="stat-sub">${fmt$(pen*12)}/yr</div></div>
+        ${sup>0?`<div class="stat-box"><div class="stat-label">Supplement</div><div class="stat-value" style="font-size:0.95rem;">${fmt$(sup)}/mo</div><div class="stat-sub">Until age 62</div></div>`:''}
+      </div>`;
     }
-    const dcBal = bnhDC + khDC;
-
-    // Draw base: only retired person's DC plans count toward 4% limit
-    const brennaRetiredNow = atDate >= bnhEffRetireDate;
-    const kevinRetiredNow  = atDate >= khEffRetireDate;
-    const drawBase = (brennaRetiredNow && kevinRetiredNow) ? dcBal
-                   : brennaRetiredNow ? bnhDC
-                   : kevinRetiredNow  ? khDC
-                   : dcBal; // pre-retirement: show hypothetical full-draw
-    const draw4pct = drawBase * 0.04;
-
-    const pensionAnnual = pension * 12;
-    const totalRetireIncome = pensionAnnual + draw4pct;
-
-    const bTermAnnual = brennaSalaryAt(atDate) * 12;
-    const kTermAnnual = kevinSalaryAt(atDate) * 12;
-    const combinedTermSalary = bTermAnnual + kTermAnnual;
-    const meetsTarget = combinedTermSalary > 0 && totalRetireIncome >= combinedTermSalary * 0.70;
-
-    labels.push(yr.toString());
-    bnhDCData.push(Math.round(bnhDC));
-    khDCData.push(Math.round(khDC));
-    dcData.push(Math.round(dcBal));
-    pensionData.push(Math.round(pensionAnnual));
-    rule80Data.push(parseFloat(r80.toFixed(2)));
-    dcDraw4pctData.push(Math.round(draw4pct));
-    meetsTargetData.push(meetsTarget);
-    combinedSalaryData.push(Math.round(combinedTermSalary));
+    h+=`</div>`;
   }
 
-  // Build year-by-year table
-  const tbody = document.getElementById('proj-table-body');
-  tbody.innerHTML = '';
-  labels.forEach((yr, i) => {
-    const atDate = new Date(parseInt(yr), 11, 31);
-    const purchasedByYearTbl = purchased + (state.purchaseScenarios || [])
-      .filter(sc => new Date(sc.windowYear + 1, 8, 30) <= atDate)
-      .reduce((s, sc) => s + (parseFloat(sc.yearsToPurchase) || 0), 0);
-    const eligible = rule80Data[i] >= state.ruleTarget;
-    const meets = meetsTargetData[i];
-    const totalIncome = pensionData[i] + dcDraw4pctData[i];
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${yr}</td>
-      <td>${getAge(state.dob, atDate)}</td>
-      <td>${fmtDec(getServiceYears(state.pensionStartDate, atDate, purchasedByYearTbl), 2)}</td>
-      <td class="${eligible ? 'text-success' : ''}" style="font-weight:${eligible?'700':'400'}">${fmtDec(rule80Data[i],2)}${eligible?' ✓':''}</td>
-      <td>${fmt$(pensionData[i])}</td>
-      <td>${fmt$(bnhDCData[i])}</td>
-      <td>${fmt$(khDCData[i])}</td>
-      <td>${fmt$(dcDraw4pctData[i])}</td>
-      <td>${fmt$(combinedSalaryData[i])}</td>
-      <td style="font-weight:700;color:${meets ? 'var(--success)' : 'var(--muted)'};">${fmt$(totalIncome)}${meets ? ' ✓' : ''}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  // Canvas chart
-  const canvas = document.getElementById('projection-chart');
-  const ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  const W = canvas.parentElement.clientWidth || 600;
-  const H = 280;
-  canvas.width = W * dpr;
-  canvas.height = H * dpr;
-  canvas.style.width = W + 'px';
-  canvas.style.height = H + 'px';
-  ctx.scale(dpr, dpr);
-  ctx.clearRect(0, 0, W, H);
-
-  const PAD = { top: 20, right: 20, bottom: 40, left: 70 };
-  const cW = W - PAD.left - PAD.right;
-  const cH = H - PAD.top - PAD.bottom;
-  const { maxVal, step } = computeNiceAxis(Math.max(...dcData, ...pensionData) || 1e6);
-
-  const xPos = (i) => PAD.left + (i / (labels.length - 1)) * cW;
-  const yPos = (v) => PAD.top + cH - (v / maxVal) * cH;
-
-  // Grid lines at round tick values
-  ctx.strokeStyle = '#dce3ec';
-  ctx.lineWidth = 1;
-  for (let v = 0; v <= maxVal + step * 0.01; v += step) {
-    const y = yPos(v);
-    ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(PAD.left + cW, y); ctx.stroke();
-    ctx.fillStyle = '#6b7a8d';
-    ctx.font = '10px sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText(fmtAxisY(v), PAD.left - 5, y + 4);
-  }
-
-  // X labels
-  ctx.fillStyle = '#6b7a8d';
-  ctx.font = '10px sans-serif';
-  ctx.textAlign = 'center';
-  const xLabelStep = Math.max(1, Math.floor(labels.length / 8));
-  labels.forEach((l, i) => {
-    if (i % xLabelStep === 0 || i === labels.length - 1) {
-      ctx.fillText(l, xPos(i), H - PAD.bottom + 18);
+  // DC plans
+  h+=`<div class="card"><div class="card-header"><div class="card-title">Brenna's DC Plans</div></div>`;
+  const bRetDate=state.brenna.retireDate?new Date(state.brenna.retireDate):projRetireDate();
+  state.brenna.plans.forEach(plan=>{
+    let proj=0;
+    if (bRetDate) {
+      const bal=parseFloat(plan.balance)||0, ac=(parseFloat(plan.contrib)||0)*(plan.periods||24);
+      const age65=state.brenna.dob?ageDate(state.brenna.dob,65):null;
+      const cut=age65&&age65<bRetDate?age65:bRetDate;
+      const yrs=Math.max(0,yFrac(now,cut));
+      proj = plan.id==='b401a'
+        ? projectDC(bal,ac,yrs,state.ror,state.brenna.raisePct)+extra401aFV(cut)
+        : projectDC(bal,ac,yrs,state.ror,state.brenna.raisePct);
+      if (cut<bRetDate) proj=projectDC(proj,0,yFrac(cut,bRetDate),state.ror);
     }
+    h+=`<div class="plan-row">
+      <div class="plan-header"><span class="plan-name">${plan.name}</span><span class="plan-badge">${plan.type}</span></div>
+      <div class="form-grid">
+        <div class="field"><label>Balance</label><input type="text" value="${plan.balance?fmtMoney(plan.balance):''}" oninput="setBPlan('${plan.id}','balance',parseMoney(this.value))" /></div>
+        <div class="field"><label>Contrib / Period</label><input type="text" value="${plan.contrib?fmtMoney(plan.contrib):''}" oninput="setBPlan('${plan.id}','contrib',parseMoney(this.value))" /></div>
+        <div class="field"><label>Periods / Year</label><input type="number" value="${plan.periods}" oninput="setBPlan('${plan.id}','periods',parseInt(this.value)||1)" /></div>
+        <div class="field" style="justify-content:flex-end;"><div style="font-size:0.8rem;color:var(--muted);padding-top:1.4rem;">At retirement: <strong style="color:var(--primary)">${proj>0?fmt$(proj):'—'}</strong></div></div>
+      </div>
+    </div>`;
   });
+  h+=`</div>`;
 
-  function drawLine(data, color, dashed) {
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2.5;
-    ctx.setLineDash(dashed ? [5, 4] : []);
-    ctx.beginPath();
-    data.forEach((v, i) => { i === 0 ? ctx.moveTo(xPos(i), yPos(v)) : ctx.lineTo(xPos(i), yPos(v)); });
-    ctx.stroke();
-    ctx.setLineDash([]);
+  // Service purchases
+  h+=`<div class="card"><div class="card-header"><div class="card-title">Service Year Purchases</div><button class="btn btn-secondary btn-sm" onclick="openPM()">+ Add</button></div>`;
+  if (state.brenna.servicePurchases.length) {
+    h+=`<div class="table-wrap"><table><thead><tr><th>Date</th><th>Years</th><th>Cost</th><th>Notes</th><th></th></tr></thead><tbody>`;
+    state.brenna.servicePurchases.forEach((p,i)=>{
+      h+=`<tr><td>${fmtDate(p.date)}</td><td>${fmtD(parseFloat(p.years),5)}</td><td>${p.cost?fmt$(parseMoney(p.cost)):'—'}</td><td style="color:var(--muted)">${p.notes||''}</td><td style="white-space:nowrap"><button class="btn btn-secondary btn-xs" onclick="openPM(${i})">Edit</button> <button class="btn btn-danger btn-xs" onclick="delPurchase(${i})">✕</button></td></tr>`;
+    });
+    h+=`</tbody></table></div>`;
+  } else h+=`<div style="color:var(--muted);font-size:0.8rem;">No purchases recorded.</div>`;
+  h+=`</div>`;
+
+  // Purchase scenarios
+  h+=renderScenarioSection();
+
+  el.innerHTML=h;
+}
+
+function renderScenarioSection() {
+  let h=`<div class="card"><div class="card-header"><div class="card-title">Purchase Scenarios</div><button class="btn btn-secondary btn-sm" onclick="openSM()">+ Scenario</button></div>`;
+  const res=calcAllScenarios();
+  if (!state.brenna.purchaseScenarios?.length) {
+    return h+`<div style="color:var(--muted);font-size:0.8rem;">Model buying additional service years from your 457B.</div></div>`;
   }
-
-  drawLine(dcData, '#2c5f8a', false);
-  drawLine(pensionData, '#4caf87', true);
-
-  // Legend
-  const legend = [['DC Balance', '#2c5f8a', false], ['Pension (Annual)', '#4caf87', true]];
-  legend.forEach(([label, color, dashed], i) => {
-    const lx = PAD.left + i * 160;
-    const ly = H - 8;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-    ctx.setLineDash(dashed ? [5,4] : []);
-    ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + 20, ly); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = '#1e2a38';
-    ctx.font = '10px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(label, lx + 24, ly + 3);
+  res.items.forEach((sc,i)=>{
+    const afc=sc.canAfford?'text-success':'text-danger';
+    h+=`<div style="border:1px solid var(--border);border-radius:8px;padding:0.875rem;margin-bottom:0.5rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;">
+        <div><span class="fw6">FY${sc.sc.windowYear}–${sc.sc.windowYear+1}</span><span style="color:var(--muted);font-size:0.8rem;margin-left:0.5rem;">${sc.yrs} yr${sc.yrs!==1?'s':''} · ${fmt$(sc.cost)}</span></div>
+        <div class="flex-row"><button class="btn btn-secondary btn-xs" onclick="openSM(${i})">Edit</button><button class="btn btn-danger btn-xs" onclick="delScenario(${i})">✕</button></div>
+      </div>
+      <div style="font-size:0.8rem;"><span class="${afc}">457B at purchase: ${fmt$(sc.bal457atPurch)} (${sc.canAfford?'✓ can afford':'✗ short'})</span></div>
+    </div>`;
   });
-}
-
-// ══════════════════════════════════════════════════════════════
-//  PURCHASE SCENARIO PLANNER
-// ══════════════════════════════════════════════════════════════
-
-function populateScenarioYearSelect() {
-  const sel = document.getElementById('scenario-year-select');
-  if (!sel) return;
-  const usedYears = new Set((state.purchaseScenarios || []).map(s => s.windowYear));
-  const thisYear = new Date().getFullYear();
-  sel.innerHTML = '';
-  // Offer the next 15 window years
-  for (let yr = thisYear; yr <= thisYear + 15; yr++) {
-    if (!usedYears.has(yr)) {
-      const opt = document.createElement('option');
-      opt.value = yr;
-      opt.textContent = `October 1, ${yr} – September 30, ${yr + 1}`;
-      sel.appendChild(opt);
-    }
+  if (res&&res.pensionGain!==undefined) {
+    h+=`<div style="background:var(--primary);color:#fff;border-radius:8px;padding:1rem;margin-top:0.25rem;">
+      <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;opacity:0.75;margin-bottom:0.75rem;">All Purchases Summary</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;font-size:0.8rem;">
+        <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Baseline Retirement</div><div class="fw7">${fmtMo(res.baseRet)||'—'}</div></div>
+        <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">With Purchases</div><div class="fw7">${fmtMo(res.withRet)||'—'}</div></div>
+        <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Time Saved</div><div class="fw7">${res.mosSaved>0.5?fmtD(res.mosSaved/12,1)+' yrs':'< 1 mo'}</div></div>
+        <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Pension Gain/mo (planned)</div><div class="fw7">${fmt$(res.pensionGain)}</div></div>
+        <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Total Pension Gain/yr (all)</div><div class="fw7">${fmt$(res.totalPensionGainAnn)}/yr</div></div>
+        <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Opp. Cost at Retirement</div><div class="fw7">${fmt$(res.oppFV)}</div></div>
+        <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">4% Draw on Opp. Cost</div><div class="fw7">${fmt$(res.draw4)}/yr</div></div>
+        <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Pension vs 4% Draw</div><div class="fw7">${res.totalPensionGainAnn>res.draw4?'+':''}${fmt$(res.totalPensionGainAnn-res.draw4)}/yr</div></div>
+        <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Break-Even After Ret.</div><div class="fw7">${isFinite(res.breakEven)?fmtD(res.breakEven,1)+' yrs':'N/A'}</div></div>
+      </div>
+      <div style="margin-top:0.75rem;padding:0.45rem 0.75rem;border-radius:6px;font-size:0.8rem;font-weight:700;text-align:center;background:${res.worthIt?'rgba(255,255,255,0.18)':'rgba(0,0,0,0.14)'};">
+        ${res.worthIt?'✓ Purchases worth it — pension gain exceeds 4% draw on opportunity cost':'✗ Pension gain is below 4% draw on opportunity cost'}
+      </div>
+      <div style="font-size:0.72rem;opacity:0.6;margin-top:0.5rem;">Opp. cost = all purchase costs (prior + planned) grown at ${state.ror}% to retirement. Break-even = years of pension income to recover total cost.</div>
+    </div>`;
   }
+  return h+`</div>`;
 }
 
-function addScenarioWindow() {
-  const sel = document.getElementById('scenario-year-select');
-  const yr = parseInt(sel.value);
-  if (!yr) return;
-  if ((state.purchaseScenarios || []).find(s => s.windowYear === yr)) return;
+// ── Render: Kevin ─────────────────────────────────────────────
+function renderKevin() {
+  const el=document.getElementById('kv-content'); if(!el) return;
+  const kRet=state.kevin.retireDate?new Date(state.kevin.retireDate):null;
+  const kDC=kRet?kevinDCatDate(kRet):0;
+  let h='';
 
-  if (!state.purchaseScenarios) state.purchaseScenarios = [];
-  // Default annual salary from projected salary at purchase window
-  const windowDate = new Date(yr, 9, 1); // Oct 1 of window year
-  const defaultAnnual = state.brennaCurrentSalary
-    ? brennaSalaryAt(windowDate) * 12
-    : (parseFloat(state.pensionCurrentSalary) || 0) * 12;
-  state.purchaseScenarios.push({ id: Date.now().toString(), windowYear: yr, annualSalary: defaultAnnual, yearsToPurchase: 1 });
-  state.purchaseScenarios.sort((a, b) => a.windowYear - b.windowYear);
-  saveState();
-  render();
-}
+  h+=`<div class="card"><div class="card-header"><div class="card-title">Kevin's Information</div></div>
+  <div class="form-grid">
+    <div class="field"><label>Date of Birth</label><input type="date" value="${state.kevin.dob||''}" oninput="state.kevin.dob=this.value;autoKRetDate();saveState();renderAll();" /></div>
+    <div class="field"><label>Monthly Salary (current)</label><input type="text" value="${state.kevin.salary?fmtMoney(state.kevin.salary):''}" oninput="state.kevin.salary=parseMoney(this.value);saveState();renderAll();" /></div>
+    <div class="field"><label>Annual Raise %</label><input type="number" step="0.1" value="${state.kevin.raisePct??2.5}" oninput="state.kevin.raisePct=parseFloat(this.value)||0;saveState();renderAll();" /></div>
+    <div class="field"><label>Target Retirement Age</label><input type="number" step="1" value="${state.kevin.retireAge??62}" oninput="state.kevin.retireAge=parseFloat(this.value)||62;autoKRetDate();saveState();renderAll();" /></div>
+    <div class="field"><label>Retirement Date</label><input type="date" value="${state.kevin.retireDate||''}" oninput="state.kevin.retireDate=this.value;saveState();renderAll();" /><div class="field-hint">Leave blank to use target retirement age</div></div>
+  </div></div>`;
 
-function deleteScenario(id) {
-  state.purchaseScenarios = (state.purchaseScenarios || []).filter(s => s.id !== id);
-  saveState();
-  render();
-}
-
-function updateScenario(id, field, value) {
-  const s = (state.purchaseScenarios || []).find(s => s.id === id);
-  if (!s) return;
-  s[field] = parseFloat(value) || 0;
-  saveState();
-  renderScenarios();
-}
-
-function computeScenarios() {
-  const sorted = [...(state.purchaseScenarios || [])].sort((a, b) => a.windowYear - b.windowYear);
-  const plan457 = state.plans.find(p => p.id === 'bnh457b') || {};
-  let balance457 = parseFloat(plan457.balance) || 0;
-  const annualContrib457Base = (parseFloat(plan457.contribPerPeriod) || 0) * 24;
-  const bnhGrowth = (state.brennaAnnualRaisePct || 3) / 100;
-  let prevDate = today();
-  let totalYearsElapsed = 0;
-  let cumulativePurchased = getTotalPurchasedYears();
-  const maxYears = parseFloat(state.maxPurchasableYears) || 11.50274;
-
-  return sorted.map(scenario => {
-    const purchaseDate = new Date(scenario.windowYear + 1, 8, 30); // Sep 30 (last day of window)
-    const yearsSpan = Math.max(0, (purchaseDate - prevDate) / (365.25 * 24 * 3600 * 1000));
-
-    // Project 457B with growing contributions from start of this span
-    const contribAtSpanStart = annualContrib457Base * Math.pow(1 + bnhGrowth, totalYearsElapsed);
-    const balanceBefore = projectDCGrowing(balance457, contribAtSpanStart, yearsSpan, state.rateOfReturn, bnhGrowth);
-
-    // Salary cap grows $500/yr; applies to purchase cost basis
-    const rawAnnualSalary = (parseFloat(scenario.annualSalary) > 0)
-      ? parseFloat(scenario.annualSalary)
-      : brennaSalaryAt(purchaseDate) * 12;
-    const salaryCap = pensionCapAt(purchaseDate);
-    const effectiveAnnualSalary = salaryCap > 0 ? Math.min(rawAnnualSalary, salaryCap * 12) : rawAnnualSalary;
-    const costPerYear = effectiveAnnualSalary * 0.1372;
-    const totalCost = (parseFloat(scenario.yearsToPurchase) || 0) * costPerYear;
-    const canAfford = balanceBefore >= totalCost;
-    const balanceAfter = balanceBefore - totalCost;
-
-    const cumulativeBefore = cumulativePurchased;
-    const maxAvailableThisWindow = Math.max(0, maxYears - cumulativeBefore);
-    cumulativePurchased += parseFloat(scenario.yearsToPurchase) || 0;
-
-    // Rule of 80 at the purchase date with cumulative purchased years
-    const serviceAtPurchase = getServiceYears(state.pensionStartDate, purchaseDate, cumulativePurchased);
-    const ageAtPurchase = getAgeDecimal(state.dob, purchaseDate);
-    const rule80AtPurchase = ageAtPurchase + serviceAtPurchase;
-
-    // New projected retirement date given all purchases through this scenario
-    const newRetDate = retirementDate(state.dob, state.pensionStartDate, cumulativePurchased);
-    const serviceAtRetirement = getServiceYears(state.pensionStartDate, newRetDate, cumulativePurchased);
-    const pensionAtRetirement = pensionMonthly(serviceAtRetirement, state.pensionFinalSalary);
-
-    // Salary basis period label
-    const salaryBasis = `Jul 1, ${scenario.windowYear} – Jun 30, ${scenario.windowYear + 1}`;
-    const windowLabel = `October 1, ${scenario.windowYear} – September 30, ${scenario.windowYear + 1}`;
-
-    // Advance state for next iteration
-    totalYearsElapsed += yearsSpan;
-    balance457 = Math.max(0, balanceAfter);
-    prevDate = purchaseDate;
-
-    return {
-      scenario, purchaseDate, salaryBasis, windowLabel,
-      balanceBefore, costPerYear, totalCost, canAfford, balanceAfter,
-      cumulativePurchased, cumulativeBefore, maxAvailableThisWindow,
-      serviceAtPurchase, ageAtPurchase, rule80AtPurchase,
-      newRetDate, serviceAtRetirement, pensionAtRetirement,
-    };
+  h+=`<div class="card"><div class="card-header"><div class="card-title">Kevin's DC Plans</div></div>`;
+  state.kevin.plans.forEach(plan=>{
+    let proj=kRet?kevinDCatDate(kRet):0;
+    h+=`<div class="plan-row">
+      <div class="plan-header"><span class="plan-name">${plan.name}</span><span class="plan-badge">${plan.type}</span></div>
+      <div class="form-grid">
+        <div class="field"><label>Balance</label><input type="text" value="${plan.balance?fmtMoney(plan.balance):''}" oninput="setKPlan('${plan.id}','balance',parseMoney(this.value))" /></div>
+        <div class="field"><label>Contrib / Period</label><input type="text" value="${plan.contrib?fmtMoney(plan.contrib):''}" oninput="setKPlan('${plan.id}','contrib',parseMoney(this.value))" /></div>
+        <div class="field"><label>Periods / Year</label><input type="number" value="${plan.periods}" oninput="setKPlan('${plan.id}','periods',parseInt(this.value)||1)" /></div>
+        <div class="field"><div style="font-size:0.8rem;color:var(--muted);padding-top:1.4rem;">At retirement: <strong style="color:var(--primary)">${proj>0?fmt$(proj):'—'}</strong></div></div>
+      </div>
+    </div>`;
   });
-}
+  h+=`</div>`;
 
-function renderScenarios() {
-  populateScenarioYearSelect();
-  const container = document.getElementById('scenario-list');
-  const summary = document.getElementById('scenario-summary');
-  if (!container) return;
-
-  const scenarios = state.purchaseScenarios || [];
-  if (scenarios.length === 0) {
-    container.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;text-align:center;padding:1rem 0;">No scenarios yet. Choose a window above and click "+ Add Window".</div>';
-    summary.innerHTML = '';
-    return;
+  if (kRet&&kDC>0) {
+    h+=`<div class="card"><div class="card-header"><div class="card-title">Retirement Projection</div></div>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-label">Retirement Date</div><div class="stat-value" style="font-size:0.95rem;">${fmtDate(kRet)}</div></div>
+      <div class="stat-box"><div class="stat-label">DC at Retirement</div><div class="stat-value">${fmt$(kDC)}</div></div>
+      <div class="stat-box"><div class="stat-label">4% Annual Draw</div><div class="stat-value" style="font-size:1rem;">${fmt$(kDC*0.04)}/yr</div><div class="stat-sub">${fmt$(kDC*0.04/12)}/mo</div></div>
+    </div></div>`;
   }
+  el.innerHTML=h;
+}
 
-  const results = computeScenarios();
-  const retOpts = { year: 'numeric', month: 'short', day: 'numeric' };
-
-  container.innerHTML = '';
-  results.forEach(r => {
-    const s = r.scenario;
-    const eligible = r.rule80AtPurchase >= state.ruleTarget;
-    const affordColor = r.canAfford ? 'var(--accent)' : 'var(--danger)';
-    const affordWarn = r.canAfford ? '' : ' ⚠ Insufficient funds';
-    const maxYrs = parseFloat(state.maxPurchasableYears) || 11.50274;
-    const overLimit = r.cumulativePurchased > maxYrs + 0.0001;
-    const limitWarn = overLimit ? `<div style="background:var(--warning);color:#fff;border-radius:6px;padding:0.4rem 0.65rem;font-size:0.8rem;font-weight:700;margin-bottom:0.5rem;">⚠ Cumulative purchases (${fmtDec(r.cumulativePurchased, 4)} yrs) exceed eligible limit of ${fmtDec(maxYrs, 5)} yrs</div>` : '';
-
-    const div = document.createElement('div');
-    div.style.cssText = `border:1.5px solid ${overLimit ? 'var(--warning)' : 'var(--border)'};border-radius:10px;padding:1rem;margin-bottom:0.75rem;`;
-    div.innerHTML = `
-      ${limitWarn}
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem;">
-        <div>
-          <div style="font-weight:700;font-size:1rem;color:var(--primary);">${r.windowLabel}</div>
-          <div style="font-size:0.72rem;color:var(--muted);">Salary basis: ${r.salaryBasis}</div>
-        </div>
-        <button class="btn btn-sm" style="background:var(--danger);color:#fff;padding:0.2rem 0.5rem;font-size:0.72rem;flex-shrink:0;margin-left:0.5rem;" onclick="deleteScenario('${s.id}')">✕</button>
-      </div>
-
-      <div class="form-row" style="margin-bottom:0.75rem;">
-        <div class="form-group" style="margin-bottom:0;">
-          <label>Annual Salary ($)</label>
-          <input type="text" value="${fmtCurrencyStr(s.annualSalary)}"
-            onfocus="onCurrencyFocus(this)"
-            onblur="onCurrencyBlur(this);updateScenario('${s.id}','annualSalary',parseCurrencyStr(this.value))" />
-          <div class="form-hint">Jul ${s.windowYear} – Jun ${s.windowYear + 1}</div>
-        </div>
-        <div class="form-group" style="margin-bottom:0;">
-          <label>Years to Purchase</label>
-          <input type="number" value="${s.yearsToPurchase}" step="0.1" min="0" max="10"
-            onchange="updateScenario('${s.id}', 'yearsToPurchase', this.value)" />
-          <div class="form-hint">Max available this window: ${fmtDec(r.maxAvailableThisWindow, 4)} yrs (of ${fmtDec(state.maxPurchasableYears, 5)} limit)</div>
-        </div>
-      </div>
-
-      <div style="background:var(--bg);border-radius:8px;padding:0.75rem;display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;font-size:0.8rem;">
-        <div>
-          <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">Cost / Year</div>
-          <div style="font-weight:600;">${fmt$(r.costPerYear)}</div>
-        </div>
-        <div>
-          <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">Total Purchase Cost</div>
-          <div style="font-weight:700;color:${affordColor};">${fmt$(r.totalCost)}${affordWarn}</div>
-        </div>
-        <div>
-          <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">457B Before Transfer</div>
-          <div style="font-weight:600;">${fmt$(r.balanceBefore)}</div>
-        </div>
-        <div>
-          <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">457B After Transfer</div>
-          <div style="font-weight:600;color:${affordColor};">${fmt$(r.balanceAfter)}</div>
-        </div>
-        <div>
-          <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">Total Svc Yrs at Purchase</div>
-          <div style="font-weight:600;">${fmtDec(r.serviceAtPurchase, 4)}</div>
-        </div>
-        <div>
-          <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">Rule of 80 at Purchase</div>
-          <div style="font-weight:700;color:${eligible ? 'var(--success)' : 'var(--primary)'};">${fmtDec(r.rule80AtPurchase, 2)}${eligible ? ' ✓ Eligible!' : ` / ${state.ruleTarget}`}</div>
-        </div>
-        <div>
-          <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">Est. Retirement Date</div>
-          <div style="font-weight:700;">${r.newRetDate.toLocaleDateString('en-US', retOpts)}</div>
-        </div>
-        <div>
-          <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">Pension at Retirement</div>
-          <div style="font-weight:700;color:var(--accent);">${fmt$(r.pensionAtRetirement)}/mo</div>
-        </div>
-      </div>
-    `;
-    container.appendChild(div);
-  });
-
-  // Summary banner comparing baseline vs. full scenario
-  const last = results[results.length - 1];
-  const baseRetDate = retirementDate(state.dob, state.pensionStartDate, getTotalPurchasedYears());
-  const baseService = getServiceYears(state.pensionStartDate, baseRetDate, getTotalPurchasedYears());
-  const basePension = pensionMonthly(baseService, state.pensionFinalSalary);
-  const daysSaved = (baseRetDate - last.newRetDate) / (24 * 3600 * 1000);
-  const monthsSaved = daysSaved / 30.44;
-  const pensionGain = last.pensionAtRetirement - basePension;
-  const totalSpent = results.reduce((s, r) => s + r.totalCost, 0);
-  const retOpts2 = { year: 'numeric', month: 'short', day: 'numeric' };
-
-  // Break-even: FV of ALL purchase costs (prior + planned) at retirement, growing at 457B ROR
-  const r457b = (state.rateOfReturn || 0) / 100;
-  const bnhRetDateForBreakEven = state.bnhPrimaryRetireDate ? new Date(state.bnhPrimaryRetireDate) : last.newRetDate;
-  let totalFVatRetirement = 0;
-  // Planned purchase scenarios
-  results.forEach(sc => {
-    const purchaseDate = new Date(sc.scenario.windowYear + 1, 8, 30);
-    const yearsToRet = Math.max(0, (bnhRetDateForBreakEven - purchaseDate) / (365.25 * 24 * 3600 * 1000));
-    totalFVatRetirement += sc.totalCost * Math.pow(1 + r457b, yearsToRet);
-  });
-  // Prior (already completed) purchases
-  let priorPurchaseCostRaw = 0;
-  state.servicePurchases.forEach(p => {
-    const cost = parseFloat(p.cost) || 0;
-    if (cost <= 0) return;
-    priorPurchaseCostRaw += cost;
-    const purchaseDate = new Date(p.date);
-    const yearsToRet = Math.max(0, (bnhRetDateForBreakEven - purchaseDate) / (365.25 * 24 * 3600 * 1000));
-    totalFVatRetirement += cost * Math.pow(1 + r457b, yearsToRet);
-  });
-  // Pension gain from ALL purchases vs truly no purchases (at final scenario retirement date)
-  const noPurchaseService = getServiceYears(state.pensionStartDate, last.newRetDate, 0);
-  const noPurchasePension = pensionMonthly(noPurchaseService, state.pensionFinalSalary);
-  const allPurchasesPensionGainAnnual = (last.pensionAtRetirement - noPurchasePension) * 12;
-  const pensionGainAnnual = pensionGain * 12; // planned scenarios only (for per-scenario display)
-  const simpleBreakEven = allPurchasesPensionGainAnnual > 0 ? totalFVatRetirement / allPurchasesPensionGainAnnual : Infinity;
-  const breakEvenStr = simpleBreakEven < Infinity ? fmtDec(simpleBreakEven, 1) + ' yrs' : 'N/A';
-  const draw4pct = totalFVatRetirement * 0.04;
-  const worthIt = allPurchasesPensionGainAnnual > 0 && allPurchasesPensionGainAnnual > draw4pct;
-
-  summary.innerHTML = `
-    <div style="background:var(--primary);color:#fff;border-radius:10px;padding:1.1rem;margin-top:0.5rem;">
-      <div style="font-weight:700;font-size:0.875rem;margin-bottom:0.6rem;opacity:0.85;text-transform:uppercase;letter-spacing:0.04em;">Scenario Summary vs. No Purchases</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;font-size:0.8rem;">
-        <div><div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Baseline Retirement</div><div style="font-weight:700;">${baseRetDate.toLocaleDateString('en-US', retOpts2)}</div></div>
-        <div><div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Scenario Retirement</div><div style="font-weight:700;">${last.newRetDate.toLocaleDateString('en-US', retOpts2)}</div></div>
-        <div><div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Time Saved</div><div style="font-weight:700;">${monthsSaved > 0.5 ? fmtDec(monthsSaved / 12, 1) + ' yrs (' + Math.round(monthsSaved) + ' mo)' : '< 1 month'}</div></div>
-        <div><div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Pension Gain / mo (planned)</div><div style="font-weight:700;">${fmt$(pensionGain)}</div></div>
-        <div><div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Prior Purchase Cost</div><div style="font-weight:700;">${priorPurchaseCostRaw > 0 ? fmt$(priorPurchaseCostRaw) : '—'}</div></div>
-        <div><div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Planned 457B Spent</div><div style="font-weight:700;">${fmt$(totalSpent)}</div></div>
-        <div><div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Total Pension Gain / yr (all)</div><div style="font-weight:700;">${fmt$(allPurchasesPensionGainAnnual)}/yr</div></div>
-        <div><div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Opp. Cost at Retirement</div><div style="font-weight:700;">${fmt$(totalFVatRetirement)}</div></div>
-        <div><div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">4% Draw on Opp. Cost</div><div style="font-weight:700;">${fmt$(draw4pct)}/yr</div></div>
-        <div><div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Pension vs 4% Draw</div><div style="font-weight:700;">${allPurchasesPensionGainAnnual > draw4pct ? '+' : ''}${fmt$(allPurchasesPensionGainAnnual - draw4pct)}/yr</div></div>
-        <div><div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Break-Even After Ret.</div><div style="font-weight:700;">${breakEvenStr}</div></div>
-      </div>
-      <div style="margin-top:0.75rem;padding:0.55rem 0.75rem;border-radius:7px;font-size:0.8rem;font-weight:700;text-align:center;background:${worthIt ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.18)'};">
-        ${worthIt ? '✓ Purchases worth it — total pension gain exceeds 4% draw on opportunity cost' : '✗ Purchases may not be worth it — total pension gain is below 4% draw on opportunity cost'}
-      </div>
-      <div style="font-size:0.72rem;opacity:0.7;margin-top:0.5rem;">All-purchases analysis: prior + planned costs grown at ${state.rateOfReturn}% (457B rate) to retirement vs. total pension gained over no purchases. 4% draw = sustainable withdrawal from that invested amount. Enter prior purchase costs via Edit on each purchase record.</div>
+// ── Render: Settings ──────────────────────────────────────────
+function renderSettings() {
+  const el=document.getElementById('st-content'); if(!el) return;
+  el.innerHTML=`
+  <div class="card"><div class="card-header"><div class="card-title">Rates & Assumptions</div></div>
+    <div class="form-grid">
+      <div class="field"><label>Pre-Retirement Return %</label><input type="number" step="0.1" value="${state.ror??7}" oninput="state.ror=parseFloat(this.value)||0;saveState();renderAll();" /></div>
+      <div class="field"><label>Post-Retirement Return %</label><input type="number" step="0.1" value="${state.retRor??5}" oninput="state.retRor=parseFloat(this.value)||0;saveState();renderAll();" /></div>
+      <div class="field"><label>Annual Income Goal</label><input type="text" value="${state.incomeGoal?fmtMoney(state.incomeGoal):''}" oninput="state.incomeGoal=parseMoney(this.value);saveState();renderAll();" /></div>
     </div>
-  `;
-}
-
-// ══════════════════════════════════════════════════════════════
-//  INCOME PLANNING
-// ══════════════════════════════════════════════════════════════
-
-function addIncomeScenario() {
-  if ((state.incomeScenarios || []).length >= 4) { alert('Maximum 4 scenarios.'); return; }
-  if (!state.incomeScenarios) state.incomeScenarios = [];
-  const n = state.incomeScenarios.length + 1;
-  state.incomeScenarios.push({
-    id: 'IS' + Date.now(),
-    name: 'Scenario ' + n,
-    bnhRetireDate: state.bnhPrimaryRetireDate || '',
-    khRetireDate: state.khPrimaryRetireDate || '',
-  });
-  saveState();
-  renderIncome();
-}
-
-function deleteIncomeScenario(id) {
-  if ((state.incomeScenarios || []).length <= 1) { alert('At least one scenario required.'); return; }
-  state.incomeScenarios = state.incomeScenarios.filter(s => s.id !== id);
-  saveState();
-  renderIncome();
-}
-
-function updateIncomeScenario(id, field, value) {
-  const s = (state.incomeScenarios || []).find(s => s.id === id);
-  if (!s) return;
-  s[field] = value;
-  saveState();
-  renderIncome();
-}
-
-function computeIncomeScenario(scenario) {
-  if (!scenario.bnhRetireDate || !scenario.khRetireDate) return null;
-  const bnhRetDate = new Date(Math.min(new Date(scenario.bnhRetireDate).getTime(), ageDate(state.dob, 65).getTime()));
-  const khRetDate  = new Date(Math.min(new Date(scenario.khRetireDate).getTime(),  ageDate(state.khDob, 65).getTime()));
-  const fullRetDate = new Date(Math.max(bnhRetDate.getTime(), khRetDate.getTime()));
-  const now = today();
-
-  // Brenna's pension — use projected avg 36-month salary (capped) if growth data available
-  // Include planned purchases whose purchase date falls before Brenna's retirement
-  const actualPurchased = getTotalPurchasedYears();
-  const plannedPurchasedByRet = (state.purchaseScenarios || [])
-    .filter(sc => new Date(sc.windowYear + 1, 8, 30) <= bnhRetDate)
-    .reduce((s, sc) => s + (parseFloat(sc.yearsToPurchase) || 0), 0);
-  const purchased = actualPurchased + plannedPurchasedByRet;
-  const bnhServiceYrs  = getServiceYears(state.pensionStartDate, bnhRetDate, purchased);
-  const projAvgSalary  = (state.brennaCurrentSalary && state.brennaAnnualRaisePct !== undefined)
-    ? cappedPensionSalary(bnhRetDate)
-    : state.pensionFinalSalary;
-  const bnhPensionMo   = pensionMonthly(bnhServiceYrs, projAvgSalary);
-  const bnhPensionAnnual = bnhPensionMo * 12;
-  const bnhAgeAtRetire = getAge(state.dob, bnhRetDate);
-  const khAgeAtRetire  = state.khDob ? getAge(state.khDob, khRetDate) : null;
-  const bnhRule80      = ruleOf80Value(state.dob, state.pensionStartDate, purchased, bnhRetDate);
-
-  // Early retirement supplement (if retire before 62)
-  const hasSupp = bnhAgeAtRetire < 62;
-  const suppMo  = hasSupp ? state.pensionSupplementMultiplier * bnhServiceYrs * state.pensionFinalSalary : 0;
-  const suppAnnual = suppMo * 12;
-  // Age 62 date — when supplement expires
-  const age62Date = (() => {
-    const d = new Date(state.dob);
-    d.setFullYear(d.getFullYear() + 62);
-    return d;
-  })();
-
-  // Project each DC plan to full retirement date (contributions stop at each person's retirement)
-  let totalDCAtFullRet = 0;
-  const planDetails = [];
-  state.plans.forEach(plan => {
-    const planRetDate  = plan.id === 'kh401k' ? khRetDate : bnhRetDate;
-    const yearsToRetire = Math.max(0, (planRetDate - now) / (365.25 * 24 * 3600 * 1000));
-    const annualContrib = (parseFloat(plan.contribPerPeriod) || 0) * (plan.semiMonthly ? 24 : state.payPeriodsPerYear);
-    const retROR = state.retirementROR !== undefined ? state.retirementROR : 4;
-    const planGrowth = plan.id === 'kh401k' ? (state.kevinAnnualRaisePct || 3) / 100 : (state.brennaAnnualRaisePct || 3) / 100;
-    let bal = projectDCGrowing(parseFloat(plan.balance) || 0, annualContrib, yearsToRetire, state.rateOfReturn, planGrowth);
-    if (plan.id === 'bnh401a') bal += computeExtra401AFV(planRetDate, state.rateOfReturn);
-    const yearsCoast = Math.max(0, (fullRetDate - planRetDate) / (365.25 * 24 * 3600 * 1000));
-    if (yearsCoast > 0) bal = projectDCGrowing(bal, 0, yearsCoast, retROR, 0);
-    planDetails.push({ name: plan.name, type: plan.type, projectedBalance: bal });
-    totalDCAtFullRet += bal;
-  });
-
-  // Income cap — use projected terminal salaries where available
-  const bnhTerminalAnnual = projAvgSalary * 12;
-  const khTerminalAnnual  = (state.kevinCurrentSalary && state.kevinAnnualRaisePct !== undefined)
-    ? kevinSalaryAt(khRetDate) * 12
-    : parseFloat(state.khTerminalSalary) || 0;
-  const combinedCap = bnhTerminalAnnual + khTerminalAnnual;
-
-  // Year-1 income (supplement may apply)
-  const pensionPlusSuppAnnual = bnhPensionAnnual + suppAnnual;
-  const maxDC4pct   = totalDCAtFullRet * 0.04;
-  const remainingCap = Math.max(0, combinedCap - pensionPlusSuppAnnual);
-  const dcWithdrawal = Math.min(maxDC4pct, remainingCap);
-  const totalAnnual  = pensionPlusSuppAnnual + dcWithdrawal;
-  const capUsedPct   = combinedCap > 0 ? (totalAnnual / combinedCap) * 100 : 0;
-
-  return {
-    scenario, bnhRetDate, khRetDate, fullRetDate,
-    bnhServiceYrs, bnhPensionMo, bnhPensionAnnual,
-    bnhAgeAtRetire, khAgeAtRetire, bnhRule80, hasSupp, suppMo, suppAnnual, age62Date,
-    totalDCAtFullRet, planDetails,
-    bnhTerminalAnnual, khTerminalAnnual, combinedCap,
-    maxDC4pct, remainingCap, dcWithdrawal,
-    pensionPlusSuppAnnual, totalAnnual,
-    totalMonthly: totalAnnual / 12,
-    capUsedPct,
-    dcLimitedByCap: maxDC4pct > 0 && dcWithdrawal < maxDC4pct,
-  };
-}
-
-function computeYearlyRows(totalDC, bnhPensionAnnual, suppAnnual, age62Date, fullRetDate, cap, years) {
-  const rows = [];
-  let balance = totalDC;
-  const ror = (state.retirementROR !== undefined ? state.retirementROR : 4) / 100;
-  const fullRetYear = fullRetDate.getFullYear();
-
-  for (let i = 0; i < years; i++) {
-    const calYear = fullRetYear + i;
-    // Supplement ends once BNH passes 62
-    const midYear = new Date(calYear, 6, 1);
-    const suppThisYear = (age62Date && midYear < age62Date) ? suppAnnual : 0;
-    const pensionTotal = bnhPensionAnnual + suppThisYear;
-    const withdrawal = balance > 0 ? Math.min(balance * 0.04, Math.max(0, cap - pensionTotal)) : 0;
-    const endBalance = Math.max(0, (balance - withdrawal) * (1 + ror));
-    const totalIncome = pensionTotal + withdrawal;
-    const capPct = cap > 0 ? (totalIncome / cap) * 100 : 100;
-    rows.push({ calYear, beginBalance: balance, withdrawal, pension: bnhPensionAnnual, supp: suppThisYear, totalIncome, endBalance, capPct });
-    balance = endBalance;
-  }
-  return rows;
-}
-
-function renderYearlyTable() {
-  const tbody = document.getElementById('yearly-income-tbody');
-  if (!tbody) return;
-  const scenario = { bnhRetireDate: state.bnhPrimaryRetireDate || '', khRetireDate: state.khPrimaryRetireDate || '' };
-  const data = computeIncomeScenario(scenario);
-  if (!data) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:1rem;">Enter both retirement dates on the Dashboard to see projection.</td></tr>';
-    return;
-  }
-  const rows = computeYearlyRows(data.totalDCAtFullRet, data.bnhPensionAnnual, data.suppAnnual, data.age62Date, data.fullRetDate, data.combinedCap, 30);
-  tbody.innerHTML = '';
-  rows.forEach(r => {
-    const suppCell = r.supp > 0 ? `<span style="color:var(--accent);">${fmt$(r.supp)}</span>` : '<span style="color:var(--muted);">—</span>';
-    const capColor = r.capPct > 98 ? 'var(--warning)' : r.capPct > 85 ? 'var(--text)' : 'var(--success)';
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td style="padding:0.4rem 0.5rem;">${r.calYear}</td>
-      <td style="padding:0.4rem 0.5rem;">${fmt$(r.beginBalance)}</td>
-      <td style="padding:0.4rem 0.5rem;">${fmt$(r.withdrawal)}</td>
-      <td style="padding:0.4rem 0.5rem;">${fmt$(r.pension)}</td>
-      <td style="padding:0.4rem 0.5rem;">${suppCell}</td>
-      <td style="padding:0.4rem 0.5rem;font-weight:700;">${fmt$(r.totalIncome)}</td>
-      <td style="padding:0.4rem 0.5rem;color:${capColor};font-weight:600;">${fmtDec(r.capPct,0)}%</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-function renderIncome() {
-  const container = document.getElementById('income-results');
-  if (!container) return;
-  container.innerHTML = '';
-
-  const scenario = { bnhRetireDate: state.bnhPrimaryRetireDate || '', khRetireDate: state.khPrimaryRetireDate || '' };
-  const data = computeIncomeScenario(scenario);
-
-  const yearlyCard = document.getElementById('yearly-income-card');
-  if (yearlyCard) yearlyCard.style.display = data ? 'block' : 'none';
-  renderYearlyTable();
-
-  const card = document.createElement('div');
-  card.className = 'card';
-
-  if (!data) {
-    card.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;padding:0.5rem 0;">Set both retirement dates on the Dashboard to see income projection.</div>';
-    container.appendChild(card);
-    return;
-  }
-
-  const dateOpts = { year: 'numeric', month: 'short', day: 'numeric' };
-  const capColor = data.capUsedPct >= 98 ? 'var(--warning)' : data.capUsedPct >= 80 ? 'var(--accent)' : 'var(--success)';
-  const planRows = data.planDetails.map(p =>
-    `<tr><td style="color:var(--muted);">${p.name}</td><td style="font-weight:600;text-align:right;">${fmt$(p.projectedBalance)}</td></tr>`
-  ).join('');
-
-  card.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;font-size:0.8rem;margin-bottom:0.75rem;">
-      <div>
-        <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Brenna's Age at Retirement</div>
-        <div style="font-weight:600;">${data.bnhAgeAtRetire} &nbsp;·&nbsp; Rule of 80: ${fmtDec(data.bnhRule80,2)}</div>
-      </div>
-      <div>
-        <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Brenna's Service Years</div>
-        <div style="font-weight:600;">${fmtDec(data.bnhServiceYrs,2)} yrs</div>
-      </div>
-      <div>
-        <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Brenna's Pension</div>
-        <div style="font-weight:700;color:var(--primary);">${fmt$(data.bnhPensionMo)}/mo &nbsp;·&nbsp; ${fmt$(data.bnhPensionAnnual)}/yr</div>
-      </div>
-      <div>
-        <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Early Ret. Supplement</div>
-        ${data.hasSupp
-          ? `<div style="font-weight:700;color:var(--accent);">${fmt$(data.suppMo)}/mo · until ${data.age62Date.toLocaleDateString('en-US',{month:'short',year:'numeric'})}</div>`
-          : `<div style="color:var(--muted);">N/A (age 62+)</div>`}
-      </div>
-      <div>
-        <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Full Retirement Date</div>
-        <div style="font-weight:600;">${data.fullRetDate.toLocaleDateString('en-US',dateOpts)}</div>
-      </div>
-      <div>
-        <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Total DC at Full Ret.</div>
-        <div style="font-weight:600;">${fmt$(data.totalDCAtFullRet)}</div>
-      </div>
-      <div>
-        <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">4% Max DC Draw/yr</div>
-        <div style="font-weight:600;">${fmt$(data.maxDC4pct)}</div>
-      </div>
-      <div>
-        <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Combined Income Cap</div>
-        <div style="font-weight:600;">${fmt$(data.combinedCap)}/yr</div>
-      </div>
-      <div style="grid-column:1/-1;">
-        <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Actual DC Draw (yr 1)</div>
-        <div style="font-weight:700;${data.dcLimitedByCap ? 'color:var(--warning);' : ''}">${fmt$(data.dcWithdrawal)}/yr${data.dcLimitedByCap ? ' — capped by income limit' : ' — 4% rule applies'}</div>
-      </div>
+  </div>
+  <div class="card"><div class="card-header"><div class="card-title">GitHub Sync</div></div>
+    <div id="sync-status-st" style="font-size:0.8rem;color:var(--muted);margin-bottom:0.75rem;">${getStoredPAT()?'Connected':'Not configured'}</div>
+    <div class="flex-row">
+      <button class="btn btn-secondary btn-sm" onclick="syncNow()">Sync Now</button>
+      <button class="btn btn-secondary btn-sm" onclick="updatePAT()">Update PAT</button>
+      <button class="btn btn-danger btn-sm" onclick="disconnectSync()">Disconnect</button>
     </div>
-
-    <details style="margin-bottom:0.75rem;">
-      <summary style="font-size:0.8rem;font-weight:700;color:var(--muted);cursor:pointer;user-select:none;">DC plan breakdown at full retirement ▾</summary>
-      <div class="table-wrap" style="margin-top:0.5rem;">
-        <table><thead><tr><th>Plan</th><th style="text-align:right;">Projected Balance</th></tr></thead>
-        <tbody>${planRows}</tbody></table>
-      </div>
-    </details>
-
-    <div style="background:var(--primary);color:#fff;border-radius:10px;padding:1.1rem;">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-bottom:0.75rem;">
-        <div>
-          <div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.15rem;">Annual Income (yr 1)</div>
-          <div style="font-size:1.4rem;font-weight:700;">${fmt$(data.totalAnnual)}</div>
-        </div>
-        <div>
-          <div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.15rem;">Monthly Income (yr 1)</div>
-          <div style="font-size:1.4rem;font-weight:700;">${fmt$(data.totalMonthly)}</div>
-        </div>
-      </div>
-      <div style="font-size:0.8rem;opacity:0.85;margin-bottom:0.5rem;">
-        Pension ${fmt$(data.bnhPensionAnnual)}${data.hasSupp ? ` + Supplement ${fmt$(data.suppAnnual)}` : ''} + DC ${fmt$(data.dcWithdrawal)} = ${fmt$(data.totalAnnual)}
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:0.3rem;">
-        <span>vs. income cap (${fmt$(data.combinedCap)}/yr)</span>
-        <span style="font-weight:700;">${fmtDec(data.capUsedPct,0)}%</span>
-      </div>
-      <div style="height:8px;background:rgba(255,255,255,0.2);border-radius:99px;overflow:hidden;">
-        <div style="height:100%;width:${Math.min(100,data.capUsedPct)}%;background:rgba(255,255,255,0.85);border-radius:99px;"></div>
-      </div>
+    <div style="font-size:0.72rem;color:var(--muted);margin-top:0.625rem;">Syncs automatically to a private GitHub Gist after every change and on every login. Requires a PAT with <strong>gist</strong> scope.</div>
+  </div>
+  <div class="card"><div class="card-header"><div class="card-title">Data Backup</div></div>
+    <div class="flex-row">
+      <button class="btn btn-secondary btn-sm" onclick="exportData()">Export JSON</button>
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('imp-file').click()">Import JSON</button>
+      <input type="file" id="imp-file" accept=".json" style="display:none" onchange="importData(event)">
+      <button class="btn btn-secondary btn-sm" onclick="copyClip()">Copy to Clipboard</button>
+      <button class="btn btn-secondary btn-sm" onclick="pasteClip()">Paste from Clipboard</button>
+      <button class="btn btn-danger btn-sm" onclick="resetAll()">Reset All</button>
     </div>
-  `;
-  container.appendChild(card);
+    <div id="bk-msg" style="font-size:0.8rem;color:var(--primary);margin-top:0.5rem;display:none;"></div>
+  </div>`;
 }
 
-// ══════════════════════════════════════════════════════════════
-//  DATA IMPORT / EXPORT
-// ══════════════════════════════════════════════════════════════
-function exportData() {
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url;
-  a.download = `retirement-plan-${new Date().toISOString().slice(0,10)}.json`;
-  a.click(); URL.revokeObjectURL(url);
+// ── Render all ────────────────────────────────────────────────
+function renderAll() {
+  renderOverview();
+  renderBrenna();
+  renderKevin();
+  renderSettings();
+}
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['overview','brenna','kevin','settings'][i]===name));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
 }
 
-function importData(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      state = JSON.parse(e.target.result);
-      saveState(); render();
-    } catch { alert('Invalid JSON file.'); }
-  };
-  reader.readAsText(file);
-  event.target.value = '';
+// ── Event helpers ─────────────────────────────────────────────
+function setBPlan(id,f,v){ const p=state.brenna.plans.find(x=>x.id===id); if(p){p[f]=v;saveState();renderAll();} }
+function setKPlan(id,f,v){ const p=state.kevin.plans.find(x=>x.id===id);  if(p){p[f]=v;saveState();renderAll();} }
+function autoKRetDate() {
+  if (state.kevin.dob&&state.kevin.retireAge&&!state.kevin.retireDate) {
+    state.kevin.retireDate=ageDate(state.kevin.dob,state.kevin.retireAge).toISOString().slice(0,10);
+  }
 }
 
-function resetData() {
-  if (!confirm('Reset ALL data to defaults? This cannot be undone.')) return;
-  state = JSON.parse(JSON.stringify(DEFAULT_STATE));
-  saveState(); render();
+// ── Purchase modal ────────────────────────────────────────────
+function openPM(idx=null) {
+  _pmIdx=idx; const p=idx!==null?state.brenna.servicePurchases[idx]:null;
+  document.getElementById('pm-title').textContent=p?'Edit Service Purchase':'Add Service Purchase';
+  document.getElementById('pm-date').value=p?.date||'';
+  document.getElementById('pm-years').value=p?.years||'';
+  document.getElementById('pm-cost').value=p?.cost?fmtMoney(parseMoney(p.cost)):'';
+  document.getElementById('pm-notes').value=p?.notes||'';
+  document.getElementById('purchase-modal').classList.add('open');
 }
-
-function showDataMsg(msg, isError) {
-  const el = document.getElementById('data-mgmt-msg');
-  if (!el) return;
-  el.textContent = msg;
-  el.style.color = isError ? 'var(--danger)' : 'var(--primary)';
-  el.style.display = 'block';
-  clearTimeout(el._t);
-  el._t = setTimeout(() => { el.style.display = 'none'; }, 3000);
+function closePurchaseModal(){ document.getElementById('purchase-modal').classList.remove('open'); _pmIdx=null; }
+function savePurchase() {
+  const yrs=parseFloat(document.getElementById('pm-years').value);
+  if (!yrs||yrs<=0){alert('Enter valid years.');return;}
+  const e={id:_pmIdx!==null?state.brenna.servicePurchases[_pmIdx].id:Date.now().toString(),
+    date:document.getElementById('pm-date').value, years:yrs,
+    cost:parseMoney(document.getElementById('pm-cost').value)||0,
+    notes:document.getElementById('pm-notes').value};
+  if (_pmIdx!==null) state.brenna.servicePurchases[_pmIdx]=e;
+  else state.brenna.servicePurchases.push(e);
+  saveState();renderAll();closePurchaseModal();
 }
+function delPurchase(i){ if(!confirm('Delete this purchase?'))return; state.brenna.servicePurchases.splice(i,1); saveState();renderAll(); }
 
-function copyDataToClipboard() {
-  navigator.clipboard.writeText(JSON.stringify(state, null, 2))
-    .then(() => showDataMsg('Data copied to clipboard.'))
-    .catch(() => showDataMsg('Copy failed — try Export JSON instead.', true));
+// ── Scenario modal ────────────────────────────────────────────
+function openSM(idx=null) {
+  _smIdx=idx; const s=idx!==null?state.brenna.purchaseScenarios[idx]:null;
+  document.getElementById('sm-title').textContent=s?'Edit Scenario':'Add Purchase Scenario';
+  document.getElementById('sm-year').value=s?.windowYear||new Date().getFullYear();
+  document.getElementById('sm-yrs').value=s?.yearsToPurchase||'';
+  document.getElementById('sm-sal').value=s?.salaryOverride?fmtMoney(s.salaryOverride):'';
+  document.getElementById('scenario-modal').classList.add('open');
 }
-
-function pasteDataFromClipboard() {
-  navigator.clipboard.readText().then(text => {
-    try {
-      state = JSON.parse(text);
-      saveState(); render();
-      showDataMsg('Data imported from clipboard.');
-    } catch { showDataMsg('Clipboard does not contain valid retirement data.', true); }
-  }).catch(() => showDataMsg('Could not read clipboard — try Import JSON instead.', true));
+function closeScenarioModal(){ document.getElementById('scenario-modal').classList.remove('open'); _smIdx=null; }
+function saveScenario() {
+  const yr=parseInt(document.getElementById('sm-year').value);
+  const yrs=parseFloat(document.getElementById('sm-yrs').value);
+  if (!yr||!yrs||yrs<=0){alert('Enter a valid window year and years to purchase.');return;}
+  const e={windowYear:yr, yearsToPurchase:yrs, salaryOverride:parseMoney(document.getElementById('sm-sal').value)||0};
+  if (_smIdx!==null) state.brenna.purchaseScenarios[_smIdx]=e;
+  else state.brenna.purchaseScenarios.push(e);
+  state.brenna.purchaseScenarios.sort((a,b)=>a.windowYear-b.windowYear);
+  saveState();renderAll();closeScenarioModal();
 }
+function delScenario(i){ if(!confirm('Delete this scenario?'))return; state.brenna.purchaseScenarios.splice(i,1); saveState();renderAll(); }
 
-// ══════════════════════════════════════════════════════════════
-//  GITHUB GIST SYNC
-// ══════════════════════════════════════════════════════════════
-const GIST_FILENAME = 'retirement-planner-bnh.json';
-
-function getStoredPAT()    { return localStorage.getItem('rp_gh_pat') || ''; }
-function storePAT(token)   { token ? localStorage.setItem('rp_gh_pat', token) : localStorage.removeItem('rp_gh_pat'); }
-function getStoredGistId() { return localStorage.getItem('rp_gist_id') || ''; }
-function storeGistId(id)   { id ? localStorage.setItem('rp_gist_id', id) : localStorage.removeItem('rp_gist_id'); }
-
-function gistHeaders(pat) {
-  return { 'Authorization': `token ${pat}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' };
+// ── Auth ──────────────────────────────────────────────────────
+function checkPassword() {
+  const pw=document.getElementById('pw-input').value;
+  const pat=(document.getElementById('pat-input')?.value||'').trim();
+  if (pw===PWD) {
+    if (pat) storePAT(pat);
+    localStorage.setItem('rp2_auth','1');
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    init();
+    const sp=getStoredPAT();
+    if (sp) initialSync(sp); else setSyncSt('Not configured — add a GitHub PAT in Settings');
+  } else {
+    document.getElementById('login-error').style.display='block';
+    document.getElementById('pw-input').value='';
+  }
 }
+document.getElementById('pw-input').addEventListener('keydown',e=>{if(e.key==='Enter')checkPassword();});
+function logout(){ localStorage.removeItem('rp2_auth'); document.getElementById('app').style.display='none'; document.getElementById('login-screen').style.display='flex'; document.getElementById('pw-input').value=''; }
+
+// ── GitHub Gist sync ──────────────────────────────────────────
+const GIST_FILE='retirement-planner-bnh.json';
+const getStoredPAT=()=>localStorage.getItem('rp2_pat')||'';
+const storePAT=t=>t?localStorage.setItem('rp2_pat',t):localStorage.removeItem('rp2_pat');
+const getGistId=()=>localStorage.getItem('rp2_gist')||'';
+const storeGistId=id=>id?localStorage.setItem('rp2_gist',id):localStorage.removeItem('rp2_gist');
+const ghH=pat=>({Authorization:`token ${pat}`,Accept:'application/vnd.github.v3+json','Content-Type':'application/json'});
 
 async function findOrCreateGist(pat) {
-  // Search existing gists for our filename
-  const resp = await fetch('https://api.github.com/gists?per_page=100', { headers: gistHeaders(pat) });
-  if (!resp.ok) throw new Error('GitHub API error ' + resp.status);
-  const list = await resp.json();
-  const found = list.find(g => g.files && g.files[GIST_FILENAME]);
+  const r=await fetch('https://api.github.com/gists?per_page=100',{headers:ghH(pat)});
+  if (!r.ok) throw new Error('GitHub API '+r.status);
+  const list=await r.json();
+  const found=list.find(g=>g.files?.[GIST_FILE]);
   if (found) return found.id;
-  // Create a new private gist
-  const create = await fetch('https://api.github.com/gists', {
-    method: 'POST', headers: gistHeaders(pat),
-    body: JSON.stringify({ description: 'Retirement Planner Data', public: false,
-      files: { [GIST_FILENAME]: { content: JSON.stringify(state, null, 2) } } })
-  });
-  if (!create.ok) throw new Error('Failed to create gist');
-  return (await create.json()).id;
+  const cr=await fetch('https://api.github.com/gists',{method:'POST',headers:ghH(pat),
+    body:JSON.stringify({description:'Retirement Planner Data',public:false,files:{[GIST_FILE]:{content:JSON.stringify(state,null,2)}}})});
+  if (!cr.ok) throw new Error('Failed to create gist');
+  return (await cr.json()).id;
 }
-
-async function pullFromGist(pat, gistId) {
-  const resp = await fetch(`https://api.github.com/gists/${gistId}`, { headers: gistHeaders(pat) });
-  if (!resp.ok) return null;
-  const data = await resp.json();
-  const file = data.files && data.files[GIST_FILENAME];
-  if (!file || !file.content) return null;
-  return JSON.parse(file.content);
+async function pullGist(pat,id) {
+  const r=await fetch(`https://api.github.com/gists/${id}`,{headers:ghH(pat)});
+  if (!r.ok) return null;
+  const d=await r.json();
+  const f=d.files?.[GIST_FILE];
+  return f?.content?JSON.parse(f.content):null;
 }
-
-async function pushToGist(pat, gistId) {
-  await fetch(`https://api.github.com/gists/${gistId}`, {
-    method: 'PATCH', headers: gistHeaders(pat),
-    body: JSON.stringify({ files: { [GIST_FILENAME]: { content: JSON.stringify(state, null, 2) } } })
+async function pushGist(pat,id) {
+  await fetch(`https://api.github.com/gists/${id}`,{method:'PATCH',headers:ghH(pat),
+    body:JSON.stringify({files:{[GIST_FILE]:{content:JSON.stringify(state,null,2)}}})});
+}
+function setSyncSt(msg,err) {
+  ['sync-status','sync-status-st'].forEach(id=>{
+    const el=document.getElementById(id); if(!el) return;
+    el.textContent=msg;
+    el.style.color=err?'var(--danger)':(id==='sync-status'?'rgba(255,255,255,0.55)':'var(--muted)');
   });
 }
-
-function setSyncStatus(msg, isError) {
-  const el = document.getElementById('gist-sync-status');
-  if (!el) return;
-  el.textContent = msg;
-  el.style.color = isError ? 'var(--danger)' : 'var(--muted)';
-}
-
-let _syncDebounceTimer = null;
-function scheduleGistSync() {
-  const pat = getStoredPAT();
-  if (!pat) return;
-  clearTimeout(_syncDebounceTimer);
-  _syncDebounceTimer = setTimeout(async () => {
+let _syncT=null;
+function scheduleSync() {
+  const pat=getStoredPAT(); if(!pat) return;
+  clearTimeout(_syncT);
+  _syncT=setTimeout(async()=>{
     try {
-      let gistId = getStoredGistId();
-      if (!gistId) { gistId = await findOrCreateGist(pat); storeGistId(gistId); }
-      await pushToGist(pat, gistId);
-      setSyncStatus('Synced ' + new Date().toLocaleTimeString());
-    } catch (e) {
-      console.warn('Gist sync failed:', e);
-      setSyncStatus('Sync failed — check PAT', true);
-    }
-  }, 1500);
+      let id=getGistId(); if(!id){id=await findOrCreateGist(pat);storeGistId(id);}
+      await pushGist(pat,id);
+      setSyncSt('Synced '+new Date().toLocaleTimeString());
+    } catch(e){console.warn('Sync:',e);setSyncSt('Sync failed',true);}
+  },1500);
 }
-
-async function initialGistSync(pat) {
-  setSyncStatus('Syncing…');
+async function initialSync(pat) {
+  setSyncSt('Syncing…');
   try {
-    let gistId = getStoredGistId();
-    if (!gistId) { gistId = await findOrCreateGist(pat); storeGistId(gistId); }
-    const remote = await pullFromGist(pat, gistId);
+    let id=getGistId(); if(!id){id=await findOrCreateGist(pat);storeGistId(id);}
+    const remote=await pullGist(pat,id);
     if (remote) {
-      state = remote;
-      localStorage.setItem('retirementState', JSON.stringify(state));
-      render();
-    } else {
-      await pushToGist(pat, gistId);
-    }
-    setSyncStatus('Synced ' + new Date().toLocaleTimeString());
-  } catch (e) {
-    console.warn('Initial sync failed:', e);
-    setSyncStatus('Sync failed — check your PAT in Settings', true);
-  }
+      state=deepMerge(JSON.parse(JSON.stringify(DEFAULT)),remote);
+      localStorage.setItem('rp2_state',JSON.stringify(state));
+      renderAll();
+    } else await pushGist(pat,id);
+    setSyncSt('Synced '+new Date().toLocaleTimeString());
+  } catch(e){console.warn('Sync:',e);setSyncSt('Sync failed — check PAT',true);}
 }
-
 async function syncNow() {
-  const pat = getStoredPAT();
-  if (!pat) { setSyncStatus('No PAT configured — log out and log back in to add one.', true); return; }
-  setSyncStatus('Syncing…');
+  const pat=getStoredPAT(); if(!pat){setSyncSt('No PAT configured',true);return;}
+  setSyncSt('Syncing…');
   try {
-    let gistId = getStoredGistId();
-    if (!gistId) { gistId = await findOrCreateGist(pat); storeGistId(gistId); }
-    await pushToGist(pat, gistId);
-    setSyncStatus('Synced ' + new Date().toLocaleTimeString());
-  } catch (e) { setSyncStatus('Sync failed', true); }
+    let id=getGistId(); if(!id){id=await findOrCreateGist(pat);storeGistId(id);}
+    await pushGist(pat,id); setSyncSt('Synced '+new Date().toLocaleTimeString());
+  } catch{setSyncSt('Sync failed',true);}
 }
-
-function updateGithubPAT() {
-  const pat = prompt('Enter your GitHub Personal Access Token (gist scope):', getStoredPAT());
-  if (pat === null) return;
-  storePAT(pat.trim());
-  storeGistId('');
-  if (pat.trim()) initialGistSync(pat.trim());
-  else setSyncStatus('Not configured');
+function updatePAT() {
+  const p=prompt('GitHub Personal Access Token (gist scope):',getStoredPAT());
+  if (p===null) return;
+  storePAT(p.trim()); storeGistId('');
+  if (p.trim()) initialSync(p.trim()); else setSyncSt('Not configured');
+  renderSettings();
 }
+function disconnectSync(){ if(!confirm('Disconnect GitHub sync?'))return; storePAT('');storeGistId('');setSyncSt('Not configured');renderSettings(); }
 
-function disconnectGist() {
-  if (!confirm('Disconnect GitHub sync? Your local data will remain but will no longer sync automatically.')) return;
-  storePAT('');
-  storeGistId('');
-  setSyncStatus('Not configured');
-}
+// ── Data backup ───────────────────────────────────────────────
+function bkMsg(msg,err){ const e=document.getElementById('bk-msg'); if(!e)return; e.textContent=msg;e.style.color=err?'var(--danger)':'var(--primary)';e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',3000); }
+function exportData(){ const b=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}); const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=`retirement-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(u); }
+function importData(e){ const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{state=deepMerge(JSON.parse(JSON.stringify(DEFAULT)),JSON.parse(ev.target.result));saveState();renderAll();}catch{alert('Invalid JSON.');}};r.readAsText(f);e.target.value=''; }
+function copyClip(){ navigator.clipboard.writeText(JSON.stringify(state,null,2)).then(()=>bkMsg('Copied.')).catch(()=>bkMsg('Copy failed.',true)); }
+function pasteClip(){ navigator.clipboard.readText().then(t=>{try{state=deepMerge(JSON.parse(JSON.stringify(DEFAULT)),JSON.parse(t));saveState();renderAll();bkMsg('Imported.');}catch{bkMsg('Invalid data.',true);}}).catch(()=>bkMsg('Could not read clipboard.',true)); }
+function resetAll(){ if(!confirm('Reset ALL data?'))return; state=JSON.parse(JSON.stringify(DEFAULT));saveState();renderAll(); }
 
-// ══════════════════════════════════════════════════════════════
-//  SUMMARY TAB
-// ══════════════════════════════════════════════════════════════
-
-function computeSummaryTimeline() {
-  const bnhRetireDate = state.bnhPrimaryRetireDate ? new Date(state.bnhPrimaryRetireDate) : null;
-  const khRetireDate  = state.khPrimaryRetireDate  ? new Date(state.khPrimaryRetireDate)  : null;
-  if (!bnhRetireDate && !khRetireDate) return null;
-
-  const now = today();
-  const ror = state.rateOfReturn / 100;
-  const retROR = (state.retirementROR !== undefined ? state.retirementROR : 4) / 100;
-
-  // Brenna age-62 (supplement expires)
-  const age62Date = new Date(state.dob);
-  age62Date.setFullYear(age62Date.getFullYear() + 62);
-
-  // Pension & supplement at Brenna's retirement
-  const purchased = getTotalPurchasedYears();
-  let bnhPensionAnnual = 0, suppAnnual = 0, hasSupp = false;
-  if (bnhRetireDate) {
-    const bnhSvcYrs = getServiceYears(state.pensionStartDate, bnhRetireDate, purchased);
-    const avgSal = (state.brennaCurrentSalary && state.brennaAnnualRaisePct !== undefined)
-      ? cappedPensionSalary(bnhRetireDate) : state.pensionFinalSalary;
-    bnhPensionAnnual = pensionMonthly(bnhSvcYrs, avgSal) * 12;
-    hasSupp = getAge(state.dob, bnhRetireDate) < 62;
-    if (hasSupp) suppAnnual = state.pensionSupplementMultiplier * bnhSvcYrs * avgSal * 12;
-  }
-
-  // DC pools by owner
-  const brennaDCIds = ['bnh457b', 'bnh401a', 'bnhira'];
-  const brennaPlans = state.plans.filter(p => brennaDCIds.includes(p.id));
-  const kevinPlans  = state.plans.filter(p => p.id === 'kh401k');
-
-  const brennaAnnualContrib = brennaPlans.reduce((s, p) =>
-    s + (parseFloat(p.contribPerPeriod) || 0) * (p.semiMonthly ? 24 : state.payPeriodsPerYear), 0);
-  const kevinAnnualContrib = kevinPlans.reduce((s, p) =>
-    s + (parseFloat(p.contribPerPeriod) || 0) * (p.semiMonthly ? 24 : state.payPeriodsPerYear), 0);
-
-  let brennaDC = brennaPlans.reduce((s, p) => s + (parseFloat(p.balance) || 0), 0);
-  let kevinDC  = kevinPlans.reduce((s,  p) => s + (parseFloat(p.balance) || 0), 0);
-
-  // Track 457B separately to detect exhaustion during staggered retirement
-  const plan457bRef = state.plans.find(p => p.id === 'bnh457b');
-  const annualContrib457b = plan457bRef
-    ? (parseFloat(plan457bRef.contribPerPeriod) || 0) * (plan457bRef.semiMonthly ? 24 : state.payPeriodsPerYear)
-    : 0;
-  let bnh457bBal = parseFloat(plan457bRef?.balance || 0);
-
-  const bnhRetYear = bnhRetireDate ? bnhRetireDate.getFullYear() : Infinity;
-  const khRetYear  = khRetireDate  ? khRetireDate.getFullYear()  : Infinity;
-  const firstRetYear = Math.min(bnhRetYear, khRetYear);
-  const lastRetYear  = Math.max(
-    bnhRetYear === Infinity ? firstRetYear : bnhRetYear,
-    khRetYear  === Infinity ? firstRetYear : khRetYear
-  );
-
-  // Income cap (combined terminal salaries, used when both retired)
-  const bnhTermAnnual = bnhRetireDate
-    ? ((state.brennaCurrentSalary && state.brennaAnnualRaisePct !== undefined)
-        ? cappedPensionSalary(bnhRetireDate) * 12 : state.pensionFinalSalary * 12) : 0;
-  const khTermAnnual  = khRetireDate
-    ? ((state.kevinCurrentSalary && state.kevinAnnualRaisePct !== undefined)
-        ? kevinSalaryAt(khRetireDate) * 12 : parseFloat(state.khTerminalSalary) || 0) : 0;
-  const combinedCap = bnhTermAnnual + khTermAnnual;
-
-  const startYear  = now.getFullYear();
-  const recordFrom = Math.max(firstRetYear, startYear);
-  const endYear    = (lastRetYear === Infinity ? startYear + 5 : lastRetYear) + 30;
-  const rows = [];
-
-  for (let yr = startYear; yr <= endYear; yr++) {
-    const brennaRetired = yr >= bnhRetYear;
-    const kevinRetired  = yr >= khRetYear;
-
-    const beginBrenna = brennaDC;
-    const beginKevin  = kevinDC;
-
-    const midYear = new Date(yr, 6, 1);
-    const brennaSalIncome = (!brennaRetired && bnhRetireDate) ? brennaSalaryAt(midYear) * 12 : 0;
-    const kevinSalIncome  = (!kevinRetired  && khRetireDate)  ? kevinSalaryAt(midYear)  * 12 : 0;
-
-    const pensionIncome = brennaRetired ? bnhPensionAnnual : 0;
-    const suppThisYear  = (brennaRetired && hasSupp && midYear < age62Date) ? suppAnnual : 0;
-
-    const availBrenna = brennaRetired ? beginBrenna : 0;
-    const availKevin  = kevinRetired  ? beginKevin  : 0;
-    const availDC     = availBrenna + availKevin;
-
-    let dcDraw = availDC * 0.04;
-    if (brennaRetired && kevinRetired) {
-      dcDraw = Math.min(dcDraw, Math.max(0, combinedCap - pensionIncome - suppThisYear));
-    }
-    dcDraw = Math.max(0, dcDraw);
-
-    // Apportion draw proportionally; update end-of-year balances
-    const brennaShare = availDC > 0 ? availBrenna / availDC : 0;
-    const kevinShare  = availDC > 0 ? availKevin  / availDC : 0;
-
-    // Track 457B separately — it grows pre-retirement, draws proportionally in retirement
-    const prev457bBal = bnh457bBal;
-    if (brennaRetired) {
-      const prop457b = beginBrenna > 0 ? Math.min(bnh457bBal / beginBrenna, 1) : 0;
-      const draw457b = dcDraw * brennaShare * prop457b;
-      bnh457bBal = Math.max(0, (bnh457bBal - draw457b) * (1 + retROR));
-      brennaDC = Math.max(0, (beginBrenna - dcDraw * brennaShare) * (1 + retROR));
-    } else {
-      bnh457bBal = bnh457bBal * (1 + ror) + annualContrib457b;
-      brennaDC = beginBrenna * (1 + ror) + brennaAnnualContrib;
-    }
-    if (kevinRetired) {
-      kevinDC = Math.max(0, (beginKevin - dcDraw * kevinShare) * (1 + retROR));
-    } else {
-      kevinDC = beginKevin * (1 + ror) + kevinAnnualContrib;
-    }
-
-    // 457B is "exhausted" if Brenna is retired, Kevin is not, and 457B just hit $0
-    const bnh457bExhausted = brennaRetired && !kevinRetired && bnh457bBal === 0;
-
-    if (yr >= recordFrom) {
-      rows.push({
-        yr, brennaRetired, kevinRetired,
-        brennaSalIncome, kevinSalIncome,
-        pensionIncome, suppIncome: suppThisYear,
-        dcDraw,
-        bnh457bExhausted,
-        totalIncome: pensionIncome + suppThisYear + brennaSalIncome + kevinSalIncome + dcDraw,
-      });
-    }
-  }
-
-  return { rows, bnhRetireDate, khRetireDate, age62Date, bnhPensionAnnual, suppAnnual, hasSupp, combinedCap };
-}
-
-function renderSummaryTab() {
-  const now = today();
-
-  // Ages
-  const bAgeEl = document.getElementById('dash-brenna-age');
-  if (bAgeEl) bAgeEl.textContent = getAge(state.dob, now);
-  const bBdayEl = document.getElementById('dash-brenna-bday');
-  if (bBdayEl) {
-    const [by, bm, bd] = state.dob.split('-').map(Number);
-    bBdayEl.textContent = new Date(by, bm - 1, bd).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-  }
-
-  // Future purchase scenarios from Pension tab
-  const scenarios = state.purchaseScenarios || [];
-  const totalScenarioYrs = scenarios.reduce((s, sc) => s + (parseFloat(sc.yearsToPurchase) || 0), 0);
-  const existingYrs = getTotalPurchasedYears();
-  const totalWithPlanned = existingYrs + totalScenarioYrs;
-
-  const bPurchEl = document.getElementById('dash-brenna-purchases');
-  if (bPurchEl) {
-    if (scenarios.length > 0) {
-      bPurchEl.textContent = `+${fmtDec(totalScenarioYrs, 2)} yrs planned (${fmtDec(totalWithPlanned, 2)} total w/ purchases)`;
-    } else {
-      bPurchEl.textContent = '';
-    }
-  }
-
-  // Earliest retirement date with planned purchases
-  const earliestEl = document.getElementById('dash-brenna-earliest');
-  if (earliestEl) {
-    const nowR80 = ruleOf80Value(state.dob, state.pensionStartDate, totalWithPlanned, now);
-    if (nowR80 >= state.ruleTarget) {
-      earliestEl.textContent = 'Eligible now w/ planned purchases';
-    } else if (totalWithPlanned > existingYrs) {
-      const earliestDate = retirementDate(state.dob, state.pensionStartDate, totalWithPlanned);
-      earliestEl.textContent = `Earliest w/ purchases: ${earliestDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-    } else {
-      // Show earliest without purchases too
-      const noPlannedR80 = ruleOf80Value(state.dob, state.pensionStartDate, existingYrs, now);
-      if (noPlannedR80 < state.ruleTarget) {
-        const earliestDate = retirementDate(state.dob, state.pensionStartDate, existingYrs);
-        earliestEl.textContent = `Earliest: ${earliestDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-      } else {
-        earliestEl.textContent = 'Eligible now';
-      }
-    }
-  }
-
-  const kAgeEl = document.getElementById('dash-kevin-age');
-  if (kAgeEl) kAgeEl.textContent = getAge(state.khDob || state.dob, now);
-  const kBdayEl = document.getElementById('dash-kevin-bday');
-  if (kBdayEl) {
-    const kDob = state.khDob || state.dob;
-    const [ky, km, kd] = kDob.split('-').map(Number);
-    kBdayEl.textContent = new Date(ky, km - 1, kd).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-  }
-
-  // Retirement date inputs + hints
-  const bRetEl = document.getElementById('dash-brenna-retire');
-  if (bRetEl) bRetEl.value = state.bnhPrimaryRetireDate || '';
-  const bRetHint = document.getElementById('dash-brenna-retire-hint');
-  if (bRetHint) {
-    if (state.bnhPrimaryRetireDate) {
-      const d = new Date(state.bnhPrimaryRetireDate);
-      const svc = getServiceYears(state.pensionStartDate, d, totalWithPlanned);
-      const r80 = ruleOf80Value(state.dob, state.pensionStartDate, totalWithPlanned, d);
-      const eligMark = r80 >= state.ruleTarget ? ' ✓' : ` / ${state.ruleTarget}`;
-      bRetHint.textContent = `Age ${getAge(state.dob, d)} · ${fmtDec(svc, 2)} svc yrs (w/ purchases) · Rule of 80: ${fmtDec(r80, 2)}${eligMark}`;
-    } else { bRetHint.textContent = ''; }
-  }
-
-  const kRetEl = document.getElementById('dash-kevin-retire');
-  if (kRetEl) kRetEl.value = state.khPrimaryRetireDate || '';
-  const kRetHint = document.getElementById('dash-kevin-retire-hint');
-  if (kRetHint) {
-    if (state.khPrimaryRetireDate && state.khDob) {
-      kRetHint.textContent = `Age ${getAge(state.khDob, new Date(state.khPrimaryRetireDate))} at retirement`;
-    } else { kRetHint.textContent = ''; }
-  }
-
-  // Salary & growth inputs
-  const bSalEl = document.getElementById('dash-brenna-salary');
-  if (bSalEl) bSalEl.value = state.brennaCurrentSalary ? fmtCurrencyStr(state.brennaCurrentSalary * 12) : '';
-  const bGrowthEl = document.getElementById('dash-brenna-growth');
-  if (bGrowthEl) bGrowthEl.value = state.brennaAnnualRaisePct ?? '';
-  const bTermEl = document.getElementById('dash-brenna-terminal');
-  if (bTermEl) {
-    if (state.bnhPrimaryRetireDate && state.brennaCurrentSalary) {
-      const termSal = brennaSalaryAt(state.bnhPrimaryRetireDate) * 12;
-      bTermEl.textContent = `Projected at retirement: ${fmt$(termSal)}/yr`;
-    } else { bTermEl.textContent = ''; }
-  }
-
-  const kSalEl = document.getElementById('dash-kevin-salary');
-  if (kSalEl) kSalEl.value = state.kevinCurrentSalary ? fmtCurrencyStr(state.kevinCurrentSalary * 12) : '';
-  const kGrowthEl = document.getElementById('dash-kevin-growth');
-  if (kGrowthEl) kGrowthEl.value = state.kevinAnnualRaisePct ?? '';
-  const kTermEl = document.getElementById('dash-kevin-terminal');
-  if (kTermEl) {
-    if (state.khPrimaryRetireDate && state.kevinCurrentSalary) {
-      const kTermSal = kevinSalaryAt(state.khPrimaryRetireDate) * 12;
-      kTermEl.textContent = `Projected at retirement: ${fmt$(kTermSal)}/yr`;
-    } else { kTermEl.textContent = ''; }
-  }
-
-  // Balance date
-  const balDateEl = document.getElementById('dash-balance-date');
-  if (balDateEl) balDateEl.value = state.balanceAsOf || '';
-
-  // Account balances (editable)
-  const balList = document.getElementById('dash-balances-list');
-  if (balList) {
-    balList.innerHTML = '';
-    let dcTotal = 0;
-
-    // DC plans
-    state.plans.forEach(plan => {
-      const bal = parseFloat(plan.balance) || 0;
-      dcTotal += bal;
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;gap:0.75rem;';
-      row.innerHTML = `
-        <span style="font-size:0.8rem;color:var(--muted);font-weight:600;min-width:90px;">${plan.name}</span>
-        <input type="text" value="${fmtCurrencyStr(bal)}"
-          style="flex:1;padding:0.4rem 0.65rem;border:1.5px solid var(--border);border-radius:6px;font-size:0.875rem;color:var(--text);background:#fff;outline:none;text-align:right;max-width:170px;"
-          onfocus="onCurrencyFocus(this);this.style.borderColor='var(--primary)'"
-          onblur="onCurrencyBlur(this);this.style.borderColor='var(--border)';dashUpdateBalance('${plan.id}',parseCurrencyStr(this.value))" />
-      `;
-      balList.appendChild(row);
-    });
-
-    // Pension cash balance (display only — not used in income projections)
-    const pensionBal = parseFloat(state.pensionCashBalance) || 0;
-    const pensionRow = document.createElement('div');
-    pensionRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;gap:0.75rem;';
-    pensionRow.innerHTML = `
-      <span style="font-size:0.8rem;color:var(--muted);font-weight:600;min-width:90px;">PEERS Cash</span>
-      <input type="text" value="${fmtCurrencyStr(pensionBal)}"
-        style="flex:1;padding:0.4rem 0.65rem;border:1.5px solid var(--border);border-radius:6px;font-size:0.875rem;color:var(--text);background:#fff;outline:none;text-align:right;max-width:170px;"
-        onfocus="onCurrencyFocus(this);this.style.borderColor='var(--primary)'"
-        onblur="onCurrencyBlur(this);this.style.borderColor='var(--border)';dashUpdatePensionBalance(parseCurrencyStr(this.value))" />
-    `;
-    balList.appendChild(pensionRow);
-
-    const totEl = document.getElementById('dash-total-bal');
-    if (totEl) totEl.textContent = fmt$(dcTotal + pensionBal);
-  }
-
-  renderSummaryTimeline();
-}
-
-function renderSummaryTimeline() {
-  const phasesEl = document.getElementById('dash-income-phases');
-  const tbodyEl  = document.getElementById('dash-yearly-tbody');
-  if (!phasesEl) return;
-
-  const timeline = computeSummaryTimeline();
-  if (!timeline) {
-    phasesEl.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;padding:0.5rem 0;">Set retirement dates above to see projected income.</div>';
-    if (tbodyEl) tbodyEl.innerHTML = '';
-    return;
-  }
-
-  const { rows } = timeline;
-
-  // Group consecutive rows by retirement/supplement/457b-exhaustion state into phases
-  const phases = [];
-  let cur = null;
-  rows.forEach(row => {
-    const key = `${row.brennaRetired}|${row.kevinRetired}|${row.suppIncome > 0}|${row.bnh457bExhausted}`;
-    if (!cur || cur.key !== key) {
-      cur = { key, startYear: row.yr, endYear: row.yr, firstRow: row,
-              brennaRetired: row.brennaRetired, kevinRetired: row.kevinRetired,
-              suppActive: row.suppIncome > 0, bnh457bExhausted: row.bnh457bExhausted };
-      phases.push(cur);
-    } else {
-      cur.endYear = row.yr;
-    }
-  });
-
-  // Phase summary cards
-  phasesEl.innerHTML = '';
-  const combinedCap = timeline.combinedCap;
-  phases.forEach(phase => {
-    const r = phase.firstRow;
-    let label = '';
-    if  (phase.brennaRetired && !phase.kevinRetired)  label = 'Brenna retired · Kevin working';
-    else if (!phase.brennaRetired && phase.kevinRetired) label = 'Kevin retired · Brenna working';
-    else if  (phase.brennaRetired && phase.kevinRetired) label = 'Both retired';
-    if (phase.suppActive) label += ' + Supplement';
-    if (phase.bnh457bExhausted) label += ' · 457B Exhausted';
-
-    const yearRange = phase.startYear === phase.endYear
-      ? String(phase.startYear) : `${phase.startYear}–${phase.endYear}`;
-
-    const parts = [];
-    if (phase.brennaRetired && r.pensionIncome > 0)    parts.push(`Pension ${fmt$(r.pensionIncome)}/yr`);
-    if (phase.suppActive)                               parts.push(`Supp. ${fmt$(r.suppIncome)}/yr`);
-    if (!phase.brennaRetired && r.brennaSalIncome > 0) parts.push(`Brenna ${fmt$(r.brennaSalIncome)}/yr`);
-    if (!phase.kevinRetired  && r.kevinSalIncome  > 0) parts.push(`Kevin ${fmt$(r.kevinSalIncome)}/yr`);
-    if (r.dcDraw > 0)                                  parts.push(`DC ${fmt$(r.dcDraw)}/yr`);
-
-    const replacePct = combinedCap > 0 ? (r.totalIncome / combinedCap) * 100 : null;
-    const replaceColor = replacePct === null ? 'var(--muted)'
-      : replacePct >= 70 ? 'var(--success)'
-      : replacePct >= 55 ? 'var(--warning)'
-      : 'var(--danger)';
-    const replaceStr = replacePct !== null
-      ? `<div style="font-size:0.8rem;font-weight:700;color:${replaceColor};margin-top:0.15rem;">${fmtDec(replacePct, 0)}% income replacement</div>`
-      : '';
-
-    const card = document.createElement('div');
-    card.style.cssText = 'border:1.5px solid var(--border);border-radius:10px;padding:0.85rem 1rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:flex-start;gap:0.75rem;';
-    card.innerHTML = `
-      <div style="flex:1;min-width:0;">
-        <div style="font-weight:700;font-size:0.875rem;color:var(--primary);margin-bottom:0.1rem;">${label}</div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-bottom:${parts.length ? '0.35rem' : '0'};">${yearRange}</div>
-        ${parts.length ? `<div style="font-size:0.8rem;color:var(--muted);line-height:1.5;">${parts.join(' · ')}</div>` : ''}
-      </div>
-      <div style="text-align:right;flex-shrink:0;">
-        <div style="font-size:1rem;font-weight:700;color:var(--accent);">${fmt$(r.totalIncome)}/yr</div>
-        <div style="font-size:0.72rem;color:var(--muted);">${fmt$(r.totalIncome / 12)}/mo</div>
-        ${replaceStr}
-      </div>
-    `;
-    phasesEl.appendChild(card);
-  });
-
-  // Year-by-year table
-  if (tbodyEl) {
-    tbodyEl.innerHTML = '';
-    rows.forEach(r => {
-      const bCol = r.brennaRetired
-        ? '<span style="color:var(--muted);font-size:0.8rem;">Retired</span>'
-        : fmt$(r.brennaSalIncome);
-      const kCol = r.kevinRetired
-        ? '<span style="color:var(--muted);font-size:0.8rem;">Retired</span>'
-        : fmt$(r.kevinSalIncome);
-      const suppCell = r.suppIncome > 0
-        ? `<span style="color:var(--accent);">${fmt$(r.suppIncome)}</span>`
-        : '<span style="color:var(--muted);">—</span>';
-      const dashSpan = v => v > 0 ? fmt$(v) : '<span style="color:var(--muted);">—</span>';
-      const replacePct = combinedCap > 0 ? (r.totalIncome / combinedCap) * 100 : null;
-      const replaceColor = replacePct === null ? 'var(--muted)'
-        : replacePct >= 70 ? 'var(--success)'
-        : replacePct >= 55 ? 'var(--warning)'
-        : 'var(--danger)';
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${r.yr}</td>
-        <td style="font-size:0.8rem;">${bCol}</td>
-        <td style="font-size:0.8rem;">${kCol}</td>
-        <td>${dashSpan(r.pensionIncome)}</td>
-        <td>${suppCell}</td>
-        <td>${dashSpan(r.dcDraw)}</td>
-        <td style="font-weight:700;">${fmt$(r.totalIncome)}</td>
-        <td style="font-weight:700;color:${replaceColor};">${replacePct !== null ? fmtDec(replacePct, 0) + '%' : '—'}</td>
-      `;
-      tbodyEl.appendChild(tr);
-    });
-  }
-}
-
-function dashUpdateRetire(person, value) {
-  if (person === 'brenna') {
-    state.bnhPrimaryRetireDate = value;
-    if (state.incomeScenarios && state.incomeScenarios[0] && !state.incomeScenarios[0].bnhRetireDate)
-      state.incomeScenarios[0].bnhRetireDate = value;
-  } else {
-    state.khPrimaryRetireDate = value;
-    if (state.incomeScenarios && state.incomeScenarios[0] && !state.incomeScenarios[0].khRetireDate)
-      state.incomeScenarios[0].khRetireDate = value;
-  }
-  saveState();
-  render();
-}
-
-function dashUpdateSalary(person, value) {
-  const v = (parseCurrencyStr(value) || 0) / 12;
-  if (person === 'brenna') { state.brennaCurrentSalary = v; state.pensionCurrentSalary = v; }
-  else { state.kevinCurrentSalary = v; }
-  saveState();
-  render();
-}
-
-function dashUpdateGrowth(person, value) {
-  const v = parseFloat(value) || 0;
-  if (person === 'brenna') state.brennaAnnualRaisePct = v;
-  else state.kevinAnnualRaisePct = v;
-  saveState();
-  render();
-}
-
-function dashUpdateBalance(planId, value) {
-  const plan = state.plans.find(p => p.id === planId);
-  if (plan) { plan.balance = parseCurrencyStr(value); saveState(); render(); }
-}
-
-function dashUpdatePensionBalance(value) {
-  state.pensionCashBalance = parseCurrencyStr(value);
-  saveState();
-  const dcTotal = state.plans.reduce((s, p) => s + (parseFloat(p.balance) || 0), 0);
-  const totEl = document.getElementById('dash-total-bal');
-  if (totEl) totEl.textContent = fmt$(dcTotal + state.pensionCashBalance);
-}
-
-function dashUpdateBalanceDate(value) {
-  state.balanceAsOf = value;
-  saveState();
-}
-
-function dashToggleYearly() {
-  const wrap = document.getElementById('dash-yearly-wrap');
-  const btn  = document.getElementById('dash-toggle-btn');
-  if (!wrap || !btn) return;
-  const showing = wrap.style.display !== 'none';
-  wrap.style.display = showing ? 'none' : 'block';
-  btn.textContent = showing ? 'Show Years' : 'Hide Years';
-}
-
-// ══════════════════════════════════════════════════════════════
-//  INIT
-// ══════════════════════════════════════════════════════════════
+// ── Init ──────────────────────────────────────────────────────
 function init() {
   loadState();
-  if (!state.projectionStartYear) state.projectionStartYear = new Date().getFullYear();
-  document.getElementById('proj-start-year').value = state.projectionStartYear;
-
-  // Auto-calculate KH retirement date from DOB + target age if not yet set
-  if (state.khDob && !state.khPrimaryRetireDate) {
-    const d = new Date(state.khDob);
-    d.setFullYear(d.getFullYear() + (state.khRetireAge || 62));
-    state.khPrimaryRetireDate = d.toISOString().slice(0, 10);
-    saveState();
-  }
-
-  // Pre-fill first income scenario with primary dates if it's still blank
-  if (state.incomeScenarios && state.incomeScenarios.length > 0) {
-    const first = state.incomeScenarios[0];
-    if (!first.bnhRetireDate && state.bnhPrimaryRetireDate) first.bnhRetireDate = state.bnhPrimaryRetireDate;
-    if (!first.khRetireDate && state.khPrimaryRetireDate) first.khRetireDate = state.khPrimaryRetireDate;
-  }
-
-  render();
+  autoKRetDate();
+  renderAll();
 }
 
-// Auto-login if previously authenticated
-if (localStorage.getItem('rp_auth') === '1') {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
+// Startup
+if (localStorage.getItem('rp2_auth')==='1') {
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
   init();
-  const _autoPat = getStoredPAT();
-  if (_autoPat) initialGistSync(_autoPat);
-  else setSyncStatus('Not configured — add a GitHub PAT in Settings to enable sync');
+  const _p=getStoredPAT();
+  if (_p) initialSync(_p); else setSyncSt('Not configured');
 } else {
-  // Show PAT field on login screen only when not yet stored
-  if (!getStoredPAT()) document.getElementById('pat-field-wrapper').style.display = 'block';
+  if (!getStoredPAT()) document.getElementById('pat-wrapper').style.display='block';
 }
 </script>
 </body>
