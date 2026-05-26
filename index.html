@@ -8,21 +8,21 @@
     :root {
       --primary: #2c5f8a;
       --primary-dark: #1a3d5c;
-      --accent: #4caf87;
-      --accent-dark: #357a5f;
-      --bg: #f4f6f9;
+      --accent: #3d9e73;
+      --bg: #f2f5f8;
       --card: #ffffff;
-      --text: #1e2a38;
+      --text: #1a2533;
       --muted: #6b7a8d;
-      --border: #dce3ec;
-      --danger: #c0392b;
-      --warning: #e67e22;
-      --success: #27ae60;
-      --shadow: 0 2px 12px rgba(0,0,0,0.08);
+      --border: #dde4ed;
+      --danger: #b83232;
+      --warning: #c97010;
+      --success: #238a52;
+      --shadow: 0 1px 6px rgba(0,0,0,0.07);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 0.9rem;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -38,56 +38,56 @@
     }
     .login-card {
       background: var(--card);
-      border-radius: 16px;
-      box-shadow: var(--shadow);
+      border-radius: 12px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.1);
       padding: 2.5rem 2rem;
       width: 100%;
       max-width: 380px;
       text-align: center;
     }
-    .login-card h1 { font-size: 1.6rem; color: var(--primary); margin-bottom: 0.25rem; }
-    .login-card p { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.75rem; }
+    .login-card h1 { font-size: 1.5rem; color: var(--text); margin-bottom: 0.25rem; font-weight: 700; }
+    .login-card p { color: var(--muted); font-size: 0.875rem; margin-bottom: 1.75rem; }
     .login-card input[type="password"] {
       width: 100%;
-      padding: 0.75rem 1rem;
+      padding: 0.7rem 1rem;
       border: 1.5px solid var(--border);
       border-radius: 8px;
-      font-size: 1rem;
+      font-size: 0.9rem;
       margin-bottom: 1rem;
       outline: none;
       transition: border-color .2s;
     }
     .login-card input[type="password"]:focus { border-color: var(--primary); }
-    .login-error { color: var(--danger); font-size: 0.85rem; margin-bottom: 0.75rem; display: none; }
+    .login-error { color: var(--danger); font-size: 0.8rem; margin-bottom: 0.75rem; display: none; }
     .btn {
       display: inline-block;
-      padding: 0.75rem 1.5rem;
-      border-radius: 8px;
+      padding: 0.65rem 1.25rem;
+      border-radius: 7px;
       border: none;
       cursor: pointer;
-      font-size: 0.95rem;
+      font-size: 0.875rem;
       font-weight: 600;
-      transition: background .2s, transform .1s;
+      transition: background .15s, opacity .15s;
     }
-    .btn:active { transform: scale(0.97); }
+    .btn:active { opacity: 0.85; }
     .btn-primary { background: var(--primary); color: #fff; width: 100%; }
     .btn-primary:hover { background: var(--primary-dark); }
     .btn-accent { background: var(--accent); color: #fff; }
-    .btn-accent:hover { background: var(--accent-dark); }
-    .btn-sm { padding: 0.45rem 1rem; font-size: 0.85rem; }
+    .btn-accent:hover { opacity: 0.88; }
+    .btn-sm { padding: 0.35rem 0.8rem; font-size: 0.8rem; }
     .btn-outline {
       background: transparent;
-      border: 1.5px solid var(--primary);
-      color: var(--primary);
+      border: 1.5px solid var(--border);
+      color: var(--text);
     }
-    .btn-outline:hover { background: var(--primary); color: #fff; }
+    .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
 
     /* ── App Layout ─────────────────────────────────── */
     #app { display: none; }
     .top-bar {
-      background: var(--primary);
+      background: var(--text);
       color: #fff;
-      padding: 0.9rem 1.25rem;
+      padding: 0.8rem 1.25rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -95,33 +95,33 @@
       top: 0;
       z-index: 100;
     }
-    .top-bar h1 { font-size: 1.1rem; font-weight: 700; }
-    .top-bar button { background: rgba(255,255,255,0.15); color: #fff; border: none; border-radius: 6px; padding: 0.4rem 0.75rem; cursor: pointer; font-size: 0.8rem; }
-    .top-bar button:hover { background: rgba(255,255,255,0.25); }
+    .top-bar h1 { font-size: 0.95rem; font-weight: 600; letter-spacing: 0.01em; }
+    .top-bar button { background: rgba(255,255,255,0.12); color: #fff; border: none; border-radius: 6px; padding: 0.35rem 0.7rem; cursor: pointer; font-size: 0.8rem; }
+    .top-bar button:hover { background: rgba(255,255,255,0.2); }
 
     /* ── Tabs ───────────────────────────────────────── */
     .tabs {
       display: flex;
       background: var(--card);
-      border-bottom: 2px solid var(--border);
+      border-bottom: 1px solid var(--border);
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
     }
     .tab-btn {
       flex: 1 0 auto;
-      min-width: 90px;
-      padding: 0.75rem 0.5rem;
+      min-width: 80px;
+      padding: 0.7rem 0.5rem;
       border: none;
       background: transparent;
       color: var(--muted);
       font-size: 0.8rem;
-      font-weight: 600;
+      font-weight: 500;
       cursor: pointer;
-      border-bottom: 3px solid transparent;
-      transition: color .2s, border-color .2s;
+      border-bottom: 2px solid transparent;
+      transition: color .15s, border-color .15s;
       white-space: nowrap;
     }
-    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
 
     .tab-content { display: none; padding: 1rem; max-width: 900px; margin: 0 auto; }
     .tab-content.active { display: block; }
@@ -129,72 +129,72 @@
     /* ── Cards ──────────────────────────────────────── */
     .card {
       background: var(--card);
-      border-radius: 12px;
+      border-radius: 10px;
       box-shadow: var(--shadow);
       padding: 1.25rem;
-      margin-bottom: 1rem;
+      margin-bottom: 0.875rem;
     }
     .card-title {
-      font-size: 0.8rem;
+      font-size: 0.72rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.06em;
       color: var(--muted);
       margin-bottom: 0.75rem;
     }
 
     /* ── Status Banner ──────────────────────────────── */
     .status-banner {
-      border-radius: 12px;
-      padding: 1.25rem 1.5rem;
-      margin-bottom: 1rem;
+      border-radius: 10px;
+      padding: 1.1rem 1.25rem;
+      margin-bottom: 0.875rem;
       color: #fff;
     }
     .status-banner.eligible { background: var(--success); }
     .status-banner.not-eligible { background: var(--primary); }
-    .status-banner h2 { font-size: 1.1rem; margin-bottom: 0.25rem; }
-    .status-banner p { font-size: 0.85rem; opacity: 0.9; }
+    .status-banner h2 { font-size: 1rem; margin-bottom: 0.2rem; font-weight: 700; }
+    .status-banner p { font-size: 0.8rem; opacity: 0.88; }
 
     /* ── Stat Grid ──────────────────────────────────── */
     .stat-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 0.75rem;
-      margin-bottom: 1rem;
+      gap: 0.625rem;
+      margin-bottom: 0.875rem;
     }
     .stat-box {
       background: var(--card);
-      border-radius: 10px;
+      border-radius: 8px;
       box-shadow: var(--shadow);
-      padding: 1rem;
+      padding: 0.875rem;
       text-align: center;
     }
-    .stat-box .label { font-size: 0.72rem; color: var(--muted); font-weight: 600; text-transform: uppercase; margin-bottom: 0.3rem; }
-    .stat-box .value { font-size: 1.4rem; font-weight: 700; color: var(--primary); }
+    .stat-box .label { font-size: 0.72rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.25rem; }
+    .stat-box .value { font-size: 1.35rem; font-weight: 700; color: var(--primary); }
     .stat-box .sub { font-size: 0.75rem; color: var(--muted); margin-top: 0.15rem; }
 
     /* ── Progress Bar ───────────────────────────────── */
-    .progress-wrap { margin: 0.5rem 0 1rem; }
-    .progress-label { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted); margin-bottom: 0.35rem; }
-    .progress-bar { height: 10px; background: var(--border); border-radius: 99px; overflow: hidden; }
-    .progress-fill { height: 100%; border-radius: 99px; transition: width 0.5s ease; }
+    .progress-wrap { margin: 0.5rem 0 0.875rem; }
+    .progress-label { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted); margin-bottom: 0.3rem; }
+    .progress-bar { height: 8px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 99px; transition: width 0.4s ease; }
     .progress-fill.primary { background: var(--primary); }
     .progress-fill.accent { background: var(--accent); }
     .progress-fill.warning { background: var(--warning); }
 
     /* ── Form Elements ──────────────────────────────── */
-    .form-group { margin-bottom: 1rem; }
-    .form-group label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--text); margin-bottom: 0.3rem; }
+    .form-group { margin-bottom: 0.875rem; }
+    .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text); margin-bottom: 0.25rem; }
     .form-group input, .form-group select {
       width: 100%;
-      padding: 0.65rem 0.875rem;
+      padding: 0.6rem 0.875rem;
       border: 1.5px solid var(--border);
-      border-radius: 8px;
-      font-size: 0.95rem;
+      border-radius: 7px;
+      font-size: 0.9rem;
       color: var(--text);
       background: #fff;
       outline: none;
-      transition: border-color .2s;
+      transition: border-color .15s;
     }
     .form-group input:focus, .form-group select:focus { border-color: var(--primary); }
     .form-hint { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
@@ -203,23 +203,23 @@
 
     /* ── DC Plan List ───────────────────────────────── */
     .plan-item {
-      border: 1.5px solid var(--border);
-      border-radius: 10px;
-      padding: 1rem;
-      margin-bottom: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.875rem;
+      margin-bottom: 0.625rem;
     }
-    .plan-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
-    .plan-name { font-weight: 700; font-size: 0.95rem; }
+    .plan-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.625rem; }
+    .plan-name { font-weight: 600; font-size: 0.9rem; }
     .plan-badge {
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 0.2rem 0.5rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
       border-radius: 99px;
       background: var(--primary);
       color: #fff;
     }
     .plan-badge.ira { background: var(--accent); }
-    .plan-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.82rem; }
+    .plan-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.375rem; font-size: 0.8rem; }
     .plan-stat-label { color: var(--muted); }
     .plan-stat-value { font-weight: 600; }
 
@@ -228,7 +228,7 @@
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.45);
+      background: rgba(0,0,0,0.4);
       z-index: 200;
       align-items: center;
       justify-content: center;
@@ -237,20 +237,20 @@
     .modal-overlay.open { display: flex; }
     .modal {
       background: var(--card);
-      border-radius: 14px;
+      border-radius: 12px;
       padding: 1.5rem;
       width: 100%;
       max-width: 420px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
     }
-    .modal h3 { font-size: 1.05rem; margin-bottom: 1rem; color: var(--primary); }
+    .modal h3 { font-size: 1rem; margin-bottom: 1rem; color: var(--text); font-weight: 700; }
     .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; }
 
     /* ── Table ──────────────────────────────────────── */
     .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-    th { background: var(--bg); color: var(--muted); font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.04em; padding: 0.6rem 0.75rem; text-align: left; }
-    td { padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: var(--bg); color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.05em; padding: 0.55rem 0.75rem; text-align: left; }
+    td { font-size: 0.875rem; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text); }
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: var(--bg); }
 
@@ -259,14 +259,14 @@
     canvas { display: block; max-width: 100%; }
 
     /* ── Misc ───────────────────────────────────────── */
-    .divider { height: 1px; background: var(--border); margin: 1rem 0; }
+    .divider { height: 1px; background: var(--border); margin: 0.875rem 0; }
     .text-success { color: var(--success); }
     .text-warning { color: var(--warning); }
     .text-danger { color: var(--danger); }
     .flex-between { display: flex; align-items: center; justify-content: space-between; }
     .mb-1 { margin-bottom: 0.5rem; }
     .mb-2 { margin-bottom: 1rem; }
-    .section-title { font-size: 1rem; font-weight: 700; color: var(--primary); margin-bottom: 0.75rem; }
+    .section-title { font-size: 0.95rem; font-weight: 700; color: var(--text); margin-bottom: 0.75rem; }
   </style>
 </head>
 <body>
@@ -279,7 +279,7 @@
     <div class="login-error" id="login-error">Incorrect password. Please try again.</div>
     <input type="password" id="password-input" placeholder="Password" autocomplete="current-password" />
     <div id="pat-field-wrapper" style="display:none;text-align:left;margin-bottom:1rem;">
-      <input type="password" id="gh-pat-input" placeholder="GitHub Personal Access Token (gist scope)" autocomplete="off" style="width:100%;padding:0.75rem 1rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.9rem;outline:none;box-sizing:border-box;" />
+      <input type="password" id="gh-pat-input" placeholder="GitHub Personal Access Token (gist scope)" autocomplete="off" style="width:100%;padding:0.75rem 1rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.875rem;outline:none;box-sizing:border-box;" />
       <div style="font-size:0.72rem;color:var(--muted);margin-top:0.3rem;">Needed once per browser for automatic data sync. Create one at GitHub → Settings → Developer settings → Personal access tokens → select <strong>gist</strong> scope.</div>
     </div>
     <button class="btn btn-primary" onclick="checkPassword()">Sign In</button>
@@ -308,12 +308,12 @@
     <!-- Person cards -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
       <div class="card" style="margin-bottom:0;">
-        <div style="font-weight:800;font-size:1.05rem;color:var(--primary);margin-bottom:0.6rem;">Brenna</div>
+        <div style="font-weight:800;font-size:1rem;color:var(--primary);margin-bottom:0.6rem;">Brenna</div>
         <div style="font-size:2.2rem;font-weight:700;line-height:1;color:var(--text);" id="dash-brenna-age">—</div>
-        <div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.75rem;" id="dash-brenna-bday"></div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.75rem;" id="dash-brenna-bday"></div>
         <div style="min-height:2.6rem;margin-bottom:0.2rem;">
-          <div style="font-size:0.71rem;color:var(--accent);font-weight:600;line-height:1.4;" id="dash-brenna-purchases"></div>
-          <div style="font-size:0.71rem;color:var(--muted);font-weight:600;" id="dash-brenna-earliest"></div>
+          <div style="font-size:0.72rem;color:var(--accent);font-weight:600;line-height:1.4;" id="dash-brenna-purchases"></div>
+          <div style="font-size:0.72rem;color:var(--muted);font-weight:600;" id="dash-brenna-earliest"></div>
         </div>
         <div class="form-group" style="margin-bottom:0.5rem;">
           <label style="font-size:0.72rem;">Retirement Date</label>
@@ -334,9 +334,9 @@
       </div>
 
       <div class="card" style="margin-bottom:0;">
-        <div style="font-weight:800;font-size:1.05rem;color:var(--primary);margin-bottom:0.6rem;">Kevin</div>
+        <div style="font-weight:800;font-size:1rem;color:var(--primary);margin-bottom:0.6rem;">Kevin</div>
         <div style="font-size:2.2rem;font-weight:700;line-height:1;color:var(--text);" id="dash-kevin-age">—</div>
-        <div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.75rem;" id="dash-kevin-bday"></div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.75rem;" id="dash-kevin-bday"></div>
         <div style="min-height:2.6rem;margin-bottom:0.2rem;"></div>
         <div class="form-group" style="margin-bottom:0.5rem;">
           <label style="font-size:0.72rem;">Retirement Date</label>
@@ -368,9 +368,9 @@
       </div>
       <div id="dash-balances-list"></div>
       <div class="divider"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:0.95rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:1rem;">
         <span>Total</span>
-        <span id="dash-total-bal" style="color:var(--accent);font-size:1.15rem;">—</span>
+        <span id="dash-total-bal" style="color:var(--accent);font-size:1rem;">—</span>
       </div>
     </div>
 
@@ -382,7 +382,7 @@
       </div>
       <div id="dash-income-phases"></div>
       <div id="dash-yearly-wrap" style="display:none;margin-top:0.75rem;overflow-x:auto;">
-        <table style="min-width:620px;font-size:0.78rem;width:100%;border-collapse:collapse;">
+        <table style="min-width:620px;font-size:0.8rem;width:100%;border-collapse:collapse;">
           <thead>
             <tr>
               <th style="padding:0.5rem 0.4rem;">Yr</th>
@@ -453,7 +453,7 @@
       <div class="divider"></div>
 
       <div class="card-title">Pension Formula</div>
-      <div style="font-size:0.9rem; color:var(--muted); margin-bottom:0.75rem;">
+      <div style="font-size:0.875rem; color:var(--muted); margin-bottom:0.75rem;">
         1.61% &times; <strong>Years of Service</strong> &times; <strong>Avg Last 36mo Salary</strong>
       </div>
 
@@ -473,7 +473,7 @@
           <tbody id="purchase-table-body"></tbody>
         </table>
       </div>
-      <div style="margin-top:0.75rem; font-size:0.85rem; color:var(--muted);">
+      <div style="margin-top:0.75rem; font-size:0.8rem; color:var(--muted);">
         Total purchased: <strong id="total-purchased-display">—</strong> years
       </div>
     </div>
@@ -483,14 +483,14 @@
       <div class="flex-between mb-1">
         <div class="section-title" style="margin-bottom:0">Purchase Scenario Planner</div>
       </div>
-      <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.75rem;line-height:1.5;">
+      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.75rem;line-height:1.5;">
         Model future 457B transfers to buy service years. Each purchase window runs <strong>Oct 1 – Sep 30</strong>; the cost is based on your salary from <strong>Jul 1 – Jun 30</strong> of the same year.
         Cost per year = annual salary &times; 13.72%. Projections use your 457B balance, contributions, and rate of return.
       </div>
       <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap;">
         <div style="flex:1;min-width:120px;">
-          <label style="font-size:0.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:0.25rem;">Purchase Window Starting Oct 1…</label>
-          <select id="scenario-year-select" style="width:100%;padding:0.6rem 0.75rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.9rem;color:var(--text);background:#fff;outline:none;"></select>
+          <label style="font-size:0.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:0.25rem;">Purchase Window Starting Oct 1…</label>
+          <select id="scenario-year-select" style="width:100%;padding:0.6rem 0.75rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.875rem;color:var(--text);background:#fff;outline:none;"></select>
         </div>
         <button class="btn btn-accent btn-sm" style="align-self:flex-end;white-space:nowrap;" onclick="addScenarioWindow()">+ Add Window</button>
       </div>
@@ -557,7 +557,7 @@
         <div class="section-title" style="margin-bottom:0;">30-Year Year-by-Year</div>
       </div>
       <div style="overflow-x:auto;width:100%;">
-        <table style="min-width:600px;font-size:0.78rem;">
+        <table style="min-width:600px;font-size:0.8rem;">
           <thead>
             <tr>
               <th style="padding:0.5rem 0.5rem;">Yr</th>
@@ -572,7 +572,7 @@
           <tbody id="yearly-income-tbody"></tbody>
         </table>
       </div>
-      <div style="font-size:0.75rem;color:var(--muted);margin-top:0.5rem;padding:0 0.75rem;">
+      <div style="font-size:0.8rem;color:var(--muted);margin-top:0.5rem;padding:0 0.75rem;">
         Supp. = early retirement supplement (ends when Brenna turns 62). DC balance is start-of-year before withdrawal.
       </div>
     </div>
@@ -635,7 +635,7 @@
   <div id="tab-settings" class="tab-content">
     <div class="card">
       <div class="section-title">Personal Information</div>
-      <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;">Brenna</div>
+      <div style="font-size:0.8rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;">Brenna</div>
       <div class="form-row">
         <div class="form-group">
           <label>Date of Birth</label>
@@ -648,7 +648,7 @@
         </div>
       </div>
       <div class="divider"></div>
-      <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;">Kevin</div>
+      <div style="font-size:0.8rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;">Kevin</div>
       <div class="form-row">
         <div class="form-group">
           <label>Date of Birth</label>
@@ -701,7 +701,7 @@
 
     <div class="card">
       <div class="section-title">Salary &amp; Annual Raises</div>
-      <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;">Brenna — raises effective July 1</div>
+      <div style="font-size:0.8rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;">Brenna — raises effective July 1</div>
       <div class="form-row">
         <div class="form-group">
           <label>Current Monthly Salary ($)</label>
@@ -716,7 +716,7 @@
       </div>
       <div class="form-hint mb-2" id="s-brenna-salary-hint"></div>
       <div class="divider"></div>
-      <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;">Kevin — raises effective January 1</div>
+      <div style="font-size:0.8rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;">Kevin — raises effective January 1</div>
       <div class="form-row">
         <div class="form-group">
           <label>Current Monthly Salary ($)</label>
@@ -750,7 +750,7 @@
 
     <div class="card">
       <div class="section-title">GitHub Sync</div>
-      <div id="gist-sync-status" style="font-size:0.82rem;color:var(--muted);margin-bottom:0.6rem;">Not configured</div>
+      <div id="gist-sync-status" style="font-size:0.8rem;color:var(--muted);margin-bottom:0.6rem;">Not configured</div>
       <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
         <button class="btn btn-outline btn-sm" onclick="syncNow()">Sync Now</button>
         <button class="btn btn-outline btn-sm" onclick="updateGithubPAT()">Update PAT</button>
@@ -769,7 +769,7 @@
         <button class="btn btn-outline btn-sm" onclick="pasteDataFromClipboard()">Paste from Clipboard</button>
         <button class="btn btn-sm" style="background:var(--danger);color:#fff;" onclick="resetData()">Reset All Data</button>
       </div>
-      <div id="data-mgmt-msg" style="font-size:0.78rem;color:var(--primary);margin-top:0.4rem;display:none;"></div>
+      <div id="data-mgmt-msg" style="font-size:0.8rem;color:var(--primary);margin-top:0.4rem;display:none;"></div>
     </div>
   </div>
 </div>
@@ -1261,28 +1261,28 @@ function render() {
     : fmtDec(purchased, 5);
 
   document.getElementById('pension-calc-display').innerHTML = `
-    <div style="background:var(--bg);border-radius:8px;padding:0.75rem;font-size:0.82rem;color:var(--muted);margin-bottom:0.75rem;line-height:1.7;">
+    <div style="background:var(--bg);border-radius:8px;padding:0.75rem;font-size:0.8rem;color:var(--muted);margin-bottom:0.75rem;line-height:1.7;">
       <span style="color:var(--text);font-weight:600;">${fmtDec(formulaAccrued,2)} accrued</span>
       + <span style="color:var(--text);font-weight:600;">${purchasedBreakdown} purchased yrs</span>
       = <span style="color:var(--primary);font-weight:700;">${fmtDec(formulaTotal,2)} total service yrs</span>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;text-align:center;">
       <div>
-        <div style="font-size:0.75rem;color:var(--muted);font-weight:700;text-transform:uppercase;">Total Service</div>
+        <div style="font-size:0.8rem;color:var(--muted);font-weight:700;text-transform:uppercase;">Total Service</div>
         <div style="font-size:1.3rem;font-weight:700;color:var(--primary);">${fmtDec(formulaTotal,2)} yrs</div>
-        <div style="font-size:0.68rem;color:var(--muted);">accrued + purchased</div>
+        <div style="font-size:0.72rem;color:var(--muted);">accrued + purchased</div>
       </div>
       <div>
-        <div style="font-size:0.75rem;color:var(--muted);font-weight:700;text-transform:uppercase;">Avg Salary (capped)</div>
+        <div style="font-size:0.8rem;color:var(--muted);font-weight:700;text-transform:uppercase;">Avg Salary (capped)</div>
         <div style="font-size:1.3rem;font-weight:700;color:var(--primary);">${fmt$(formulaSalary)}/mo</div>
-        <div style="font-size:0.7rem;color:var(--muted);">avg last 36mo</div>
+        <div style="font-size:0.72rem;color:var(--muted);">avg last 36mo</div>
       </div>
       <div>
-        <div style="font-size:0.75rem;color:var(--muted);font-weight:700;text-transform:uppercase;">Monthly Benefit</div>
+        <div style="font-size:0.8rem;color:var(--muted);font-weight:700;text-transform:uppercase;">Monthly Benefit</div>
         <div style="font-size:1.3rem;font-weight:700;color:var(--accent);">${fmt$(formulaPension)}/mo</div>
       </div>
     </div>
-    <div style="margin-top:0.75rem;font-size:0.82rem;color:var(--muted);">
+    <div style="margin-top:0.75rem;font-size:0.8rem;color:var(--muted);">
       Annual benefit: <strong>${fmt$(formulaPension * 12)}</strong>
       &nbsp;·&nbsp; 1.61% × ${fmtDec(formulaTotal,2)} yrs × ${fmt$(formulaSalary)}/mo
     </div>
@@ -1295,8 +1295,8 @@ function render() {
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${p.date}</td><td>${fmtDec(parseFloat(p.years),5)}</td><td>${p.cost ? fmt$(p.cost) : '—'}</td><td>${p.notes || ''}</td>
       <td style="white-space:nowrap;">
-        <button class="btn btn-sm" style="background:var(--primary);color:#fff;padding:0.2rem 0.5rem;font-size:0.7rem;margin-right:0.25rem;" onclick="openEditPurchaseModal(${i})">Edit</button>
-        <button class="btn btn-sm" style="background:var(--danger);color:#fff;padding:0.2rem 0.5rem;font-size:0.7rem;" onclick="deletePurchase(${i})">✕</button>
+        <button class="btn btn-sm" style="background:var(--primary);color:#fff;padding:0.2rem 0.5rem;font-size:0.72rem;margin-right:0.25rem;" onclick="openEditPurchaseModal(${i})">Edit</button>
+        <button class="btn btn-sm" style="background:var(--danger);color:#fff;padding:0.2rem 0.5rem;font-size:0.72rem;" onclick="deletePurchase(${i})">✕</button>
       </td>`;
     tbody.appendChild(tr);
   });
@@ -1928,7 +1928,7 @@ function renderScenarios() {
 
   const scenarios = state.purchaseScenarios || [];
   if (scenarios.length === 0) {
-    container.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;text-align:center;padding:1rem 0;">No scenarios yet. Choose a window above and click "+ Add Window".</div>';
+    container.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;text-align:center;padding:1rem 0;">No scenarios yet. Choose a window above and click "+ Add Window".</div>';
     summary.innerHTML = '';
     return;
   }
@@ -1952,10 +1952,10 @@ function renderScenarios() {
       ${limitWarn}
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem;">
         <div>
-          <div style="font-weight:700;font-size:0.95rem;color:var(--primary);">${r.windowLabel}</div>
-          <div style="font-size:0.73rem;color:var(--muted);">Salary basis: ${r.salaryBasis}</div>
+          <div style="font-weight:700;font-size:1rem;color:var(--primary);">${r.windowLabel}</div>
+          <div style="font-size:0.72rem;color:var(--muted);">Salary basis: ${r.salaryBasis}</div>
         </div>
-        <button class="btn btn-sm" style="background:var(--danger);color:#fff;padding:0.2rem 0.5rem;font-size:0.7rem;flex-shrink:0;margin-left:0.5rem;" onclick="deleteScenario('${s.id}')">✕</button>
+        <button class="btn btn-sm" style="background:var(--danger);color:#fff;padding:0.2rem 0.5rem;font-size:0.72rem;flex-shrink:0;margin-left:0.5rem;" onclick="deleteScenario('${s.id}')">✕</button>
       </div>
 
       <div class="form-row" style="margin-bottom:0.75rem;">
@@ -1974,37 +1974,37 @@ function renderScenarios() {
         </div>
       </div>
 
-      <div style="background:var(--bg);border-radius:8px;padding:0.75rem;display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;font-size:0.82rem;">
+      <div style="background:var(--bg);border-radius:8px;padding:0.75rem;display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;font-size:0.8rem;">
         <div>
-          <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">Cost / Year</div>
+          <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">Cost / Year</div>
           <div style="font-weight:600;">${fmt$(r.costPerYear)}</div>
         </div>
         <div>
-          <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">Total Purchase Cost</div>
+          <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">Total Purchase Cost</div>
           <div style="font-weight:700;color:${affordColor};">${fmt$(r.totalCost)}${affordWarn}</div>
         </div>
         <div>
-          <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">457B Before Transfer</div>
+          <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">457B Before Transfer</div>
           <div style="font-weight:600;">${fmt$(r.balanceBefore)}</div>
         </div>
         <div>
-          <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">457B After Transfer</div>
+          <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">457B After Transfer</div>
           <div style="font-weight:600;color:${affordColor};">${fmt$(r.balanceAfter)}</div>
         </div>
         <div>
-          <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">Total Svc Yrs at Purchase</div>
+          <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">Total Svc Yrs at Purchase</div>
           <div style="font-weight:600;">${fmtDec(r.serviceAtPurchase, 4)}</div>
         </div>
         <div>
-          <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">Rule of 80 at Purchase</div>
+          <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">Rule of 80 at Purchase</div>
           <div style="font-weight:700;color:${eligible ? 'var(--success)' : 'var(--primary)'};">${fmtDec(r.rule80AtPurchase, 2)}${eligible ? ' ✓ Eligible!' : ` / ${state.ruleTarget}`}</div>
         </div>
         <div>
-          <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">Est. Retirement Date</div>
+          <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">Est. Retirement Date</div>
           <div style="font-weight:700;">${r.newRetDate.toLocaleDateString('en-US', retOpts)}</div>
         </div>
         <div>
-          <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">Pension at Retirement</div>
+          <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.15rem;">Pension at Retirement</div>
           <div style="font-weight:700;color:var(--accent);">${fmt$(r.pensionAtRetirement)}/mo</div>
         </div>
       </div>
@@ -2055,21 +2055,21 @@ function renderScenarios() {
 
   summary.innerHTML = `
     <div style="background:var(--primary);color:#fff;border-radius:10px;padding:1.1rem;margin-top:0.5rem;">
-      <div style="font-weight:700;font-size:0.9rem;margin-bottom:0.6rem;opacity:0.85;text-transform:uppercase;letter-spacing:0.04em;">Scenario Summary vs. No Purchases</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;font-size:0.83rem;">
-        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Baseline Retirement</div><div style="font-weight:700;">${baseRetDate.toLocaleDateString('en-US', retOpts2)}</div></div>
-        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Scenario Retirement</div><div style="font-weight:700;">${last.newRetDate.toLocaleDateString('en-US', retOpts2)}</div></div>
-        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Time Saved</div><div style="font-weight:700;">${monthsSaved > 0.5 ? fmtDec(monthsSaved / 12, 1) + ' yrs (' + Math.round(monthsSaved) + ' mo)' : '< 1 month'}</div></div>
-        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Pension Gain / mo (planned)</div><div style="font-weight:700;">${fmt$(pensionGain)}</div></div>
-        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Prior Purchase Cost</div><div style="font-weight:700;">${priorPurchaseCostRaw > 0 ? fmt$(priorPurchaseCostRaw) : '—'}</div></div>
-        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Planned 457B Spent</div><div style="font-weight:700;">${fmt$(totalSpent)}</div></div>
-        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Total Pension Gain / yr (all)</div><div style="font-weight:700;">${fmt$(allPurchasesPensionGainAnnual)}/yr</div></div>
-        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Opp. Cost at Retirement</div><div style="font-weight:700;">${fmt$(totalFVatRetirement)}</div></div>
-        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">4% Draw on Opp. Cost</div><div style="font-weight:700;">${fmt$(draw4pct)}/yr</div></div>
-        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Pension vs 4% Draw</div><div style="font-weight:700;">${allPurchasesPensionGainAnnual > draw4pct ? '+' : ''}${fmt$(allPurchasesPensionGainAnnual - draw4pct)}/yr</div></div>
-        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Break-Even After Ret.</div><div style="font-weight:700;">${breakEvenStr}</div></div>
+      <div style="font-weight:700;font-size:0.875rem;margin-bottom:0.6rem;opacity:0.85;text-transform:uppercase;letter-spacing:0.04em;">Scenario Summary vs. No Purchases</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;font-size:0.8rem;">
+        <div><div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Baseline Retirement</div><div style="font-weight:700;">${baseRetDate.toLocaleDateString('en-US', retOpts2)}</div></div>
+        <div><div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Scenario Retirement</div><div style="font-weight:700;">${last.newRetDate.toLocaleDateString('en-US', retOpts2)}</div></div>
+        <div><div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Time Saved</div><div style="font-weight:700;">${monthsSaved > 0.5 ? fmtDec(monthsSaved / 12, 1) + ' yrs (' + Math.round(monthsSaved) + ' mo)' : '< 1 month'}</div></div>
+        <div><div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Pension Gain / mo (planned)</div><div style="font-weight:700;">${fmt$(pensionGain)}</div></div>
+        <div><div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Prior Purchase Cost</div><div style="font-weight:700;">${priorPurchaseCostRaw > 0 ? fmt$(priorPurchaseCostRaw) : '—'}</div></div>
+        <div><div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Planned 457B Spent</div><div style="font-weight:700;">${fmt$(totalSpent)}</div></div>
+        <div><div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Total Pension Gain / yr (all)</div><div style="font-weight:700;">${fmt$(allPurchasesPensionGainAnnual)}/yr</div></div>
+        <div><div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Opp. Cost at Retirement</div><div style="font-weight:700;">${fmt$(totalFVatRetirement)}</div></div>
+        <div><div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">4% Draw on Opp. Cost</div><div style="font-weight:700;">${fmt$(draw4pct)}/yr</div></div>
+        <div><div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Pension vs 4% Draw</div><div style="font-weight:700;">${allPurchasesPensionGainAnnual > draw4pct ? '+' : ''}${fmt$(allPurchasesPensionGainAnnual - draw4pct)}/yr</div></div>
+        <div><div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Break-Even After Ret.</div><div style="font-weight:700;">${breakEvenStr}</div></div>
       </div>
-      <div style="margin-top:0.75rem;padding:0.55rem 0.75rem;border-radius:7px;font-size:0.82rem;font-weight:700;text-align:center;background:${worthIt ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.18)'};">
+      <div style="margin-top:0.75rem;padding:0.55rem 0.75rem;border-radius:7px;font-size:0.8rem;font-weight:700;text-align:center;background:${worthIt ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.18)'};">
         ${worthIt ? '✓ Purchases worth it — total pension gain exceeds 4% draw on opportunity cost' : '✗ Purchases may not be worth it — total pension gain is below 4% draw on opportunity cost'}
       </div>
       <div style="font-size:0.72rem;opacity:0.7;margin-top:0.5rem;">All-purchases analysis: prior + planned costs grown at ${state.rateOfReturn}% (457B rate) to retirement vs. total pension gained over no purchases. 4% draw = sustainable withdrawal from that invested amount. Enter prior purchase costs via Edit on each purchase record.</div>
@@ -2257,7 +2257,7 @@ function renderIncome() {
   card.className = 'card';
 
   if (!data) {
-    card.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:0.5rem 0;">Set both retirement dates on the Dashboard to see income projection.</div>';
+    card.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;padding:0.5rem 0;">Set both retirement dates on the Dashboard to see income projection.</div>';
     container.appendChild(card);
     return;
   }
@@ -2269,43 +2269,43 @@ function renderIncome() {
   ).join('');
 
   card.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;font-size:0.82rem;margin-bottom:0.75rem;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;font-size:0.8rem;margin-bottom:0.75rem;">
       <div>
-        <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Brenna's Age at Retirement</div>
+        <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Brenna's Age at Retirement</div>
         <div style="font-weight:600;">${data.bnhAgeAtRetire} &nbsp;·&nbsp; Rule of 80: ${fmtDec(data.bnhRule80,2)}</div>
       </div>
       <div>
-        <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Brenna's Service Years</div>
+        <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Brenna's Service Years</div>
         <div style="font-weight:600;">${fmtDec(data.bnhServiceYrs,2)} yrs</div>
       </div>
       <div>
-        <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Brenna's Pension</div>
+        <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Brenna's Pension</div>
         <div style="font-weight:700;color:var(--primary);">${fmt$(data.bnhPensionMo)}/mo &nbsp;·&nbsp; ${fmt$(data.bnhPensionAnnual)}/yr</div>
       </div>
       <div>
-        <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Early Ret. Supplement</div>
+        <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Early Ret. Supplement</div>
         ${data.hasSupp
           ? `<div style="font-weight:700;color:var(--accent);">${fmt$(data.suppMo)}/mo · until ${data.age62Date.toLocaleDateString('en-US',{month:'short',year:'numeric'})}</div>`
           : `<div style="color:var(--muted);">N/A (age 62+)</div>`}
       </div>
       <div>
-        <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Full Retirement Date</div>
+        <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Full Retirement Date</div>
         <div style="font-weight:600;">${data.fullRetDate.toLocaleDateString('en-US',dateOpts)}</div>
       </div>
       <div>
-        <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Total DC at Full Ret.</div>
+        <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Total DC at Full Ret.</div>
         <div style="font-weight:600;">${fmt$(data.totalDCAtFullRet)}</div>
       </div>
       <div>
-        <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">4% Max DC Draw/yr</div>
+        <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">4% Max DC Draw/yr</div>
         <div style="font-weight:600;">${fmt$(data.maxDC4pct)}</div>
       </div>
       <div>
-        <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Combined Income Cap</div>
+        <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Combined Income Cap</div>
         <div style="font-weight:600;">${fmt$(data.combinedCap)}/yr</div>
       </div>
       <div style="grid-column:1/-1;">
-        <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Actual DC Draw (yr 1)</div>
+        <div style="color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Actual DC Draw (yr 1)</div>
         <div style="font-weight:700;${data.dcLimitedByCap ? 'color:var(--warning);' : ''}">${fmt$(data.dcWithdrawal)}/yr${data.dcLimitedByCap ? ' — capped by income limit' : ' — 4% rule applies'}</div>
       </div>
     </div>
@@ -2321,18 +2321,18 @@ function renderIncome() {
     <div style="background:var(--primary);color:#fff;border-radius:10px;padding:1.1rem;">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-bottom:0.75rem;">
         <div>
-          <div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.15rem;">Annual Income (yr 1)</div>
+          <div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.15rem;">Annual Income (yr 1)</div>
           <div style="font-size:1.4rem;font-weight:700;">${fmt$(data.totalAnnual)}</div>
         </div>
         <div>
-          <div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.15rem;">Monthly Income (yr 1)</div>
+          <div style="opacity:0.7;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.15rem;">Monthly Income (yr 1)</div>
           <div style="font-size:1.4rem;font-weight:700;">${fmt$(data.totalMonthly)}</div>
         </div>
       </div>
-      <div style="font-size:0.78rem;opacity:0.85;margin-bottom:0.5rem;">
+      <div style="font-size:0.8rem;opacity:0.85;margin-bottom:0.5rem;">
         Pension ${fmt$(data.bnhPensionAnnual)}${data.hasSupp ? ` + Supplement ${fmt$(data.suppAnnual)}` : ''} + DC ${fmt$(data.dcWithdrawal)} = ${fmt$(data.totalAnnual)}
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:0.3rem;">
+      <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:0.3rem;">
         <span>vs. income cap (${fmt$(data.combinedCap)}/yr)</span>
         <span style="font-weight:700;">${fmtDec(data.capUsedPct,0)}%</span>
       </div>
@@ -2777,9 +2777,9 @@ function renderSummaryTab() {
       const row = document.createElement('div');
       row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;gap:0.75rem;';
       row.innerHTML = `
-        <span style="font-size:0.85rem;color:var(--muted);font-weight:600;min-width:90px;">${plan.name}</span>
+        <span style="font-size:0.8rem;color:var(--muted);font-weight:600;min-width:90px;">${plan.name}</span>
         <input type="text" value="${fmtCurrencyStr(bal)}"
-          style="flex:1;padding:0.4rem 0.65rem;border:1.5px solid var(--border);border-radius:6px;font-size:0.88rem;color:var(--text);background:#fff;outline:none;text-align:right;max-width:170px;"
+          style="flex:1;padding:0.4rem 0.65rem;border:1.5px solid var(--border);border-radius:6px;font-size:0.875rem;color:var(--text);background:#fff;outline:none;text-align:right;max-width:170px;"
           onfocus="onCurrencyFocus(this);this.style.borderColor='var(--primary)'"
           onblur="onCurrencyBlur(this);this.style.borderColor='var(--border)';dashUpdateBalance('${plan.id}',parseCurrencyStr(this.value))" />
       `;
@@ -2791,9 +2791,9 @@ function renderSummaryTab() {
     const pensionRow = document.createElement('div');
     pensionRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;gap:0.75rem;';
     pensionRow.innerHTML = `
-      <span style="font-size:0.85rem;color:var(--muted);font-weight:600;min-width:90px;">PEERS Cash</span>
+      <span style="font-size:0.8rem;color:var(--muted);font-weight:600;min-width:90px;">PEERS Cash</span>
       <input type="text" value="${fmtCurrencyStr(pensionBal)}"
-        style="flex:1;padding:0.4rem 0.65rem;border:1.5px solid var(--border);border-radius:6px;font-size:0.88rem;color:var(--text);background:#fff;outline:none;text-align:right;max-width:170px;"
+        style="flex:1;padding:0.4rem 0.65rem;border:1.5px solid var(--border);border-radius:6px;font-size:0.875rem;color:var(--text);background:#fff;outline:none;text-align:right;max-width:170px;"
         onfocus="onCurrencyFocus(this);this.style.borderColor='var(--primary)'"
         onblur="onCurrencyBlur(this);this.style.borderColor='var(--border)';dashUpdatePensionBalance(parseCurrencyStr(this.value))" />
     `;
@@ -2813,7 +2813,7 @@ function renderSummaryTimeline() {
 
   const timeline = computeSummaryTimeline();
   if (!timeline) {
-    phasesEl.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:0.5rem 0;">Set retirement dates above to see projected income.</div>';
+    phasesEl.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;padding:0.5rem 0;">Set retirement dates above to see projected income.</div>';
     if (tbodyEl) tbodyEl.innerHTML = '';
     return;
   }
@@ -2863,19 +2863,19 @@ function renderSummaryTimeline() {
       : replacePct >= 55 ? 'var(--warning)'
       : 'var(--danger)';
     const replaceStr = replacePct !== null
-      ? `<div style="font-size:0.75rem;font-weight:700;color:${replaceColor};margin-top:0.15rem;">${fmtDec(replacePct, 0)}% income replacement</div>`
+      ? `<div style="font-size:0.8rem;font-weight:700;color:${replaceColor};margin-top:0.15rem;">${fmtDec(replacePct, 0)}% income replacement</div>`
       : '';
 
     const card = document.createElement('div');
     card.style.cssText = 'border:1.5px solid var(--border);border-radius:10px;padding:0.85rem 1rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:flex-start;gap:0.75rem;';
     card.innerHTML = `
       <div style="flex:1;min-width:0;">
-        <div style="font-weight:700;font-size:0.88rem;color:var(--primary);margin-bottom:0.1rem;">${label}</div>
-        <div style="font-size:0.73rem;color:var(--muted);margin-bottom:${parts.length ? '0.35rem' : '0'};">${yearRange}</div>
-        ${parts.length ? `<div style="font-size:0.75rem;color:var(--muted);line-height:1.5;">${parts.join(' · ')}</div>` : ''}
+        <div style="font-weight:700;font-size:0.875rem;color:var(--primary);margin-bottom:0.1rem;">${label}</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-bottom:${parts.length ? '0.35rem' : '0'};">${yearRange}</div>
+        ${parts.length ? `<div style="font-size:0.8rem;color:var(--muted);line-height:1.5;">${parts.join(' · ')}</div>` : ''}
       </div>
       <div style="text-align:right;flex-shrink:0;">
-        <div style="font-size:1.1rem;font-weight:700;color:var(--accent);">${fmt$(r.totalIncome)}/yr</div>
+        <div style="font-size:1rem;font-weight:700;color:var(--accent);">${fmt$(r.totalIncome)}/yr</div>
         <div style="font-size:0.72rem;color:var(--muted);">${fmt$(r.totalIncome / 12)}/mo</div>
         ${replaceStr}
       </div>
@@ -2888,10 +2888,10 @@ function renderSummaryTimeline() {
     tbodyEl.innerHTML = '';
     rows.forEach(r => {
       const bCol = r.brennaRetired
-        ? '<span style="color:var(--muted);font-size:0.75rem;">Retired</span>'
+        ? '<span style="color:var(--muted);font-size:0.8rem;">Retired</span>'
         : fmt$(r.brennaSalIncome);
       const kCol = r.kevinRetired
-        ? '<span style="color:var(--muted);font-size:0.75rem;">Retired</span>'
+        ? '<span style="color:var(--muted);font-size:0.8rem;">Retired</span>'
         : fmt$(r.kevinSalIncome);
       const suppCell = r.suppIncome > 0
         ? `<span style="color:var(--accent);">${fmt$(r.suppIncome)}</span>`
