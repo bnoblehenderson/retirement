@@ -1746,7 +1746,7 @@ function computeScenarios() {
   const maxYears = parseFloat(state.maxPurchasableYears) || 11.50274;
 
   return sorted.map(scenario => {
-    const purchaseDate = new Date(scenario.windowYear, 9, 1); // Oct 1
+    const purchaseDate = new Date(scenario.windowYear, 8, 30); // Sep 30
     const yearsSpan = Math.max(0, (purchaseDate - prevDate) / (365.25 * 24 * 3600 * 1000));
 
     // Project 457B with growing contributions from start of this span
