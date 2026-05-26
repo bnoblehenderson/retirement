@@ -307,12 +307,14 @@
         <div style="font-weight:800;font-size:1.05rem;color:var(--primary);margin-bottom:0.6rem;">Brenna</div>
         <div style="font-size:2.2rem;font-weight:700;line-height:1;color:var(--text);" id="dash-brenna-age">—</div>
         <div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.75rem;" id="dash-brenna-bday"></div>
+        <div style="min-height:2.6rem;margin-bottom:0.2rem;">
+          <div style="font-size:0.71rem;color:var(--accent);font-weight:600;line-height:1.4;" id="dash-brenna-purchases"></div>
+          <div style="font-size:0.71rem;color:var(--muted);font-weight:600;" id="dash-brenna-earliest"></div>
+        </div>
         <div class="form-group" style="margin-bottom:0.5rem;">
           <label style="font-size:0.72rem;">Retirement Date</label>
           <input type="date" id="dash-brenna-retire" onblur="dashUpdateRetire('brenna',this.value)" />
           <div class="form-hint" id="dash-brenna-retire-hint"></div>
-          <div style="font-size:0.71rem;color:var(--accent);font-weight:600;margin-top:0.2rem;line-height:1.4;" id="dash-brenna-purchases"></div>
-          <div style="font-size:0.71rem;color:var(--muted);font-weight:600;margin-top:0.1rem;" id="dash-brenna-earliest"></div>
         </div>
         <div class="form-group" style="margin-bottom:0.5rem;">
           <label style="font-size:0.72rem;">Current Annual Salary ($)</label>
@@ -331,6 +333,7 @@
         <div style="font-weight:800;font-size:1.05rem;color:var(--primary);margin-bottom:0.6rem;">Kevin</div>
         <div style="font-size:2.2rem;font-weight:700;line-height:1;color:var(--text);" id="dash-kevin-age">—</div>
         <div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.75rem;" id="dash-kevin-bday"></div>
+        <div style="min-height:2.6rem;margin-bottom:0.2rem;"></div>
         <div class="form-group" style="margin-bottom:0.5rem;">
           <label style="font-size:0.72rem;">Retirement Date</label>
           <input type="date" id="dash-kevin-retire" onblur="dashUpdateRetire('kevin',this.value)" />
@@ -606,7 +609,7 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Year</th><th>Age</th><th>Svc Yrs</th><th>Rule of 80</th><th>Pension/mo</th><th>DC Balance</th><th>4% DC/yr</th><th>Total Income ≥ 80% cap?</th></tr>
+            <tr><th>Year</th><th>Age</th><th>Svc Yrs</th><th>Rule of 80</th><th>Pension/mo</th><th>BNH DC</th><th>KH DC</th><th>4% DC/yr</th><th>Meets 70% Goal?</th></tr>
           </thead>
           <tbody id="proj-table-body"></tbody>
         </table>
@@ -972,6 +975,44 @@ function projectDC(currentBalance, annualContrib, years, rate) {
   return currentBalance * growth + annualContrib * (growth - 1) / r;
 }
 
+// Growing annuity: pmt grows at growthRate per year (decimal, e.g. 0.03)
+function projectDCGrowing(balance, annualContrib, years, rate, growthRate) {
+  const r = rate / 100;
+  const g = growthRate;
+  const n = years;
+  if (n <= 0) return balance;
+  const rv = Math.pow(1 + r, n);
+  if (annualContrib === 0) return balance * rv;
+  if (Math.abs(r - g) < 1e-9) return balance * rv + annualContrib * n * Math.pow(1 + r, n - 1);
+  const gv = Math.pow(1 + g, n);
+  return balance * rv + annualContrib * (rv - gv) / (r - g);
+}
+
+// Monthly salary cap at a given date, growing $500/year from base cap
+function pensionCapAt(date) {
+  const baseCap = parseFloat(state.pensionSalaryCap) || 0;
+  if (!baseCap) return 0;
+  const currentYear = new Date().getFullYear();
+  const targetYear = new Date(date).getFullYear();
+  return baseCap + Math.max(0, targetYear - currentYear) * 500;
+}
+
+// Nice chart Y-axis: returns {maxVal, step} where maxVal is a round multiple of step
+function computeNiceAxis(rawMax) {
+  if (rawMax <= 0) return { maxVal: 4e6, step: 1e6 };
+  const rough = rawMax / 4;
+  const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+  let step = mag;
+  for (const m of [1, 2, 5, 10]) { if (m * mag >= rough) { step = m * mag; break; } }
+  return { maxVal: Math.ceil(rawMax / step) * step, step };
+}
+
+function fmtAxisY(v) {
+  if (v >= 1e6) return '$' + (v / 1e6).toFixed(v % 1e6 === 0 ? 0 : 1) + 'M';
+  if (v >= 1e3) return '$' + (v / 1e3).toFixed(v % 1e3 === 0 ? 0 : 1) + 'K';
+  return '$' + Math.round(v);
+}
+
 // ── Salary Projection ──────────────────────────────────────
 // raiseMonth: 1=Jan (Kevin), 7=Jul (Brenna)
 function salaryAtDate(baseMonthlySalary, annualRaisePct, raiseMonth, targetDate) {
@@ -1007,7 +1048,7 @@ function kevinSalaryAt(targetDate) {
 
 function cappedPensionSalary(date) {
   const avg36 = brennaAvg36Month(date);
-  const cap = parseFloat(state.pensionSalaryCap) || 0;
+  const cap = pensionCapAt(date);
   return cap > 0 ? Math.min(avg36, cap) : avg36;
 }
 
@@ -1320,7 +1361,8 @@ function renderDCPlans() {
     const annualContrib = (parseFloat(plan.contribPerPeriod) || 0) * (plan.semiMonthly ? 24 : state.payPeriodsPerYear);
     const retDate = retirementDate(state.dob, state.pensionStartDate, getTotalPurchasedYears());
     const yearsToRet = Math.max(0, (retDate - today()) / (365.25 * 24 * 3600 * 1000));
-    const projected = projectDC(parseFloat(plan.balance) || 0, annualContrib, yearsToRet, ror);
+    const planGrowth = plan.id === 'kh401k' ? (state.kevinAnnualRaisePct || 3) / 100 : (state.brennaAnnualRaisePct || 3) / 100;
+    const projected = projectDCGrowing(parseFloat(plan.balance) || 0, annualContrib, yearsToRet, ror, planGrowth);
 
     const badge = plan.type === 'IRA' ? 'plan-badge ira' : 'plan-badge';
     const div = document.createElement('div');
@@ -1487,41 +1529,45 @@ function renderProjectionChart() {
   const startYear = state.projectionStartYear || new Date().getFullYear();
   const years = state.projectionYears || 20;
   const purchased = getTotalPurchasedYears();
-  const ror = state.rateOfReturn / 100;
 
-  const labels = [], dcData = [], pensionData = [], rule80Data = [], dcDraw4pctData = [], meetsTargetData = [];
+  const labels = [], bnhDCData = [], khDCData = [], dcData = [], pensionData = [], rule80Data = [], dcDraw4pctData = [], meetsTargetData = [];
 
-  const annualContrib = state.plans.reduce((s, p) => {
-    const periods = p.semiMonthly ? 24 : state.payPeriodsPerYear;
-    return s + (parseFloat(p.contribPerPeriod) || 0) * periods;
-  }, 0);
+  // Split plans by person for growing-contribution projection
+  const bnhPlans = state.plans.filter(p => p.id !== 'kh401k');
+  const khPlans  = state.plans.filter(p => p.id === 'kh401k');
+  const bnhBal0  = bnhPlans.reduce((s, p) => s + (parseFloat(p.balance) || 0), 0);
+  const khBal0   = khPlans.reduce((s,  p) => s + (parseFloat(p.balance) || 0), 0);
+  const bnhContrib0 = bnhPlans.reduce((s, p) => s + (parseFloat(p.contribPerPeriod) || 0) * (p.semiMonthly ? 24 : state.payPeriodsPerYear), 0);
+  const khContrib0  = khPlans.reduce((s,  p) => s + (parseFloat(p.contribPerPeriod) || 0) * (p.semiMonthly ? 24 : state.payPeriodsPerYear), 0);
+  const bnhGrowth = (state.brennaAnnualRaisePct || 3) / 100;
+  const khGrowth  = (state.kevinAnnualRaisePct  || 3) / 100;
 
   for (let i = 0; i <= years; i++) {
     const yr = startYear + i;
-    const atDate = new Date(yr, 0, 1);
+    const atDate = new Date(yr, 11, 31); // 12/31 year-end
     const svc = getServiceYears(state.pensionStartDate, atDate, purchased);
     const ageDec = getAgeDecimal(state.dob, atDate);
     const r80 = ageDec + svc;
-    // Use per-year projected capped salary for accurate pension estimate
     const pensionSalAtDate = cappedPensionSalary(atDate);
     const pension = pensionMonthly(svc, pensionSalAtDate);
 
-    // DC projection from now to this point
-    const yearsFromNow = (atDate - today()) / (365.25 * 24 * 3600 * 1000);
-    const dcBal = projectDC(totalDCBalance(), annualContrib, Math.max(0, yearsFromNow), state.rateOfReturn);
+    const yearsFromNow = Math.max(0, (atDate - today()) / (365.25 * 24 * 3600 * 1000));
+    const bnhDC = projectDCGrowing(bnhBal0, bnhContrib0, yearsFromNow, state.rateOfReturn, bnhGrowth);
+    const khDC  = projectDCGrowing(khBal0,  khContrib0,  yearsFromNow, state.rateOfReturn, khGrowth);
+    const dcBal = bnhDC + khDC;
 
     const draw4pct = dcBal * 0.04;
     const pensionAnnual = pension * 12;
     const totalRetireIncome = pensionAnnual + draw4pct;
 
-    // Combined terminal salary at this year
     const bTermAnnual = brennaSalaryAt(atDate) * 12;
     const kTermAnnual = kevinSalaryAt(atDate) * 12;
     const combinedTermSalary = bTermAnnual + kTermAnnual;
-    const target80 = combinedTermSalary * 0.80;
-    const meetsTarget = combinedTermSalary > 0 && totalRetireIncome >= target80;
+    const meetsTarget = combinedTermSalary > 0 && totalRetireIncome >= combinedTermSalary * 0.70;
 
     labels.push(yr.toString());
+    bnhDCData.push(Math.round(bnhDC));
+    khDCData.push(Math.round(khDC));
     dcData.push(Math.round(dcBal));
     pensionData.push(Math.round(pensionAnnual));
     rule80Data.push(parseFloat(r80.toFixed(2)));
@@ -1533,7 +1579,7 @@ function renderProjectionChart() {
   const tbody = document.getElementById('proj-table-body');
   tbody.innerHTML = '';
   labels.forEach((yr, i) => {
-    const atDate = new Date(parseInt(yr), 0, 1);
+    const atDate = new Date(parseInt(yr), 11, 31);
     const eligible = rule80Data[i] >= state.ruleTarget;
     const meets = meetsTargetData[i];
     const totalIncome = pensionData[i] + dcDraw4pctData[i];
@@ -1544,14 +1590,15 @@ function renderProjectionChart() {
       <td>${fmtDec(getServiceYears(state.pensionStartDate, atDate, purchased), 2)}</td>
       <td class="${eligible ? 'text-success' : ''}" style="font-weight:${eligible?'700':'400'}">${fmtDec(rule80Data[i],2)}${eligible?' ✓':''}</td>
       <td>${fmt$(pensionData[i]/12)}</td>
-      <td>${fmt$(dcData[i])}</td>
+      <td>${fmt$(bnhDCData[i])}</td>
+      <td>${fmt$(khDCData[i])}</td>
       <td>${fmt$(dcDraw4pctData[i])}</td>
       <td style="font-weight:700;color:${meets ? 'var(--success)' : 'var(--muted)'};">${fmt$(totalIncome)}${meets ? ' ✓' : ''}</td>
     `;
     tbody.appendChild(tr);
   });
 
-  // Canvas chart (minimal built-in chart)
+  // Canvas chart
   const canvas = document.getElementById('projection-chart');
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
@@ -1567,21 +1614,21 @@ function renderProjectionChart() {
   const PAD = { top: 20, right: 20, bottom: 40, left: 70 };
   const cW = W - PAD.left - PAD.right;
   const cH = H - PAD.top - PAD.bottom;
-  const maxVal = Math.max(...dcData, ...pensionData) * 1.1 || 1;
+  const { maxVal, step } = computeNiceAxis(Math.max(...dcData, ...pensionData) || 1e6);
 
   const xPos = (i) => PAD.left + (i / (labels.length - 1)) * cW;
   const yPos = (v) => PAD.top + cH - (v / maxVal) * cH;
 
-  // Grid lines
+  // Grid lines at round tick values
   ctx.strokeStyle = '#dce3ec';
   ctx.lineWidth = 1;
-  for (let g = 0; g <= 4; g++) {
-    const y = PAD.top + (g / 4) * cH;
+  for (let v = 0; v <= maxVal + step * 0.01; v += step) {
+    const y = yPos(v);
     ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(PAD.left + cW, y); ctx.stroke();
     ctx.fillStyle = '#6b7a8d';
     ctx.font = '10px sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText(fmt$(maxVal * (4 - g) / 4), PAD.left - 5, y + 4);
+    ctx.fillText(fmtAxisY(v), PAD.left - 5, y + 4);
   }
 
   // X labels
@@ -1682,29 +1729,34 @@ function computeScenarios() {
   const sorted = [...(state.purchaseScenarios || [])].sort((a, b) => a.windowYear - b.windowYear);
   const plan457 = state.plans.find(p => p.id === 'bnh457b') || {};
   let balance457 = parseFloat(plan457.balance) || 0;
-  const annualContrib457 = (parseFloat(plan457.contribPerPeriod) || 0) * 24;
+  const annualContrib457Base = (parseFloat(plan457.contribPerPeriod) || 0) * 24;
+  const bnhGrowth = (state.brennaAnnualRaisePct || 3) / 100;
   let prevDate = today();
+  let totalYearsElapsed = 0;
   let cumulativePurchased = getTotalPurchasedYears();
+  const maxYears = parseFloat(state.maxPurchasableYears) || 11.50274;
 
   return sorted.map(scenario => {
     const purchaseDate = new Date(scenario.windowYear, 9, 1); // Oct 1
     const yearsSpan = Math.max(0, (purchaseDate - prevDate) / (365.25 * 24 * 3600 * 1000));
 
-    // Project 457B from previous milestone to this purchase date
-    const balanceBefore = projectDC(balance457, annualContrib457, yearsSpan, state.rateOfReturn);
+    // Project 457B with growing contributions from start of this span
+    const contribAtSpanStart = annualContrib457Base * Math.pow(1 + bnhGrowth, totalYearsElapsed);
+    const balanceBefore = projectDCGrowing(balance457, contribAtSpanStart, yearsSpan, state.rateOfReturn, bnhGrowth);
 
-    // Use scenario's entered salary, but fall back to projected salary if 0
-    // Salary cap (monthly) also applies to the purchase cost basis
+    // Salary cap grows $500/yr; applies to purchase cost basis
     const rawAnnualSalary = (parseFloat(scenario.annualSalary) > 0)
       ? parseFloat(scenario.annualSalary)
       : brennaSalaryAt(purchaseDate) * 12;
-    const salaryCap = parseFloat(state.pensionSalaryCap) || 0;
+    const salaryCap = pensionCapAt(purchaseDate);
     const effectiveAnnualSalary = salaryCap > 0 ? Math.min(rawAnnualSalary, salaryCap * 12) : rawAnnualSalary;
     const costPerYear = effectiveAnnualSalary * 0.1372;
     const totalCost = (parseFloat(scenario.yearsToPurchase) || 0) * costPerYear;
     const canAfford = balanceBefore >= totalCost;
     const balanceAfter = balanceBefore - totalCost;
 
+    const cumulativeBefore = cumulativePurchased;
+    const maxAvailableThisWindow = Math.max(0, maxYears - cumulativeBefore);
     cumulativePurchased += parseFloat(scenario.yearsToPurchase) || 0;
 
     // Rule of 80 at the purchase date with cumulative purchased years
@@ -1722,13 +1774,15 @@ function computeScenarios() {
     const windowLabel = `October 1, ${scenario.windowYear} – September 30, ${scenario.windowYear + 1}`;
 
     // Advance state for next iteration
+    totalYearsElapsed += yearsSpan;
     balance457 = Math.max(0, balanceAfter);
     prevDate = purchaseDate;
 
     return {
       scenario, purchaseDate, salaryBasis, windowLabel,
       balanceBefore, costPerYear, totalCost, canAfford, balanceAfter,
-      cumulativePurchased, serviceAtPurchase, ageAtPurchase, rule80AtPurchase,
+      cumulativePurchased, cumulativeBefore, maxAvailableThisWindow,
+      serviceAtPurchase, ageAtPurchase, rule80AtPurchase,
       newRetDate, serviceAtRetirement, pensionAtRetirement,
     };
   });
@@ -1784,7 +1838,7 @@ function renderScenarios() {
           <label>Years to Purchase</label>
           <input type="number" value="${s.yearsToPurchase}" step="0.1" min="0" max="10"
             onchange="updateScenario('${s.id}', 'yearsToPurchase', this.value)" />
-          <div class="form-hint">Total eligible limit: ${fmtDec(state.maxPurchasableYears, 5)} yrs (incl. purchased)</div>
+          <div class="form-hint">Max available this window: ${fmtDec(r.maxAvailableThisWindow, 4)} yrs (of ${fmtDec(state.maxPurchasableYears, 5)} limit)</div>
         </div>
       </div>
 
@@ -1923,9 +1977,10 @@ function computeIncomeScenario(scenario) {
     const yearsToRetire = Math.max(0, (planRetDate - now) / (365.25 * 24 * 3600 * 1000));
     const annualContrib = (parseFloat(plan.contribPerPeriod) || 0) * (plan.semiMonthly ? 24 : state.payPeriodsPerYear);
     const retROR = state.retirementROR !== undefined ? state.retirementROR : 4;
-    let bal = projectDC(parseFloat(plan.balance) || 0, annualContrib, yearsToRetire, state.rateOfReturn);
+    const planGrowth = plan.id === 'kh401k' ? (state.kevinAnnualRaisePct || 3) / 100 : (state.brennaAnnualRaisePct || 3) / 100;
+    let bal = projectDCGrowing(parseFloat(plan.balance) || 0, annualContrib, yearsToRetire, state.rateOfReturn, planGrowth);
     const yearsCoast = Math.max(0, (fullRetDate - planRetDate) / (365.25 * 24 * 3600 * 1000));
-    if (yearsCoast > 0) bal = projectDC(bal, 0, yearsCoast, retROR);
+    if (yearsCoast > 0) bal = projectDCGrowing(bal, 0, yearsCoast, retROR, 0);
     planDetails.push({ name: plan.name, type: plan.type, projectedBalance: bal });
     totalDCAtFullRet += bal;
   });
@@ -2506,8 +2561,8 @@ function renderSummaryTimeline() {
 
     const replacePct = combinedCap > 0 ? (r.totalIncome / combinedCap) * 100 : null;
     const replaceColor = replacePct === null ? 'var(--muted)'
-      : replacePct >= 80 ? 'var(--success)'
-      : replacePct >= 65 ? 'var(--warning)'
+      : replacePct >= 70 ? 'var(--success)'
+      : replacePct >= 55 ? 'var(--warning)'
       : 'var(--danger)';
     const replaceStr = replacePct !== null
       ? `<div style="font-size:0.75rem;font-weight:700;color:${replaceColor};margin-top:0.15rem;">${fmtDec(replacePct, 0)}% income replacement</div>`
@@ -2546,8 +2601,8 @@ function renderSummaryTimeline() {
       const dashSpan = v => v > 0 ? fmt$(v) : '<span style="color:var(--muted);">—</span>';
       const replacePct = combinedCap > 0 ? (r.totalIncome / combinedCap) * 100 : null;
       const replaceColor = replacePct === null ? 'var(--muted)'
-        : replacePct >= 80 ? 'var(--success)'
-        : replacePct >= 65 ? 'var(--warning)'
+        : replacePct >= 70 ? 'var(--success)'
+        : replacePct >= 55 ? 'var(--warning)'
         : 'var(--danger)';
       const tr = document.createElement('tr');
       tr.innerHTML = `
