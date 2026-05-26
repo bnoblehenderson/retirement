@@ -1031,7 +1031,7 @@ function pensionCapAt(date) {
   if (!baseCap) return 0;
   const currentYear = new Date().getFullYear();
   const targetYear = new Date(date).getFullYear();
-  return baseCap + Math.max(0, targetYear - currentYear) * 500;
+  return Math.max(0, baseCap + (targetYear - currentYear) * 500);
 }
 
 // Nice chart Y-axis: returns {maxVal, step} where maxVal is a round multiple of step
