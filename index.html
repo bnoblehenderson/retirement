@@ -278,6 +278,10 @@
     <p>Enter your password to continue</p>
     <div class="login-error" id="login-error">Incorrect password. Please try again.</div>
     <input type="password" id="password-input" placeholder="Password" autocomplete="current-password" />
+    <div id="pat-field-wrapper" style="display:none;text-align:left;margin-bottom:1rem;">
+      <input type="password" id="gh-pat-input" placeholder="GitHub Personal Access Token (gist scope)" autocomplete="off" style="width:100%;padding:0.75rem 1rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.9rem;outline:none;box-sizing:border-box;" />
+      <div style="font-size:0.72rem;color:var(--muted);margin-top:0.3rem;">Needed once per browser for automatic data sync. Create one at GitHub → Settings → Developer settings → Personal access tokens → select <strong>gist</strong> scope.</div>
+    </div>
     <button class="btn btn-primary" onclick="checkPassword()">Sign In</button>
   </div>
 </div>
@@ -745,14 +749,24 @@
     </div>
 
     <div class="card">
-      <div class="section-title">Data Management</div>
+      <div class="section-title">GitHub Sync</div>
+      <div id="gist-sync-status" style="font-size:0.82rem;color:var(--muted);margin-bottom:0.6rem;">Not configured</div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+        <button class="btn btn-outline btn-sm" onclick="syncNow()">Sync Now</button>
+        <button class="btn btn-outline btn-sm" onclick="updateGithubPAT()">Update PAT</button>
+        <button class="btn btn-sm" style="background:var(--danger);color:#fff;" onclick="disconnectGist()">Disconnect</button>
+      </div>
+      <div style="font-size:0.72rem;color:var(--muted);">Data is automatically pushed to a private GitHub Gist after every change and pulled on every login.</div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Data Backup</div>
       <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
         <button class="btn btn-outline btn-sm" onclick="exportData()">Export JSON</button>
         <button class="btn btn-outline btn-sm" onclick="document.getElementById('import-file').click()">Import JSON</button>
         <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)" />
         <button class="btn btn-outline btn-sm" onclick="copyDataToClipboard()">Copy to Clipboard</button>
         <button class="btn btn-outline btn-sm" onclick="pasteDataFromClipboard()">Paste from Clipboard</button>
-        <button class="btn btn-outline btn-sm" onclick="copyShareLink()">Copy Share Link</button>
         <button class="btn btn-sm" style="background:var(--danger);color:#fff;" onclick="resetData()">Reset All Data</button>
       </div>
       <div id="data-mgmt-msg" style="font-size:0.78rem;color:var(--primary);margin-top:0.4rem;display:none;"></div>
@@ -872,6 +886,7 @@ function loadState() {
 
 function saveState() {
   localStorage.setItem('retirementState', JSON.stringify(state));
+  scheduleGistSync();
 }
 
 function saveAndRender() {
@@ -887,12 +902,18 @@ const PWD_HASH = 'Henderson2022';
 
 function checkPassword() {
   const val = document.getElementById('password-input').value;
+  const patInput = document.getElementById('gh-pat-input');
+  const pat = patInput ? patInput.value.trim() : '';
   if (val === PWD_HASH) {
+    if (pat) storePAT(pat);
     localStorage.setItem('rp_auth', '1');
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     document.getElementById('login-error').style.display = 'none';
     init();
+    const storedPat = getStoredPAT();
+    if (storedPat) initialGistSync(storedPat);
+    else setSyncStatus('Not configured — add a GitHub PAT in Settings to enable sync');
   } else {
     document.getElementById('login-error').style.display = 'block';
     document.getElementById('password-input').value = '';
@@ -2380,29 +2401,124 @@ function pasteDataFromClipboard() {
   }).catch(() => showDataMsg('Could not read clipboard — try Import JSON instead.', true));
 }
 
-function stateToHash() {
-  return btoa(encodeURIComponent(JSON.stringify(state)));
+// ══════════════════════════════════════════════════════════════
+//  GITHUB GIST SYNC
+// ══════════════════════════════════════════════════════════════
+const GIST_FILENAME = 'retirement-planner-bnh.json';
+
+function getStoredPAT()    { return localStorage.getItem('rp_gh_pat') || ''; }
+function storePAT(token)   { token ? localStorage.setItem('rp_gh_pat', token) : localStorage.removeItem('rp_gh_pat'); }
+function getStoredGistId() { return localStorage.getItem('rp_gist_id') || ''; }
+function storeGistId(id)   { id ? localStorage.setItem('rp_gist_id', id) : localStorage.removeItem('rp_gist_id'); }
+
+function gistHeaders(pat) {
+  return { 'Authorization': `token ${pat}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' };
 }
 
-function copyShareLink() {
-  const url = location.origin + location.pathname + '#data=' + stateToHash();
-  navigator.clipboard.writeText(url)
-    .then(() => showDataMsg('Share link copied! Open it on any browser to load your data.'))
-    .catch(() => showDataMsg('Copy failed.', true));
+async function findOrCreateGist(pat) {
+  // Search existing gists for our filename
+  const resp = await fetch('https://api.github.com/gists?per_page=100', { headers: gistHeaders(pat) });
+  if (!resp.ok) throw new Error('GitHub API error ' + resp.status);
+  const list = await resp.json();
+  const found = list.find(g => g.files && g.files[GIST_FILENAME]);
+  if (found) return found.id;
+  // Create a new private gist
+  const create = await fetch('https://api.github.com/gists', {
+    method: 'POST', headers: gistHeaders(pat),
+    body: JSON.stringify({ description: 'Retirement Planner Data', public: false,
+      files: { [GIST_FILENAME]: { content: JSON.stringify(state, null, 2) } } })
+  });
+  if (!create.ok) throw new Error('Failed to create gist');
+  return (await create.json()).id;
 }
 
-function loadFromHash() {
+async function pullFromGist(pat, gistId) {
+  const resp = await fetch(`https://api.github.com/gists/${gistId}`, { headers: gistHeaders(pat) });
+  if (!resp.ok) return null;
+  const data = await resp.json();
+  const file = data.files && data.files[GIST_FILENAME];
+  if (!file || !file.content) return null;
+  return JSON.parse(file.content);
+}
+
+async function pushToGist(pat, gistId) {
+  await fetch(`https://api.github.com/gists/${gistId}`, {
+    method: 'PATCH', headers: gistHeaders(pat),
+    body: JSON.stringify({ files: { [GIST_FILENAME]: { content: JSON.stringify(state, null, 2) } } })
+  });
+}
+
+function setSyncStatus(msg, isError) {
+  const el = document.getElementById('gist-sync-status');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = isError ? 'var(--danger)' : 'var(--muted)';
+}
+
+let _syncDebounceTimer = null;
+function scheduleGistSync() {
+  const pat = getStoredPAT();
+  if (!pat) return;
+  clearTimeout(_syncDebounceTimer);
+  _syncDebounceTimer = setTimeout(async () => {
+    try {
+      let gistId = getStoredGistId();
+      if (!gistId) { gistId = await findOrCreateGist(pat); storeGistId(gistId); }
+      await pushToGist(pat, gistId);
+      setSyncStatus('Synced ' + new Date().toLocaleTimeString());
+    } catch (e) {
+      console.warn('Gist sync failed:', e);
+      setSyncStatus('Sync failed — check PAT', true);
+    }
+  }, 1500);
+}
+
+async function initialGistSync(pat) {
+  setSyncStatus('Syncing…');
   try {
-    const match = location.hash.match(/[#&]data=([^&]*)/);
-    if (!match) return false;
-    const decoded = JSON.parse(decodeURIComponent(atob(match[1])));
-    if (!decoded || typeof decoded !== 'object') return false;
-    if (!confirm('A shared retirement plan was detected in the URL. Load it? (Your current data will be replaced.)')) return false;
-    state = decoded;
-    saveState(); render();
-    history.replaceState(null, '', location.pathname);
-    return true;
-  } catch { return false; }
+    let gistId = getStoredGistId();
+    if (!gistId) { gistId = await findOrCreateGist(pat); storeGistId(gistId); }
+    const remote = await pullFromGist(pat, gistId);
+    if (remote) {
+      state = remote;
+      localStorage.setItem('retirementState', JSON.stringify(state));
+      render();
+    } else {
+      await pushToGist(pat, gistId);
+    }
+    setSyncStatus('Synced ' + new Date().toLocaleTimeString());
+  } catch (e) {
+    console.warn('Initial sync failed:', e);
+    setSyncStatus('Sync failed — check your PAT in Settings', true);
+  }
+}
+
+async function syncNow() {
+  const pat = getStoredPAT();
+  if (!pat) { setSyncStatus('No PAT configured — log out and log back in to add one.', true); return; }
+  setSyncStatus('Syncing…');
+  try {
+    let gistId = getStoredGistId();
+    if (!gistId) { gistId = await findOrCreateGist(pat); storeGistId(gistId); }
+    await pushToGist(pat, gistId);
+    setSyncStatus('Synced ' + new Date().toLocaleTimeString());
+  } catch (e) { setSyncStatus('Sync failed', true); }
+}
+
+function updateGithubPAT() {
+  const pat = prompt('Enter your GitHub Personal Access Token (gist scope):', getStoredPAT());
+  if (pat === null) return;
+  storePAT(pat.trim());
+  storeGistId('');
+  if (pat.trim()) initialGistSync(pat.trim());
+  else setSyncStatus('Not configured');
+}
+
+function disconnectGist() {
+  if (!confirm('Disconnect GitHub sync? Your local data will remain but will no longer sync automatically.')) return;
+  storePAT('');
+  storeGistId('');
+  setSyncStatus('Not configured');
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2864,7 +2980,6 @@ function dashToggleYearly() {
 // ══════════════════════════════════════════════════════════════
 function init() {
   loadState();
-  loadFromHash();
   if (!state.projectionStartYear) state.projectionStartYear = new Date().getFullYear();
   document.getElementById('proj-start-year').value = state.projectionStartYear;
 
@@ -2891,6 +3006,12 @@ if (localStorage.getItem('rp_auth') === '1') {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   init();
+  const _autoPat = getStoredPAT();
+  if (_autoPat) initialGistSync(_autoPat);
+  else setSyncStatus('Not configured — add a GitHub PAT in Settings to enable sync');
+} else {
+  // Show PAT field on login screen only when not yet stored
+  if (!getStoredPAT()) document.getElementById('pat-field-wrapper').style.display = 'block';
 }
 </script>
 </body>
