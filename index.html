@@ -1559,8 +1559,9 @@ function renderProjectionChart() {
     const svc = getServiceYears(state.pensionStartDate, atDate, purchased);
     const ageDec = getAgeDecimal(state.dob, atDate);
     const r80 = ageDec + svc;
+    const eligible = r80 >= state.ruleTarget;
     const pensionSalAtDate = cappedPensionSalary(atDate);
-    const pension = pensionMonthly(svc, pensionSalAtDate);
+    const pension = eligible ? pensionMonthly(svc, pensionSalAtDate) : 0;
 
     const yearsFromNow = Math.max(0, (atDate - today()) / (365.25 * 24 * 3600 * 1000));
     const bnhDC = projectDCGrowing(bnhBal0, bnhContrib0, yearsFromNow, state.rateOfReturn, bnhGrowth);
