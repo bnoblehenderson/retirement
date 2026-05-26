@@ -315,7 +315,7 @@
           <div class="form-hint" id="dash-brenna-retire-hint"></div>
         </div>
         <div class="form-group" style="margin-bottom:0.5rem;">
-          <label style="font-size:0.72rem;">Annual Salary ($)</label>
+          <label style="font-size:0.72rem;">Current Annual Salary ($)</label>
           <input type="text" id="dash-brenna-salary"
             onfocus="onCurrencyFocus(this)"
             onblur="onCurrencyBlur(this);dashUpdateSalary('brenna',parseCurrencyStr(this.value))" />
@@ -337,7 +337,7 @@
           <div class="form-hint" id="dash-kevin-retire-hint"></div>
         </div>
         <div class="form-group" style="margin-bottom:0.5rem;">
-          <label style="font-size:0.72rem;">Annual Salary ($)</label>
+          <label style="font-size:0.72rem;">Current Annual Salary ($)</label>
           <input type="text" id="dash-kevin-salary"
             onfocus="onCurrencyFocus(this)"
             onblur="onCurrencyBlur(this);dashUpdateSalary('kevin',parseCurrencyStr(this.value))" />
@@ -1130,24 +1130,39 @@ function render() {
       : projStr;
   }
 
+  // Pension formula uses the primary retirement date (if set), falling back to Rule of 80 date
+  const formulaRetDate = pensionRetDate; // already computed above
+  const formulaAccrued = Math.max(0, (formulaRetDate - new Date(state.pensionStartDate)) / (365.25 * 24 * 3600 * 1000));
+  const formulaPurchased = purchased;
+  const formulaTotal = formulaAccrued + formulaPurchased;
+  const formulaSalary = cappedPensionSalary(formulaRetDate);
+  const formulaPension = pensionMonthly(formulaTotal, formulaSalary);
+
   document.getElementById('pension-calc-display').innerHTML = `
+    <div style="background:var(--bg);border-radius:8px;padding:0.75rem;font-size:0.82rem;color:var(--muted);margin-bottom:0.75rem;line-height:1.7;">
+      <span style="color:var(--text);font-weight:600;">${fmtDec(formulaAccrued,2)} accrued</span>
+      + <span style="color:var(--text);font-weight:600;">${fmtDec(formulaPurchased,5)} purchased</span>
+      = <span style="color:var(--primary);font-weight:700;">${fmtDec(formulaTotal,2)} total service yrs</span>
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;text-align:center;">
       <div>
-        <div style="font-size:0.75rem;color:var(--muted);font-weight:700;text-transform:uppercase;">Service at Retirement</div>
-        <div style="font-size:1.3rem;font-weight:700;color:var(--primary);">${fmtDec(serviceAtRet,2)} yrs</div>
+        <div style="font-size:0.75rem;color:var(--muted);font-weight:700;text-transform:uppercase;">Total Service</div>
+        <div style="font-size:1.3rem;font-weight:700;color:var(--primary);">${fmtDec(formulaTotal,2)} yrs</div>
+        <div style="font-size:0.68rem;color:var(--muted);">accrued + purchased</div>
       </div>
       <div>
-        <div style="font-size:0.75rem;color:var(--muted);font-weight:700;text-transform:uppercase;">Avg Salary</div>
-        <div style="font-size:1.3rem;font-weight:700;color:var(--primary);">${fmt$(salaryForPension)}/mo</div>
+        <div style="font-size:0.75rem;color:var(--muted);font-weight:700;text-transform:uppercase;">Avg Salary (capped)</div>
+        <div style="font-size:1.3rem;font-weight:700;color:var(--primary);">${fmt$(formulaSalary)}/mo</div>
         <div style="font-size:0.7rem;color:var(--muted);">avg last 36mo</div>
       </div>
       <div>
         <div style="font-size:0.75rem;color:var(--muted);font-weight:700;text-transform:uppercase;">Monthly Benefit</div>
-        <div style="font-size:1.3rem;font-weight:700;color:var(--accent);">${fmt$(pensionAtRet)}/mo</div>
+        <div style="font-size:1.3rem;font-weight:700;color:var(--accent);">${fmt$(formulaPension)}/mo</div>
       </div>
     </div>
     <div style="margin-top:0.75rem;font-size:0.82rem;color:var(--muted);">
-      Annual benefit: <strong>${fmt$(pensionAtRet * 12)}</strong>
+      Annual benefit: <strong>${fmt$(formulaPension * 12)}</strong>
+      &nbsp;·&nbsp; 1.61% × ${fmtDec(formulaTotal,2)} yrs × ${fmt$(formulaSalary)}/mo
     </div>
   `;
 
@@ -1625,7 +1640,7 @@ function populateScenarioYearSelect() {
     if (!usedYears.has(yr)) {
       const opt = document.createElement('option');
       opt.value = yr;
-      opt.textContent = `${yr} — Oct 1, ${yr} to Sep 30, ${yr + 1}`;
+      opt.textContent = `October 1, ${yr} – September 30, ${yr + 1}`;
       sel.appendChild(opt);
     }
   }
@@ -1679,9 +1694,12 @@ function computeScenarios() {
     const balanceBefore = projectDC(balance457, annualContrib457, yearsSpan, state.rateOfReturn);
 
     // Use scenario's entered salary, but fall back to projected salary if 0
-    const effectiveAnnualSalary = (parseFloat(scenario.annualSalary) > 0)
+    // Salary cap (monthly) also applies to the purchase cost basis
+    const rawAnnualSalary = (parseFloat(scenario.annualSalary) > 0)
       ? parseFloat(scenario.annualSalary)
       : brennaSalaryAt(purchaseDate) * 12;
+    const salaryCap = parseFloat(state.pensionSalaryCap) || 0;
+    const effectiveAnnualSalary = salaryCap > 0 ? Math.min(rawAnnualSalary, salaryCap * 12) : rawAnnualSalary;
     const costPerYear = effectiveAnnualSalary * 0.1372;
     const totalCost = (parseFloat(scenario.yearsToPurchase) || 0) * costPerYear;
     const canAfford = balanceBefore >= totalCost;
@@ -1701,7 +1719,7 @@ function computeScenarios() {
 
     // Salary basis period label
     const salaryBasis = `Jul 1, ${scenario.windowYear} – Jun 30, ${scenario.windowYear + 1}`;
-    const windowLabel = `${scenario.windowYear} Purchase Window (Oct 1, ${scenario.windowYear} – Sep 30, ${scenario.windowYear + 1})`;
+    const windowLabel = `October 1, ${scenario.windowYear} – September 30, ${scenario.windowYear + 1}`;
 
     // Advance state for next iteration
     balance457 = Math.max(0, balanceAfter);
