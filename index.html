@@ -375,7 +375,7 @@
       </div>
       <div id="dash-income-phases"></div>
       <div id="dash-yearly-wrap" style="display:none;margin-top:0.75rem;overflow-x:auto;">
-        <table style="min-width:580px;font-size:0.78rem;width:100%;border-collapse:collapse;">
+        <table style="min-width:620px;font-size:0.78rem;width:100%;border-collapse:collapse;">
           <thead>
             <tr>
               <th style="padding:0.5rem 0.4rem;">Yr</th>
@@ -385,6 +385,7 @@
               <th style="padding:0.5rem 0.4rem;">Supp.</th>
               <th style="padding:0.5rem 0.4rem;">DC Draw</th>
               <th style="padding:0.5rem 0.4rem;">Total/yr</th>
+              <th style="padding:0.5rem 0.4rem;">Replace%</th>
             </tr>
           </thead>
           <tbody id="dash-yearly-tbody"></tbody>
@@ -1903,9 +1904,10 @@ function computeIncomeScenario(scenario) {
     const planRetDate  = plan.id === 'kh401k' ? khRetDate : bnhRetDate;
     const yearsToRetire = Math.max(0, (planRetDate - now) / (365.25 * 24 * 3600 * 1000));
     const annualContrib = (parseFloat(plan.contribPerPeriod) || 0) * (plan.semiMonthly ? 24 : state.payPeriodsPerYear);
+    const retROR = state.retirementROR !== undefined ? state.retirementROR : 4;
     let bal = projectDC(parseFloat(plan.balance) || 0, annualContrib, yearsToRetire, state.rateOfReturn);
     const yearsCoast = Math.max(0, (fullRetDate - planRetDate) / (365.25 * 24 * 3600 * 1000));
-    if (yearsCoast > 0) bal = projectDC(bal, 0, yearsCoast, state.rateOfReturn);
+    if (yearsCoast > 0) bal = projectDC(bal, 0, yearsCoast, retROR);
     planDetails.push({ name: plan.name, type: plan.type, projectedBalance: bal });
     totalDCAtFullRet += bal;
   });
@@ -2465,6 +2467,7 @@ function renderSummaryTimeline() {
 
   // Phase summary cards
   phasesEl.innerHTML = '';
+  const combinedCap = timeline.combinedCap;
   phases.forEach(phase => {
     const r = phase.firstRow;
     let label = '';
@@ -2483,6 +2486,15 @@ function renderSummaryTimeline() {
     if (!phase.kevinRetired  && r.kevinSalIncome  > 0) parts.push(`Kevin ${fmt$(r.kevinSalIncome)}/yr`);
     if (r.dcDraw > 0)                                  parts.push(`DC ${fmt$(r.dcDraw)}/yr`);
 
+    const replacePct = combinedCap > 0 ? (r.totalIncome / combinedCap) * 100 : null;
+    const replaceColor = replacePct === null ? 'var(--muted)'
+      : replacePct >= 80 ? 'var(--success)'
+      : replacePct >= 65 ? 'var(--warning)'
+      : 'var(--danger)';
+    const replaceStr = replacePct !== null
+      ? `<div style="font-size:0.75rem;font-weight:700;color:${replaceColor};margin-top:0.15rem;">${fmtDec(replacePct, 0)}% income replacement</div>`
+      : '';
+
     const card = document.createElement('div');
     card.style.cssText = 'border:1.5px solid var(--border);border-radius:10px;padding:0.85rem 1rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:flex-start;gap:0.75rem;';
     card.innerHTML = `
@@ -2494,6 +2506,7 @@ function renderSummaryTimeline() {
       <div style="text-align:right;flex-shrink:0;">
         <div style="font-size:1.1rem;font-weight:700;color:var(--accent);">${fmt$(r.totalIncome)}/yr</div>
         <div style="font-size:0.72rem;color:var(--muted);">${fmt$(r.totalIncome / 12)}/mo</div>
+        ${replaceStr}
       </div>
     `;
     phasesEl.appendChild(card);
@@ -2513,6 +2526,11 @@ function renderSummaryTimeline() {
         ? `<span style="color:var(--accent);">${fmt$(r.suppIncome)}</span>`
         : '<span style="color:var(--muted);">—</span>';
       const dashSpan = v => v > 0 ? fmt$(v) : '<span style="color:var(--muted);">—</span>';
+      const replacePct = combinedCap > 0 ? (r.totalIncome / combinedCap) * 100 : null;
+      const replaceColor = replacePct === null ? 'var(--muted)'
+        : replacePct >= 80 ? 'var(--success)'
+        : replacePct >= 65 ? 'var(--warning)'
+        : 'var(--danger)';
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${r.yr}</td>
@@ -2522,6 +2540,7 @@ function renderSummaryTimeline() {
         <td>${suppCell}</td>
         <td>${dashSpan(r.dcDraw)}</td>
         <td style="font-weight:700;">${fmt$(r.totalIncome)}</td>
+        <td style="font-weight:700;color:${replaceColor};">${replacePct !== null ? fmtDec(replacePct, 0) + '%' : '—'}</td>
       `;
       tbodyEl.appendChild(tr);
     });
