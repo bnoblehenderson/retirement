@@ -609,7 +609,7 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Year</th><th>Age</th><th>Svc Yrs</th><th>Rule of 80</th><th>Pension/mo</th><th>BNH DC</th><th>KH DC</th><th>4% DC/yr</th><th>Meets 70% Goal?</th></tr>
+            <tr><th>Year</th><th>Age</th><th>Svc Yrs</th><th>Rule of 80</th><th>Pension/yr</th><th>BNH DC</th><th>KH DC</th><th>4% DC/yr</th><th>Meets 70% Goal?</th></tr>
           </thead>
           <tbody id="proj-table-body"></tbody>
         </table>
@@ -1601,7 +1601,7 @@ function renderProjectionChart() {
       <td>${getAge(state.dob, atDate)}</td>
       <td>${fmtDec(getServiceYears(state.pensionStartDate, atDate, purchased), 2)}</td>
       <td class="${eligible ? 'text-success' : ''}" style="font-weight:${eligible?'700':'400'}">${fmtDec(rule80Data[i],2)}${eligible?' ✓':''}</td>
-      <td>${fmt$(pensionData[i]/12)}</td>
+      <td>${fmt$(pensionData[i])}</td>
       <td>${fmt$(bnhDCData[i])}</td>
       <td>${fmt$(khDCData[i])}</td>
       <td>${fmt$(dcDraw4pctData[i])}</td>
