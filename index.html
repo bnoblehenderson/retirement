@@ -1171,18 +1171,27 @@ function render() {
       : projStr;
   }
 
-  // Pension formula uses the primary retirement date (if set), falling back to Rule of 80 date
-  const formulaRetDate = pensionRetDate; // already computed above
+  // Include planned purchases from scenarios in formula
+  const plannedYears = (state.purchaseScenarios || []).reduce((s, sc) => s + (parseFloat(sc.yearsToPurchase) || 0), 0);
+  const totalPurchasedWithPlanned = purchased + plannedYears;
+
+  // Retirement date should reflect planned purchases too (unless primary date is set)
+  const formulaRetDate = state.bnhPrimaryRetireDate
+    ? new Date(state.bnhPrimaryRetireDate)
+    : retirementDate(state.dob, state.pensionStartDate, totalPurchasedWithPlanned);
   const formulaAccrued = Math.max(0, (formulaRetDate - new Date(state.pensionStartDate)) / (365.25 * 24 * 3600 * 1000));
-  const formulaPurchased = purchased;
-  const formulaTotal = formulaAccrued + formulaPurchased;
+  const formulaTotal = formulaAccrued + totalPurchasedWithPlanned;
   const formulaSalary = cappedPensionSalary(formulaRetDate);
   const formulaPension = pensionMonthly(formulaTotal, formulaSalary);
+
+  const purchasedBreakdown = plannedYears > 0
+    ? `${fmtDec(purchased,4)} actual + ${fmtDec(plannedYears,4)} planned = ${fmtDec(totalPurchasedWithPlanned,4)}`
+    : fmtDec(purchased, 5);
 
   document.getElementById('pension-calc-display').innerHTML = `
     <div style="background:var(--bg);border-radius:8px;padding:0.75rem;font-size:0.82rem;color:var(--muted);margin-bottom:0.75rem;line-height:1.7;">
       <span style="color:var(--text);font-weight:600;">${fmtDec(formulaAccrued,2)} accrued</span>
-      + <span style="color:var(--text);font-weight:600;">${fmtDec(formulaPurchased,5)} purchased</span>
+      + <span style="color:var(--text);font-weight:600;">${purchasedBreakdown} purchased yrs</span>
       = <span style="color:var(--primary);font-weight:700;">${fmtDec(formulaTotal,2)} total service yrs</span>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;text-align:center;">
