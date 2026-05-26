@@ -605,7 +605,7 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Year</th><th>Age</th><th>Service Yrs</th><th>Rule of 80</th><th>Pension/mo</th><th>DC Balance</th></tr>
+            <tr><th>Year</th><th>Age</th><th>Svc Yrs</th><th>Rule of 80</th><th>Pension/mo</th><th>DC Balance</th><th>4% DC/yr</th><th>Total Income ≥ 80% cap?</th></tr>
           </thead>
           <tbody id="proj-table-body"></tbody>
         </table>
@@ -1473,7 +1473,12 @@ function renderProjectionChart() {
   const purchased = getTotalPurchasedYears();
   const ror = state.rateOfReturn / 100;
 
-  const labels = [], dcData = [], pensionData = [], rule80Data = [];
+  const labels = [], dcData = [], pensionData = [], rule80Data = [], dcDraw4pctData = [], meetsTargetData = [];
+
+  const annualContrib = state.plans.reduce((s, p) => {
+    const periods = p.semiMonthly ? 24 : state.payPeriodsPerYear;
+    return s + (parseFloat(p.contribPerPeriod) || 0) * periods;
+  }, 0);
 
   for (let i = 0; i <= years; i++) {
     const yr = startYear + i;
@@ -1481,20 +1486,31 @@ function renderProjectionChart() {
     const svc = getServiceYears(state.pensionStartDate, atDate, purchased);
     const ageDec = getAgeDecimal(state.dob, atDate);
     const r80 = ageDec + svc;
-    const pension = pensionMonthly(svc, state.pensionFinalSalary);
+    // Use per-year projected capped salary for accurate pension estimate
+    const pensionSalAtDate = cappedPensionSalary(atDate);
+    const pension = pensionMonthly(svc, pensionSalAtDate);
 
     // DC projection from now to this point
     const yearsFromNow = (atDate - today()) / (365.25 * 24 * 3600 * 1000);
-    const annualContrib = state.plans.reduce((s, p) => {
-      const periods = p.semiMonthly ? 24 : state.payPeriodsPerYear;
-      return s + (parseFloat(p.contribPerPeriod) || 0) * periods;
-    }, 0);
     const dcBal = projectDC(totalDCBalance(), annualContrib, Math.max(0, yearsFromNow), state.rateOfReturn);
+
+    const draw4pct = dcBal * 0.04;
+    const pensionAnnual = pension * 12;
+    const totalRetireIncome = pensionAnnual + draw4pct;
+
+    // Combined terminal salary at this year
+    const bTermAnnual = brennaSalaryAt(atDate) * 12;
+    const kTermAnnual = kevinSalaryAt(atDate) * 12;
+    const combinedTermSalary = bTermAnnual + kTermAnnual;
+    const target80 = combinedTermSalary * 0.80;
+    const meetsTarget = combinedTermSalary > 0 && totalRetireIncome >= target80;
 
     labels.push(yr.toString());
     dcData.push(Math.round(dcBal));
-    pensionData.push(Math.round(pension * 12));
+    pensionData.push(Math.round(pensionAnnual));
     rule80Data.push(parseFloat(r80.toFixed(2)));
+    dcDraw4pctData.push(Math.round(draw4pct));
+    meetsTargetData.push(meetsTarget);
   }
 
   // Build year-by-year table
@@ -1503,6 +1519,8 @@ function renderProjectionChart() {
   labels.forEach((yr, i) => {
     const atDate = new Date(parseInt(yr), 0, 1);
     const eligible = rule80Data[i] >= state.ruleTarget;
+    const meets = meetsTargetData[i];
+    const totalIncome = pensionData[i] + dcDraw4pctData[i];
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${yr}</td>
@@ -1511,6 +1529,8 @@ function renderProjectionChart() {
       <td class="${eligible ? 'text-success' : ''}" style="font-weight:${eligible?'700':'400'}">${fmtDec(rule80Data[i],2)}${eligible?' ✓':''}</td>
       <td>${fmt$(pensionData[i]/12)}</td>
       <td>${fmt$(dcData[i])}</td>
+      <td>${fmt$(dcDraw4pctData[i])}</td>
+      <td style="font-weight:700;color:${meets ? 'var(--success)' : 'var(--muted)'};">${fmt$(totalIncome)}${meets ? ' ✓' : ''}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -2270,7 +2290,10 @@ function renderSummaryTab() {
   const bAgeEl = document.getElementById('dash-brenna-age');
   if (bAgeEl) bAgeEl.textContent = getAge(state.dob, now);
   const bBdayEl = document.getElementById('dash-brenna-bday');
-  if (bBdayEl) bBdayEl.textContent = new Date(state.dob).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  if (bBdayEl) {
+    const [by, bm, bd] = state.dob.split('-').map(Number);
+    bBdayEl.textContent = new Date(by, bm - 1, bd).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  }
 
   // Future purchase scenarios from Pension tab
   const scenarios = state.purchaseScenarios || [];
@@ -2311,7 +2334,11 @@ function renderSummaryTab() {
   const kAgeEl = document.getElementById('dash-kevin-age');
   if (kAgeEl) kAgeEl.textContent = getAge(state.khDob || state.dob, now);
   const kBdayEl = document.getElementById('dash-kevin-bday');
-  if (kBdayEl) kBdayEl.textContent = new Date(state.khDob || state.dob).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  if (kBdayEl) {
+    const kDob = state.khDob || state.dob;
+    const [ky, km, kd] = kDob.split('-').map(Number);
+    kBdayEl.textContent = new Date(ky, km - 1, kd).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  }
 
   // Retirement date inputs + hints
   const bRetEl = document.getElementById('dash-brenna-retire');
