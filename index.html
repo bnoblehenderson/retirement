@@ -1998,20 +1998,35 @@ function renderScenarios() {
   const totalSpent = results.reduce((s, r) => s + r.totalCost, 0);
   const retOpts2 = { year: 'numeric', month: 'short', day: 'numeric' };
 
-  // Break-even: FV of each purchase cost at retirement, growing at 457B ROR
+  // Break-even: FV of ALL purchase costs (prior + planned) at retirement, growing at 457B ROR
   const r457b = (state.rateOfReturn || 0) / 100;
   const bnhRetDateForBreakEven = state.bnhPrimaryRetireDate ? new Date(state.bnhPrimaryRetireDate) : last.newRetDate;
   let totalFVatRetirement = 0;
+  // Planned purchase scenarios
   results.forEach(sc => {
     const purchaseDate = new Date(sc.scenario.windowYear + 1, 8, 30);
     const yearsToRet = Math.max(0, (bnhRetDateForBreakEven - purchaseDate) / (365.25 * 24 * 3600 * 1000));
     totalFVatRetirement += sc.totalCost * Math.pow(1 + r457b, yearsToRet);
   });
-  const pensionGainAnnual = pensionGain * 12;
-  const simpleBreakEven = pensionGainAnnual > 0 ? totalFVatRetirement / pensionGainAnnual : Infinity;
+  // Prior (already completed) purchases
+  let priorPurchaseCostRaw = 0;
+  state.servicePurchases.forEach(p => {
+    const cost = parseFloat(p.cost) || 0;
+    if (cost <= 0) return;
+    priorPurchaseCostRaw += cost;
+    const purchaseDate = new Date(p.date);
+    const yearsToRet = Math.max(0, (bnhRetDateForBreakEven - purchaseDate) / (365.25 * 24 * 3600 * 1000));
+    totalFVatRetirement += cost * Math.pow(1 + r457b, yearsToRet);
+  });
+  // Pension gain from ALL purchases vs truly no purchases (at final scenario retirement date)
+  const noPurchaseService = getServiceYears(state.pensionStartDate, last.newRetDate, 0);
+  const noPurchasePension = pensionMonthly(noPurchaseService, state.pensionFinalSalary);
+  const allPurchasesPensionGainAnnual = (last.pensionAtRetirement - noPurchasePension) * 12;
+  const pensionGainAnnual = pensionGain * 12; // planned scenarios only (for per-scenario display)
+  const simpleBreakEven = allPurchasesPensionGainAnnual > 0 ? totalFVatRetirement / allPurchasesPensionGainAnnual : Infinity;
   const breakEvenStr = simpleBreakEven < Infinity ? fmtDec(simpleBreakEven, 1) + ' yrs' : 'N/A';
   const draw4pct = totalFVatRetirement * 0.04;
-  const worthIt = pensionGainAnnual > 0 && pensionGainAnnual > draw4pct;
+  const worthIt = allPurchasesPensionGainAnnual > 0 && allPurchasesPensionGainAnnual > draw4pct;
 
   summary.innerHTML = `
     <div style="background:var(--primary);color:#fff;border-radius:10px;padding:1.1rem;margin-top:0.5rem;">
@@ -2020,18 +2035,19 @@ function renderScenarios() {
         <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Baseline Retirement</div><div style="font-weight:700;">${baseRetDate.toLocaleDateString('en-US', retOpts2)}</div></div>
         <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Scenario Retirement</div><div style="font-weight:700;">${last.newRetDate.toLocaleDateString('en-US', retOpts2)}</div></div>
         <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Time Saved</div><div style="font-weight:700;">${monthsSaved > 0.5 ? fmtDec(monthsSaved / 12, 1) + ' yrs (' + Math.round(monthsSaved) + ' mo)' : '< 1 month'}</div></div>
-        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Pension Gain / mo</div><div style="font-weight:700;">${fmt$(pensionGain)}</div></div>
-        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Total 457B Spent</div><div style="font-weight:700;">${fmt$(totalSpent)}</div></div>
-        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Added Pension (Annual)</div><div style="font-weight:700;">${fmt$(pensionGainAnnual)}/yr</div></div>
+        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Pension Gain / mo (planned)</div><div style="font-weight:700;">${fmt$(pensionGain)}</div></div>
+        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Prior Purchase Cost</div><div style="font-weight:700;">${priorPurchaseCostRaw > 0 ? fmt$(priorPurchaseCostRaw) : '—'}</div></div>
+        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Planned 457B Spent</div><div style="font-weight:700;">${fmt$(totalSpent)}</div></div>
+        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Total Pension Gain / yr (all)</div><div style="font-weight:700;">${fmt$(allPurchasesPensionGainAnnual)}/yr</div></div>
         <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Opp. Cost at Retirement</div><div style="font-weight:700;">${fmt$(totalFVatRetirement)}</div></div>
         <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">4% Draw on Opp. Cost</div><div style="font-weight:700;">${fmt$(draw4pct)}/yr</div></div>
-        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Added Pension vs 4% Draw</div><div style="font-weight:700;">${pensionGainAnnual > draw4pct ? '+' : ''}${fmt$(pensionGainAnnual - draw4pct)}/yr</div></div>
+        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Pension vs 4% Draw</div><div style="font-weight:700;">${allPurchasesPensionGainAnnual > draw4pct ? '+' : ''}${fmt$(allPurchasesPensionGainAnnual - draw4pct)}/yr</div></div>
         <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Break-Even After Ret.</div><div style="font-weight:700;">${breakEvenStr}</div></div>
       </div>
       <div style="margin-top:0.75rem;padding:0.55rem 0.75rem;border-radius:7px;font-size:0.82rem;font-weight:700;text-align:center;background:${worthIt ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.18)'};">
-        ${worthIt ? '✓ Purchases worth it — pension gain exceeds 4% draw on opportunity cost' : '✗ Purchases may not be worth it — pension gain is below 4% draw on opportunity cost'}
+        ${worthIt ? '✓ Purchases worth it — total pension gain exceeds 4% draw on opportunity cost' : '✗ Purchases may not be worth it — total pension gain is below 4% draw on opportunity cost'}
       </div>
-      <div style="font-size:0.72rem;opacity:0.7;margin-top:0.5rem;">Opportunity cost = purchase costs grown at ${state.rateOfReturn}% (457B rate) to retirement. 4% draw = what you could sustainably withdraw from that invested amount. Break-even = years of added pension to fully recover the cost.</div>
+      <div style="font-size:0.72rem;opacity:0.7;margin-top:0.5rem;">All-purchases analysis: prior + planned costs grown at ${state.rateOfReturn}% (457B rate) to retirement vs. total pension gained over no purchases. 4% draw = sustainable withdrawal from that invested amount. Enter prior purchase costs via Edit on each purchase record.</div>
     </div>
   `;
 }
