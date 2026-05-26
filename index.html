@@ -1614,6 +1614,10 @@ function renderProjectionChart() {
     unlockDate: (p.id === 'kh401k') ? kevinUnlockDate : (p.id === 'bnh457b' ? null : brennaUnlockDate),
   }));
 
+  // Effective retirement dates (contributions stop here) — used for draw eligibility
+  const bnhEffRetireDate = planMeta.find(p => p.id === 'bnh457b').contribStopDate;
+  const khEffRetireDate  = planMeta.find(p => p.id === 'kh401k').contribStopDate;
+
   for (let i = 0; i <= years; i++) {
     const yr = startYear + i;
     const atDate = new Date(yr, 11, 31); // 12/31 year-end
@@ -1637,8 +1641,15 @@ function renderProjectionChart() {
       if (pm.isBrenna) bnhDC += bal; else khDC += bal;
     }
     const dcBal = bnhDC + khDC;
-    // 457B has no per-account withdrawal limit; draw = 4% of total DC balance
-    const draw4pct = dcBal * 0.04;
+
+    // Draw base: only retired person's DC plans count toward 4% limit
+    const brennaRetiredNow = atDate >= bnhEffRetireDate;
+    const kevinRetiredNow  = atDate >= khEffRetireDate;
+    const drawBase = (brennaRetiredNow && kevinRetiredNow) ? dcBal
+                   : brennaRetiredNow ? bnhDC
+                   : kevinRetiredNow  ? khDC
+                   : dcBal; // pre-retirement: show hypothetical full-draw
+    const draw4pct = drawBase * 0.04;
 
     const pensionAnnual = pension * 12;
     const totalRetireIncome = pensionAnnual + draw4pct;
