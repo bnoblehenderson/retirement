@@ -1628,7 +1628,6 @@ function renderProjectionChart() {
 
     // Project each plan, stopping contributions at owner retirement; add extra 401A from overage
     let bnhDC = 0, khDC = 0;
-    let accessibleDC = 0;
     for (const pm of planMeta) {
       const yearsContrib = Math.max(0, Math.min(yearsFromNow, (pm.contribStopDate - today()) / (365.25 * 24 * 3600 * 1000)));
       const yearsCoast   = Math.max(0, yearsFromNow - yearsContrib);
@@ -1636,11 +1635,10 @@ function renderProjectionChart() {
       if (yearsCoast > 0) bal = projectDCGrowing(bal, 0, yearsCoast, state.rateOfReturn, 0);
       if (pm.id === 'bnh401a') bal += computeExtra401AFV(atDate, state.rateOfReturn);
       if (pm.isBrenna) bnhDC += bal; else khDC += bal;
-      const isUnlocked = !pm.unlockDate || atDate >= pm.unlockDate;
-      if (isUnlocked) accessibleDC += bal;
     }
     const dcBal = bnhDC + khDC;
-    const draw4pct = Math.min(dcBal * 0.04, accessibleDC);
+    // 457B has no per-account withdrawal limit; draw = 4% of total DC balance
+    const draw4pct = dcBal * 0.04;
 
     const pensionAnnual = pension * 12;
     const totalRetireIncome = pensionAnnual + draw4pct;
