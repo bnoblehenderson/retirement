@@ -1368,9 +1368,11 @@ function renderDCPlans() {
 
   state.plans.forEach(plan => {
     const annualContrib = (parseFloat(plan.contribPerPeriod) || 0) * (plan.semiMonthly ? 24 : state.payPeriodsPerYear);
-    const retDate = retirementDate(state.dob, state.pensionStartDate, getTotalPurchasedYears());
-    const yearsToRet = Math.max(0, (retDate - today()) / (365.25 * 24 * 3600 * 1000));
     const planGrowth = plan.id === 'kh401k' ? (state.kevinAnnualRaisePct || 3) / 100 : (state.brennaAnnualRaisePct || 3) / 100;
+    const planRetDate = plan.id === 'kh401k'
+      ? (state.khPrimaryRetireDate ? new Date(state.khPrimaryRetireDate) : (() => { const d = new Date(state.khDob); d.setFullYear(d.getFullYear() + (state.khRetireAge || 62)); return d; })())
+      : retirementDate(state.dob, state.pensionStartDate, getTotalPurchasedYears());
+    const yearsToRet = Math.max(0, (planRetDate - today()) / (365.25 * 24 * 3600 * 1000));
     const projected = projectDCGrowing(parseFloat(plan.balance) || 0, annualContrib, yearsToRet, ror, planGrowth);
 
     const badge = plan.type === 'IRA' ? 'plan-badge ira' : 'plan-badge';
@@ -1746,7 +1748,7 @@ function computeScenarios() {
   const maxYears = parseFloat(state.maxPurchasableYears) || 11.50274;
 
   return sorted.map(scenario => {
-    const purchaseDate = new Date(scenario.windowYear, 8, 30); // Sep 30
+    const purchaseDate = new Date(scenario.windowYear + 1, 8, 30); // Sep 30 (last day of window)
     const yearsSpan = Math.max(0, (purchaseDate - prevDate) / (365.25 * 24 * 3600 * 1000));
 
     // Project 457B with growing contributions from start of this span
