@@ -1635,9 +1635,9 @@ function renderProjectionChart() {
   ctx.fillStyle = '#6b7a8d';
   ctx.font = '10px sans-serif';
   ctx.textAlign = 'center';
-  const step = Math.max(1, Math.floor(labels.length / 8));
+  const xLabelStep = Math.max(1, Math.floor(labels.length / 8));
   labels.forEach((l, i) => {
-    if (i % step === 0 || i === labels.length - 1) {
+    if (i % xLabelStep === 0 || i === labels.length - 1) {
       ctx.fillText(l, xPos(i), H - PAD.bottom + 18);
     }
   });
