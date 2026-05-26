@@ -431,7 +431,13 @@
         <input type="text" id="p-salary-cap"
           onfocus="onCurrencyFocus(this)"
           onblur="onCurrencyBlur(this);saveAndRender()" />
-        <div class="form-hint">If projected avg salary exceeds this cap, the cap is used instead.</div>
+        <div class="form-hint">If projected avg salary exceeds this cap, the cap is used instead. Cap grows $500/yr.</div>
+      </div>
+
+      <div class="form-group">
+        <label>Excess Salary → 401A Contribution Rate (%)</label>
+        <input type="number" id="p-excess401a-rate" step="1" min="0" max="100" onchange="saveAndRender()" />
+        <div class="form-hint">% of salary above the cap automatically contributed to BNH 401A.</div>
       </div>
 
       <div class="form-group">
@@ -816,6 +822,7 @@ const DEFAULT_STATE = {
   pensionSalaryCap: 30000,
   pensionCashBalance: 0,
   balanceAsOf: '',
+  excess401ARate: 0.20,
 };
 
 let state = {};
@@ -844,6 +851,7 @@ function loadState() {
       if (state.khRetireAge === undefined) state.khRetireAge = 62;
       if (state.maxPurchasableYears === undefined) state.maxPurchasableYears = 11.50274;
       if (state.retirementROR === undefined) state.retirementROR = 4;
+      if (state.excess401ARate === undefined) state.excess401ARate = 0.20;
       // Migrate old multiplier values to correct 1.61%
       if (state.pensionMultiplier === 0.161 || state.pensionMultiplier === 0.00161) state.pensionMultiplier = 0.0161;
     } else {
@@ -1013,6 +1021,38 @@ function fmtAxisY(v) {
   return '$' + Math.round(v);
 }
 
+// Return the date when person born on dob turns targetAge years old
+function ageDate(dob, targetAge) {
+  const [y, m, d] = String(dob).split('-').map(Number);
+  return new Date(y + targetAge, (m || 1) - 1, d || 1);
+}
+
+// Age-59.5 dates: 6 months after 59th birthday
+function age595Date(dob) {
+  const base = ageDate(dob, 59);
+  return new Date(base.getFullYear(), base.getMonth() + 6, base.getDate());
+}
+
+// FV of extra 401A contributions (excess salary over pension cap * rate) to a target date
+// Contributions are computed year-by-year since cap grows $500/yr while salary grows at %
+function computeExtra401AFV(toDate, rorPct) {
+  const rate = (state.excess401ARate || 0);
+  if (!rate) return 0;
+  const r = rorPct / 100;
+  const toYear = new Date(toDate).getFullYear();
+  const fromYear = new Date().getFullYear();
+  let fv = 0;
+  for (let yr = fromYear; yr <= toYear; yr++) {
+    const date = new Date(yr, 11, 31);
+    const brennaAnnual = brennaSalaryAt(date) * 12;
+    const capAnnual = pensionCapAt(date) * 12;
+    const extra = Math.max(0, brennaAnnual - capAnnual) * rate;
+    const yearsLeft = Math.max(0, (new Date(toDate) - date) / (365.25 * 24 * 3600 * 1000));
+    fv += extra * Math.pow(1 + r, yearsLeft);
+  }
+  return fv;
+}
+
 // ── Salary Projection ──────────────────────────────────────
 // raiseMonth: 1=Jan (Kevin), 7=Jul (Brenna)
 function salaryAtDate(baseMonthlySalary, annualRaisePct, raiseMonth, targetDate) {
@@ -1082,6 +1122,8 @@ function collectFormValues() {
   if (suppMult !== '') state.pensionSupplementMultiplier = parseFloat(suppMult);
   const salaryCap = document.getElementById('p-salary-cap').value;
   if (salaryCap !== '') state.pensionSalaryCap = parseCurrencyStr(salaryCap) || 0;
+  const excess401aRateEl = document.getElementById('p-excess401a-rate');
+  if (excess401aRateEl && excess401aRateEl.value !== '') state.excess401ARate = parseFloat(excess401aRateEl.value) / 100;
   const maxPurch = document.getElementById('p-max-purchasable').value;
   if (maxPurch !== '') state.maxPurchasableYears = parseFloat(maxPurch) || 11.50274;
   // kh-terminal-salary is now auto-computed from dashboard assumptions — not collected here
@@ -1153,6 +1195,7 @@ function render() {
   document.getElementById('p-purchased').value = state.pensionPurchased;
   document.getElementById('p-salary-cap').value = fmtCurrencyStr(state.pensionSalaryCap ?? 30000);
   document.getElementById('p-max-purchasable').value = state.maxPurchasableYears ?? 11.50274;
+  document.getElementById('p-excess401a-rate').value = Math.round((state.excess401ARate ?? 0.20) * 100);
   // Auto-compute projected avg 36-month salary (capped by pensionSalaryCap if set)
   const pensionRetDate = state.bnhPrimaryRetireDate ? new Date(state.bnhPrimaryRetireDate) : retDate;
   const projAvg36 = (state.brennaCurrentSalary && state.brennaAnnualRaisePct !== undefined)
@@ -1369,11 +1412,14 @@ function renderDCPlans() {
   state.plans.forEach(plan => {
     const annualContrib = (parseFloat(plan.contribPerPeriod) || 0) * (plan.semiMonthly ? 24 : state.payPeriodsPerYear);
     const planGrowth = plan.id === 'kh401k' ? (state.kevinAnnualRaisePct || 3) / 100 : (state.brennaAnnualRaisePct || 3) / 100;
+    const khAge65dc = ageDate(state.khDob, 65);
+    const bnhAge65dc = ageDate(state.dob, 65);
     const planRetDate = plan.id === 'kh401k'
-      ? (state.khPrimaryRetireDate ? new Date(state.khPrimaryRetireDate) : (() => { const d = new Date(state.khDob); d.setFullYear(d.getFullYear() + (state.khRetireAge || 62)); return d; })())
-      : retirementDate(state.dob, state.pensionStartDate, getTotalPurchasedYears());
+      ? new Date(Math.min((state.khPrimaryRetireDate ? new Date(state.khPrimaryRetireDate) : khAge65dc).getTime(), khAge65dc.getTime()))
+      : new Date(Math.min((state.bnhPrimaryRetireDate ? new Date(state.bnhPrimaryRetireDate) : retirementDate(state.dob, state.pensionStartDate, getTotalPurchasedYears())).getTime(), bnhAge65dc.getTime()));
     const yearsToRet = Math.max(0, (planRetDate - today()) / (365.25 * 24 * 3600 * 1000));
-    const projected = projectDCGrowing(parseFloat(plan.balance) || 0, annualContrib, yearsToRet, ror, planGrowth);
+    let projected = projectDCGrowing(parseFloat(plan.balance) || 0, annualContrib, yearsToRet, ror, planGrowth);
+    if (plan.id === 'bnh401a') projected += computeExtra401AFV(planRetDate, ror);
 
     const badge = plan.type === 'IRA' ? 'plan-badge ira' : 'plan-badge';
     const div = document.createElement('div');
@@ -1543,15 +1589,30 @@ function renderProjectionChart() {
 
   const labels = [], bnhDCData = [], khDCData = [], dcData = [], pensionData = [], rule80Data = [], dcDraw4pctData = [], meetsTargetData = [], combinedSalaryData = [];
 
-  // Split plans by person for growing-contribution projection
-  const bnhPlans = state.plans.filter(p => p.id !== 'kh401k');
-  const khPlans  = state.plans.filter(p => p.id === 'kh401k');
-  const bnhBal0  = bnhPlans.reduce((s, p) => s + (parseFloat(p.balance) || 0), 0);
-  const khBal0   = khPlans.reduce((s,  p) => s + (parseFloat(p.balance) || 0), 0);
-  const bnhContrib0 = bnhPlans.reduce((s, p) => s + (parseFloat(p.contribPerPeriod) || 0) * (p.semiMonthly ? 24 : state.payPeriodsPerYear), 0);
-  const khContrib0  = khPlans.reduce((s,  p) => s + (parseFloat(p.contribPerPeriod) || 0) * (p.semiMonthly ? 24 : state.payPeriodsPerYear), 0);
   const bnhGrowth = (state.brennaAnnualRaisePct || 3) / 100;
   const khGrowth  = (state.kevinAnnualRaisePct  || 3) / 100;
+
+  // 59.5 unlock dates by account
+  const brennaUnlockDate = age595Date(state.dob);
+  const kevinUnlockDate  = age595Date(state.khDob);
+
+  // Age-65 hard retirement caps
+  const bnhAge65 = ageDate(state.dob, 65);
+  const khAge65  = ageDate(state.khDob, 65);
+
+  // Per-plan starting data (contributions stop at owner's retirement)
+  const planMeta = state.plans.map(p => ({
+    id: p.id,
+    bal: parseFloat(p.balance) || 0,
+    annualContrib: (parseFloat(p.contribPerPeriod) || 0) * (p.semiMonthly ? 24 : state.payPeriodsPerYear),
+    growth: p.id === 'kh401k' ? khGrowth : bnhGrowth,
+    isBrenna: p.id !== 'kh401k',
+    // Contributions stop at the owner's retirement (capped at 65)
+    contribStopDate: p.id === 'kh401k'
+      ? new Date(Math.min((state.khPrimaryRetireDate ? new Date(state.khPrimaryRetireDate) : khAge65).getTime(), khAge65.getTime()))
+      : new Date(Math.min((state.bnhPrimaryRetireDate ? new Date(state.bnhPrimaryRetireDate) : bnhAge65).getTime(), bnhAge65.getTime())),
+    unlockDate: (p.id === 'kh401k') ? kevinUnlockDate : (p.id === 'bnh457b' ? null : brennaUnlockDate),
+  }));
 
   for (let i = 0; i <= years; i++) {
     const yr = startYear + i;
@@ -1564,11 +1625,23 @@ function renderProjectionChart() {
     const pension = eligible ? pensionMonthly(svc, pensionSalAtDate) : 0;
 
     const yearsFromNow = Math.max(0, (atDate - today()) / (365.25 * 24 * 3600 * 1000));
-    const bnhDC = projectDCGrowing(bnhBal0, bnhContrib0, yearsFromNow, state.rateOfReturn, bnhGrowth);
-    const khDC  = projectDCGrowing(khBal0,  khContrib0,  yearsFromNow, state.rateOfReturn, khGrowth);
-    const dcBal = bnhDC + khDC;
 
-    const draw4pct = dcBal * 0.04;
+    // Project each plan, stopping contributions at owner retirement; add extra 401A from overage
+    let bnhDC = 0, khDC = 0;
+    let accessibleDC = 0;
+    for (const pm of planMeta) {
+      const yearsContrib = Math.max(0, Math.min(yearsFromNow, (pm.contribStopDate - today()) / (365.25 * 24 * 3600 * 1000)));
+      const yearsCoast   = Math.max(0, yearsFromNow - yearsContrib);
+      let bal = projectDCGrowing(pm.bal, pm.annualContrib, yearsContrib, state.rateOfReturn, pm.growth);
+      if (yearsCoast > 0) bal = projectDCGrowing(bal, 0, yearsCoast, state.rateOfReturn, 0);
+      if (pm.id === 'bnh401a') bal += computeExtra401AFV(atDate, state.rateOfReturn);
+      if (pm.isBrenna) bnhDC += bal; else khDC += bal;
+      const isUnlocked = !pm.unlockDate || atDate >= pm.unlockDate;
+      if (isUnlocked) accessibleDC += bal;
+    }
+    const dcBal = bnhDC + khDC;
+    const draw4pct = Math.min(dcBal * 0.04, accessibleDC);
+
     const pensionAnnual = pension * 12;
     const totalRetireIncome = pensionAnnual + draw4pct;
 
@@ -1955,8 +2028,8 @@ function updateIncomeScenario(id, field, value) {
 
 function computeIncomeScenario(scenario) {
   if (!scenario.bnhRetireDate || !scenario.khRetireDate) return null;
-  const bnhRetDate = new Date(scenario.bnhRetireDate);
-  const khRetDate  = new Date(scenario.khRetireDate);
+  const bnhRetDate = new Date(Math.min(new Date(scenario.bnhRetireDate).getTime(), ageDate(state.dob, 65).getTime()));
+  const khRetDate  = new Date(Math.min(new Date(scenario.khRetireDate).getTime(),  ageDate(state.khDob, 65).getTime()));
   const fullRetDate = new Date(Math.max(bnhRetDate.getTime(), khRetDate.getTime()));
   const now = today();
 
@@ -1993,6 +2066,7 @@ function computeIncomeScenario(scenario) {
     const retROR = state.retirementROR !== undefined ? state.retirementROR : 4;
     const planGrowth = plan.id === 'kh401k' ? (state.kevinAnnualRaisePct || 3) / 100 : (state.brennaAnnualRaisePct || 3) / 100;
     let bal = projectDCGrowing(parseFloat(plan.balance) || 0, annualContrib, yearsToRetire, state.rateOfReturn, planGrowth);
+    if (plan.id === 'bnh401a') bal += computeExtra401AFV(planRetDate, state.rateOfReturn);
     const yearsCoast = Math.max(0, (fullRetDate - planRetDate) / (365.25 * 24 * 3600 * 1000));
     if (yearsCoast > 0) bal = projectDCGrowing(bal, 0, yearsCoast, retROR, 0);
     planDetails.push({ name: plan.name, type: plan.type, projectedBalance: bal });
