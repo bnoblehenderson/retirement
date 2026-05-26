@@ -750,8 +750,12 @@
         <button class="btn btn-outline btn-sm" onclick="exportData()">Export JSON</button>
         <button class="btn btn-outline btn-sm" onclick="document.getElementById('import-file').click()">Import JSON</button>
         <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)" />
+        <button class="btn btn-outline btn-sm" onclick="copyDataToClipboard()">Copy to Clipboard</button>
+        <button class="btn btn-outline btn-sm" onclick="pasteDataFromClipboard()">Paste from Clipboard</button>
+        <button class="btn btn-outline btn-sm" onclick="copyShareLink()">Copy Share Link</button>
         <button class="btn btn-sm" style="background:var(--danger);color:#fff;" onclick="resetData()">Reset All Data</button>
       </div>
+      <div id="data-mgmt-msg" style="font-size:0.78rem;color:var(--primary);margin-top:0.4rem;display:none;"></div>
     </div>
   </div>
 </div>
@@ -2350,6 +2354,57 @@ function resetData() {
   saveState(); render();
 }
 
+function showDataMsg(msg, isError) {
+  const el = document.getElementById('data-mgmt-msg');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = isError ? 'var(--danger)' : 'var(--primary)';
+  el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
+
+function copyDataToClipboard() {
+  navigator.clipboard.writeText(JSON.stringify(state, null, 2))
+    .then(() => showDataMsg('Data copied to clipboard.'))
+    .catch(() => showDataMsg('Copy failed — try Export JSON instead.', true));
+}
+
+function pasteDataFromClipboard() {
+  navigator.clipboard.readText().then(text => {
+    try {
+      state = JSON.parse(text);
+      saveState(); render();
+      showDataMsg('Data imported from clipboard.');
+    } catch { showDataMsg('Clipboard does not contain valid retirement data.', true); }
+  }).catch(() => showDataMsg('Could not read clipboard — try Import JSON instead.', true));
+}
+
+function stateToHash() {
+  return btoa(encodeURIComponent(JSON.stringify(state)));
+}
+
+function copyShareLink() {
+  const url = location.origin + location.pathname + '#data=' + stateToHash();
+  navigator.clipboard.writeText(url)
+    .then(() => showDataMsg('Share link copied! Open it on any browser to load your data.'))
+    .catch(() => showDataMsg('Copy failed.', true));
+}
+
+function loadFromHash() {
+  try {
+    const match = location.hash.match(/[#&]data=([^&]*)/);
+    if (!match) return false;
+    const decoded = JSON.parse(decodeURIComponent(atob(match[1])));
+    if (!decoded || typeof decoded !== 'object') return false;
+    if (!confirm('A shared retirement plan was detected in the URL. Load it? (Your current data will be replaced.)')) return false;
+    state = decoded;
+    saveState(); render();
+    history.replaceState(null, '', location.pathname);
+    return true;
+  } catch { return false; }
+}
+
 // ══════════════════════════════════════════════════════════════
 //  SUMMARY TAB
 // ══════════════════════════════════════════════════════════════
@@ -2809,6 +2864,7 @@ function dashToggleYearly() {
 // ══════════════════════════════════════════════════════════════
 function init() {
   loadState();
+  loadFromHash();
   if (!state.projectionStartYear) state.projectionStartYear = new Date().getFullYear();
   document.getElementById('proj-start-year').value = state.projectionStartYear;
 
