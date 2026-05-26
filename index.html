@@ -609,7 +609,7 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Year</th><th>Age</th><th>Svc Yrs</th><th>Rule of 80</th><th>Pension/yr</th><th>BNH DC</th><th>KH DC</th><th>4% DC/yr</th><th>Meets 70% Goal?</th></tr>
+            <tr><th>Year</th><th>Age</th><th>Svc Yrs</th><th>Rule of 80</th><th>Pension/yr</th><th>BNH DC</th><th>KH DC</th><th>4% DC/yr</th><th>Combined Salary</th><th>Meets 70% Goal?</th></tr>
           </thead>
           <tbody id="proj-table-body"></tbody>
         </table>
@@ -1541,7 +1541,7 @@ function renderProjectionChart() {
   const years = state.projectionYears || 20;
   const purchased = getTotalPurchasedYears();
 
-  const labels = [], bnhDCData = [], khDCData = [], dcData = [], pensionData = [], rule80Data = [], dcDraw4pctData = [], meetsTargetData = [];
+  const labels = [], bnhDCData = [], khDCData = [], dcData = [], pensionData = [], rule80Data = [], dcDraw4pctData = [], meetsTargetData = [], combinedSalaryData = [];
 
   // Split plans by person for growing-contribution projection
   const bnhPlans = state.plans.filter(p => p.id !== 'kh401k');
@@ -1585,6 +1585,7 @@ function renderProjectionChart() {
     rule80Data.push(parseFloat(r80.toFixed(2)));
     dcDraw4pctData.push(Math.round(draw4pct));
     meetsTargetData.push(meetsTarget);
+    combinedSalaryData.push(Math.round(combinedTermSalary));
   }
 
   // Build year-by-year table
@@ -1605,6 +1606,7 @@ function renderProjectionChart() {
       <td>${fmt$(bnhDCData[i])}</td>
       <td>${fmt$(khDCData[i])}</td>
       <td>${fmt$(dcDraw4pctData[i])}</td>
+      <td>${fmt$(combinedSalaryData[i])}</td>
       <td style="font-weight:700;color:${meets ? 'var(--success)' : 'var(--muted)'};">${fmt$(totalIncome)}${meets ? ' ✓' : ''}</td>
     `;
     tbody.appendChild(tr);
