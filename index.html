@@ -546,18 +546,11 @@
       </div>
     </div>
 
-    <div class="flex-between" style="margin-bottom:0.75rem;">
-      <div class="section-title" style="margin-bottom:0;">Retirement Scenarios</div>
-      <button class="btn btn-accent btn-sm" onclick="addIncomeScenario()">+ Scenario</button>
-    </div>
-
-    <div id="income-scenario-list"></div>
+    <div id="income-results"></div>
 
     <div class="card" id="yearly-income-card" style="display:none;padding:1rem 0.5rem;">
-      <div class="flex-between mb-1" style="padding:0 0.75rem;">
+      <div style="padding:0 0.75rem;margin-bottom:0.75rem;">
         <div class="section-title" style="margin-bottom:0;">30-Year Year-by-Year</div>
-        <select id="yearly-scenario-select" onchange="renderYearlyTable()"
-          style="padding:0.4rem 0.6rem;border:1.5px solid var(--border);border-radius:6px;font-size:0.82rem;color:var(--text);outline:none;"></select>
       </div>
       <div style="overflow-x:auto;width:100%;">
         <table style="min-width:600px;font-size:0.78rem;">
@@ -612,10 +605,21 @@
 
     <div class="card">
       <div class="card-title">Year-by-Year Breakdown</div>
-      <div class="table-wrap">
-        <table>
+      <div class="table-wrap" style="overflow-x:visible;">
+        <table style="table-layout:fixed;width:100%;">
           <thead>
-            <tr><th>Year</th><th>Age</th><th>Svc Yrs</th><th>Rule of 80</th><th>Pension/yr</th><th>BNH DC</th><th>KH DC</th><th>4% DC/yr</th><th>Combined Salary</th><th>Meets 70% Goal?</th></tr>
+            <tr>
+              <th style="white-space:nowrap;width:50px;">Year</th>
+              <th style="white-space:nowrap;width:38px;">Age</th>
+              <th style="white-space:nowrap;width:62px;">Svc Yrs</th>
+              <th style="white-space:nowrap;width:80px;">Rule of 80</th>
+              <th style="white-space:nowrap;width:88px;">Pension/yr</th>
+              <th style="white-space:nowrap;width:88px;">BNH DC</th>
+              <th style="white-space:nowrap;width:88px;">KH DC</th>
+              <th style="white-space:nowrap;width:88px;">4% DC/yr</th>
+              <th style="white-space:nowrap;width:96px;">Combined Sal.</th>
+              <th style="white-space:nowrap;">Goal Met?</th>
+            </tr>
           </thead>
           <tbody id="proj-table-body"></tbody>
         </table>
@@ -1621,7 +1625,11 @@ function renderProjectionChart() {
   for (let i = 0; i <= years; i++) {
     const yr = startYear + i;
     const atDate = new Date(yr, 11, 31); // 12/31 year-end
-    const svc = getServiceYears(state.pensionStartDate, atDate, purchased);
+    // Include planned purchases whose purchase date has passed by this year
+    const purchasedByYear = purchased + (state.purchaseScenarios || [])
+      .filter(sc => new Date(sc.windowYear + 1, 8, 30) <= atDate)
+      .reduce((s, sc) => s + (parseFloat(sc.yearsToPurchase) || 0), 0);
+    const svc = getServiceYears(state.pensionStartDate, atDate, purchasedByYear);
     const ageDec = getAgeDecimal(state.dob, atDate);
     const r80 = ageDec + svc;
     const eligible = r80 >= state.ruleTarget;
@@ -1675,6 +1683,9 @@ function renderProjectionChart() {
   tbody.innerHTML = '';
   labels.forEach((yr, i) => {
     const atDate = new Date(parseInt(yr), 11, 31);
+    const purchasedByYearTbl = purchased + (state.purchaseScenarios || [])
+      .filter(sc => new Date(sc.windowYear + 1, 8, 30) <= atDate)
+      .reduce((s, sc) => s + (parseFloat(sc.yearsToPurchase) || 0), 0);
     const eligible = rule80Data[i] >= state.ruleTarget;
     const meets = meetsTargetData[i];
     const totalIncome = pensionData[i] + dcDraw4pctData[i];
@@ -1682,7 +1693,7 @@ function renderProjectionChart() {
     tr.innerHTML = `
       <td>${yr}</td>
       <td>${getAge(state.dob, atDate)}</td>
-      <td>${fmtDec(getServiceYears(state.pensionStartDate, atDate, purchased), 2)}</td>
+      <td>${fmtDec(getServiceYears(state.pensionStartDate, atDate, purchasedByYearTbl), 2)}</td>
       <td class="${eligible ? 'text-success' : ''}" style="font-weight:${eligible?'700':'400'}">${fmtDec(rule80Data[i],2)}${eligible?' ✓':''}</td>
       <td>${fmt$(pensionData[i])}</td>
       <td>${fmt$(bnhDCData[i])}</td>
@@ -1987,6 +1998,19 @@ function renderScenarios() {
   const totalSpent = results.reduce((s, r) => s + r.totalCost, 0);
   const retOpts2 = { year: 'numeric', month: 'short', day: 'numeric' };
 
+  // Break-even: FV of each purchase cost at retirement, growing at 457B ROR
+  const r457b = (state.rateOfReturn || 0) / 100;
+  const bnhRetDateForBreakEven = state.bnhPrimaryRetireDate ? new Date(state.bnhPrimaryRetireDate) : last.newRetDate;
+  let totalFVatRetirement = 0;
+  results.forEach(sc => {
+    const purchaseDate = new Date(sc.scenario.windowYear + 1, 8, 30);
+    const yearsToRet = Math.max(0, (bnhRetDateForBreakEven - purchaseDate) / (365.25 * 24 * 3600 * 1000));
+    totalFVatRetirement += sc.totalCost * Math.pow(1 + r457b, yearsToRet);
+  });
+  const pensionGainAnnual = pensionGain * 12;
+  const simpleBreakEven = pensionGainAnnual > 0 ? totalFVatRetirement / pensionGainAnnual : Infinity;
+  const breakEvenStr = simpleBreakEven < Infinity ? fmtDec(simpleBreakEven, 1) + ' yrs' : 'N/A';
+
   summary.innerHTML = `
     <div style="background:var(--primary);color:#fff;border-radius:10px;padding:1.1rem;margin-top:0.5rem;">
       <div style="font-weight:700;font-size:0.9rem;margin-bottom:0.6rem;opacity:0.85;text-transform:uppercase;letter-spacing:0.04em;">Scenario Summary vs. No Purchases</div>
@@ -1996,8 +2020,11 @@ function renderScenarios() {
         <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Time Saved</div><div style="font-weight:700;">${monthsSaved > 0.5 ? fmtDec(monthsSaved / 12, 1) + ' yrs (' + Math.round(monthsSaved) + ' mo)' : '< 1 month'}</div></div>
         <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Pension Gain / mo</div><div style="font-weight:700;">${fmt$(pensionGain)}</div></div>
         <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Total 457B Spent</div><div style="font-weight:700;">${fmt$(totalSpent)}</div></div>
-        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Added Pension (Annual)</div><div style="font-weight:700;">${fmt$(pensionGain * 12)}/yr</div></div>
+        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Added Pension (Annual)</div><div style="font-weight:700;">${fmt$(pensionGainAnnual)}/yr</div></div>
+        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Opp. Cost at Retirement</div><div style="font-weight:700;">${fmt$(totalFVatRetirement)}</div></div>
+        <div><div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.1rem;">Break-Even After Ret.</div><div style="font-weight:700;">${breakEvenStr}</div></div>
       </div>
+      <div style="font-size:0.72rem;opacity:0.7;margin-top:0.6rem;">Opportunity cost = purchase costs grown at ${state.rateOfReturn}% (457B rate) to retirement. Break-even = years of added pension to recover that cost.</div>
     </div>
   `;
 }
@@ -2043,7 +2070,12 @@ function computeIncomeScenario(scenario) {
   const now = today();
 
   // Brenna's pension — use projected avg 36-month salary (capped) if growth data available
-  const purchased = getTotalPurchasedYears();
+  // Include planned purchases whose purchase date falls before Brenna's retirement
+  const actualPurchased = getTotalPurchasedYears();
+  const plannedPurchasedByRet = (state.purchaseScenarios || [])
+    .filter(sc => new Date(sc.windowYear + 1, 8, 30) <= bnhRetDate)
+    .reduce((s, sc) => s + (parseFloat(sc.yearsToPurchase) || 0), 0);
+  const purchased = actualPurchased + plannedPurchasedByRet;
   const bnhServiceYrs  = getServiceYears(state.pensionStartDate, bnhRetDate, purchased);
   const projAvgSalary  = (state.brennaCurrentSalary && state.brennaAnnualRaisePct !== undefined)
     ? cappedPensionSalary(bnhRetDate)
@@ -2134,14 +2166,12 @@ function computeYearlyRows(totalDC, bnhPensionAnnual, suppAnnual, age62Date, ful
 }
 
 function renderYearlyTable() {
-  const sel = document.getElementById('yearly-scenario-select');
-  if (!sel) return;
-  const scenario = (state.incomeScenarios || []).find(s => s.id === sel.value);
   const tbody = document.getElementById('yearly-income-tbody');
-  if (!scenario) { tbody.innerHTML = ''; return; }
+  if (!tbody) return;
+  const scenario = { bnhRetireDate: state.bnhPrimaryRetireDate || '', khRetireDate: state.khPrimaryRetireDate || '' };
   const data = computeIncomeScenario(scenario);
   if (!data) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:1rem;">Enter both retirement dates to see projection.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:1rem;">Enter both retirement dates on the Dashboard to see projection.</td></tr>';
     return;
   }
   const rows = computeYearlyRows(data.totalDCAtFullRet, data.bnhPensionAnnual, data.suppAnnual, data.age62Date, data.fullRetDate, data.combinedCap, 30);
@@ -2164,147 +2194,106 @@ function renderYearlyTable() {
 }
 
 function renderIncome() {
-  const container = document.getElementById('income-scenario-list');
+  const container = document.getElementById('income-results');
   if (!container) return;
   container.innerHTML = '';
 
-  const scenarios = state.incomeScenarios || [];
+  const scenario = { bnhRetireDate: state.bnhPrimaryRetireDate || '', khRetireDate: state.khPrimaryRetireDate || '' };
+  const data = computeIncomeScenario(scenario);
 
-  // Populate year-by-year selector
-  const sel = document.getElementById('yearly-scenario-select');
-  if (sel) {
-    const prevVal = sel.value;
-    sel.innerHTML = '';
-    scenarios.forEach(s => {
-      const opt = document.createElement('option');
-      opt.value = s.id; opt.textContent = s.name;
-      sel.appendChild(opt);
-    });
-    if (prevVal && scenarios.find(s => s.id === prevVal)) sel.value = prevVal;
-  }
   const yearlyCard = document.getElementById('yearly-income-card');
-  if (yearlyCard) yearlyCard.style.display = scenarios.length ? 'block' : 'none';
+  if (yearlyCard) yearlyCard.style.display = data ? 'block' : 'none';
   renderYearlyTable();
 
-  const dateOpts = { year: 'numeric', month: 'short', day: 'numeric' };
+  const card = document.createElement('div');
+  card.className = 'card';
 
-  scenarios.forEach(s => {
-    const data = computeIncomeScenario(s);
-    const canDelete = scenarios.length > 1;
-
-    let bodyHTML = '';
-    if (data) {
-      const capColor = data.capUsedPct >= 98 ? 'var(--warning)' : data.capUsedPct >= 80 ? 'var(--accent)' : 'var(--success)';
-
-      // Per-plan breakdown rows
-      const planRows = data.planDetails.map(p =>
-        `<tr><td style="color:var(--muted);">${p.name}</td><td style="font-weight:600;text-align:right;">${fmt$(p.projectedBalance)}</td></tr>`
-      ).join('');
-
-      bodyHTML = `
-        <div class="divider"></div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;font-size:0.82rem;margin-bottom:0.75rem;">
-          <div>
-            <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Brenna's Age at Retirement</div>
-            <div style="font-weight:600;">${data.bnhAgeAtRetire} &nbsp;·&nbsp; Rule of 80: ${fmtDec(data.bnhRule80,2)}</div>
-          </div>
-          <div>
-            <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Brenna's Service Years</div>
-            <div style="font-weight:600;">${fmtDec(data.bnhServiceYrs,2)} yrs</div>
-          </div>
-          <div>
-            <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Brenna's Pension</div>
-            <div style="font-weight:700;color:var(--primary);">${fmt$(data.bnhPensionMo)}/mo &nbsp;·&nbsp; ${fmt$(data.bnhPensionAnnual)}/yr</div>
-          </div>
-          <div>
-            <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Early Ret. Supplement</div>
-            ${data.hasSupp
-              ? `<div style="font-weight:700;color:var(--accent);">${fmt$(data.suppMo)}/mo · until ${data.age62Date.toLocaleDateString('en-US',{month:'short',year:'numeric'})}</div>`
-              : `<div style="color:var(--muted);">N/A (age 62+)</div>`}
-          </div>
-          <div>
-            <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Full Retirement Date</div>
-            <div style="font-weight:600;">${data.fullRetDate.toLocaleDateString('en-US',dateOpts)}</div>
-          </div>
-          <div>
-            <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Total DC at Full Ret.</div>
-            <div style="font-weight:600;">${fmt$(data.totalDCAtFullRet)}</div>
-          </div>
-          <div>
-            <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">4% Max DC Draw/yr</div>
-            <div style="font-weight:600;">${fmt$(data.maxDC4pct)}</div>
-          </div>
-          <div>
-            <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Combined Income Cap</div>
-            <div style="font-weight:600;">${fmt$(data.combinedCap)}/yr</div>
-          </div>
-          <div style="grid-column:1/-1;">
-            <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Actual DC Draw (yr 1)</div>
-            <div style="font-weight:700;${data.dcLimitedByCap ? 'color:var(--warning);' : ''}">${fmt$(data.dcWithdrawal)}/yr${data.dcLimitedByCap ? ' — capped by income limit' : ' — 4% rule applies'}</div>
-          </div>
-        </div>
-
-        <details style="margin-bottom:0.75rem;">
-          <summary style="font-size:0.8rem;font-weight:700;color:var(--muted);cursor:pointer;user-select:none;">DC plan breakdown at full retirement ▾</summary>
-          <div class="table-wrap" style="margin-top:0.5rem;">
-            <table><thead><tr><th>Plan</th><th style="text-align:right;">Projected Balance</th></tr></thead>
-            <tbody>${planRows}</tbody></table>
-          </div>
-        </details>
-
-        <div style="background:var(--primary);color:#fff;border-radius:10px;padding:1.1rem;">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-bottom:0.75rem;">
-            <div>
-              <div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.15rem;">Annual Income (yr 1)</div>
-              <div style="font-size:1.4rem;font-weight:700;">${fmt$(data.totalAnnual)}</div>
-            </div>
-            <div>
-              <div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.15rem;">Monthly Income (yr 1)</div>
-              <div style="font-size:1.4rem;font-weight:700;">${fmt$(data.totalMonthly)}</div>
-            </div>
-          </div>
-          <div style="font-size:0.78rem;opacity:0.85;margin-bottom:0.5rem;">
-            Pension ${fmt$(data.bnhPensionAnnual)}${data.hasSupp ? ` + Supplement ${fmt$(data.suppAnnual)}` : ''} + DC ${fmt$(data.dcWithdrawal)} = ${fmt$(data.totalAnnual)}
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:0.3rem;">
-            <span>vs. income cap (${fmt$(data.combinedCap)}/yr)</span>
-            <span style="font-weight:700;">${fmtDec(data.capUsedPct,0)}%</span>
-          </div>
-          <div style="height:8px;background:rgba(255,255,255,0.2);border-radius:99px;overflow:hidden;">
-            <div style="height:100%;width:${Math.min(100,data.capUsedPct)}%;background:rgba(255,255,255,0.85);border-radius:99px;"></div>
-          </div>
-        </div>
-      `;
-    } else {
-      bodyHTML = '<div style="color:var(--muted);font-size:0.82rem;margin-top:0.75rem;padding:0.75rem;background:var(--bg);border-radius:8px;">Enter both retirement dates to calculate income.</div>';
-    }
-
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = `
-      <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.75rem;">
-        <input type="text" value="${s.name}"
-          style="flex:1;font-weight:700;font-size:1rem;border:none;border-bottom:1.5px solid var(--border);padding:0.15rem 0.25rem;outline:none;background:transparent;color:var(--text);"
-          onchange="updateIncomeScenario('${s.id}','name',this.value)" />
-        ${canDelete ? `<button class="btn btn-sm" style="background:var(--danger);color:#fff;padding:0.2rem 0.6rem;font-size:0.7rem;flex-shrink:0;" onclick="deleteIncomeScenario('${s.id}')">✕</button>` : ''}
-      </div>
-      <div class="form-row">
-        <div class="form-group" style="margin-bottom:0;">
-          <label>Brenna's Retirement Date</label>
-          <input type="date" value="${s.bnhRetireDate||''}" onblur="updateIncomeScenario('${s.id}','bnhRetireDate',this.value)" />
-          ${data ? `<div class="form-hint">Brenna age ${data.bnhAgeAtRetire} · Rule of 80: ${fmtDec(data.bnhRule80,2)}${data.bnhRule80 >= state.ruleTarget ? ' ✓' : ''}</div>` : ''}
-        </div>
-        <div class="form-group" style="margin-bottom:0;">
-          <label>Kevin's Retirement Date</label>
-          <input type="date" value="${s.khRetireDate||''}" onblur="updateIncomeScenario('${s.id}','khRetireDate',this.value)" />
-          ${data ? `<div class="form-hint">Kevin age ${data.khAgeAtRetire !== null ? data.khAgeAtRetire : '—'} · Full retirement: ${data.fullRetDate.toLocaleDateString('en-US',dateOpts)}</div>` : ''}
-        </div>
-      </div>
-      ${bodyHTML}
-    `;
+  if (!data) {
+    card.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:0.5rem 0;">Set both retirement dates on the Dashboard to see income projection.</div>';
     container.appendChild(card);
-  });
+    return;
+  }
+
+  const dateOpts = { year: 'numeric', month: 'short', day: 'numeric' };
+  const capColor = data.capUsedPct >= 98 ? 'var(--warning)' : data.capUsedPct >= 80 ? 'var(--accent)' : 'var(--success)';
+  const planRows = data.planDetails.map(p =>
+    `<tr><td style="color:var(--muted);">${p.name}</td><td style="font-weight:600;text-align:right;">${fmt$(p.projectedBalance)}</td></tr>`
+  ).join('');
+
+  card.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;font-size:0.82rem;margin-bottom:0.75rem;">
+      <div>
+        <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Brenna's Age at Retirement</div>
+        <div style="font-weight:600;">${data.bnhAgeAtRetire} &nbsp;·&nbsp; Rule of 80: ${fmtDec(data.bnhRule80,2)}</div>
+      </div>
+      <div>
+        <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Brenna's Service Years</div>
+        <div style="font-weight:600;">${fmtDec(data.bnhServiceYrs,2)} yrs</div>
+      </div>
+      <div>
+        <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Brenna's Pension</div>
+        <div style="font-weight:700;color:var(--primary);">${fmt$(data.bnhPensionMo)}/mo &nbsp;·&nbsp; ${fmt$(data.bnhPensionAnnual)}/yr</div>
+      </div>
+      <div>
+        <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Early Ret. Supplement</div>
+        ${data.hasSupp
+          ? `<div style="font-weight:700;color:var(--accent);">${fmt$(data.suppMo)}/mo · until ${data.age62Date.toLocaleDateString('en-US',{month:'short',year:'numeric'})}</div>`
+          : `<div style="color:var(--muted);">N/A (age 62+)</div>`}
+      </div>
+      <div>
+        <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Full Retirement Date</div>
+        <div style="font-weight:600;">${data.fullRetDate.toLocaleDateString('en-US',dateOpts)}</div>
+      </div>
+      <div>
+        <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Total DC at Full Ret.</div>
+        <div style="font-weight:600;">${fmt$(data.totalDCAtFullRet)}</div>
+      </div>
+      <div>
+        <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">4% Max DC Draw/yr</div>
+        <div style="font-weight:600;">${fmt$(data.maxDC4pct)}</div>
+      </div>
+      <div>
+        <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Combined Income Cap</div>
+        <div style="font-weight:600;">${fmt$(data.combinedCap)}/yr</div>
+      </div>
+      <div style="grid-column:1/-1;">
+        <div style="color:var(--muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:0.1rem;">Actual DC Draw (yr 1)</div>
+        <div style="font-weight:700;${data.dcLimitedByCap ? 'color:var(--warning);' : ''}">${fmt$(data.dcWithdrawal)}/yr${data.dcLimitedByCap ? ' — capped by income limit' : ' — 4% rule applies'}</div>
+      </div>
+    </div>
+
+    <details style="margin-bottom:0.75rem;">
+      <summary style="font-size:0.8rem;font-weight:700;color:var(--muted);cursor:pointer;user-select:none;">DC plan breakdown at full retirement ▾</summary>
+      <div class="table-wrap" style="margin-top:0.5rem;">
+        <table><thead><tr><th>Plan</th><th style="text-align:right;">Projected Balance</th></tr></thead>
+        <tbody>${planRows}</tbody></table>
+      </div>
+    </details>
+
+    <div style="background:var(--primary);color:#fff;border-radius:10px;padding:1.1rem;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-bottom:0.75rem;">
+        <div>
+          <div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.15rem;">Annual Income (yr 1)</div>
+          <div style="font-size:1.4rem;font-weight:700;">${fmt$(data.totalAnnual)}</div>
+        </div>
+        <div>
+          <div style="opacity:0.7;font-size:0.7rem;text-transform:uppercase;margin-bottom:0.15rem;">Monthly Income (yr 1)</div>
+          <div style="font-size:1.4rem;font-weight:700;">${fmt$(data.totalMonthly)}</div>
+        </div>
+      </div>
+      <div style="font-size:0.78rem;opacity:0.85;margin-bottom:0.5rem;">
+        Pension ${fmt$(data.bnhPensionAnnual)}${data.hasSupp ? ` + Supplement ${fmt$(data.suppAnnual)}` : ''} + DC ${fmt$(data.dcWithdrawal)} = ${fmt$(data.totalAnnual)}
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:0.3rem;">
+        <span>vs. income cap (${fmt$(data.combinedCap)}/yr)</span>
+        <span style="font-weight:700;">${fmtDec(data.capUsedPct,0)}%</span>
+      </div>
+      <div style="height:8px;background:rgba(255,255,255,0.2);border-radius:99px;overflow:hidden;">
+        <div style="height:100%;width:${Math.min(100,data.capUsedPct)}%;background:rgba(255,255,255,0.85);border-radius:99px;"></div>
+      </div>
+    </div>
+  `;
+  container.appendChild(card);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2380,6 +2369,13 @@ function computeSummaryTimeline() {
   let brennaDC = brennaPlans.reduce((s, p) => s + (parseFloat(p.balance) || 0), 0);
   let kevinDC  = kevinPlans.reduce((s,  p) => s + (parseFloat(p.balance) || 0), 0);
 
+  // Track 457B separately to detect exhaustion during staggered retirement
+  const plan457bRef = state.plans.find(p => p.id === 'bnh457b');
+  const annualContrib457b = plan457bRef
+    ? (parseFloat(plan457bRef.contribPerPeriod) || 0) * (plan457bRef.semiMonthly ? 24 : state.payPeriodsPerYear)
+    : 0;
+  let bnh457bBal = parseFloat(plan457bRef?.balance || 0);
+
   const bnhRetYear = bnhRetireDate ? bnhRetireDate.getFullYear() : Infinity;
   const khRetYear  = khRetireDate  ? khRetireDate.getFullYear()  : Infinity;
   const firstRetYear = Math.min(bnhRetYear, khRetYear);
@@ -2430,9 +2426,15 @@ function computeSummaryTimeline() {
     const brennaShare = availDC > 0 ? availBrenna / availDC : 0;
     const kevinShare  = availDC > 0 ? availKevin  / availDC : 0;
 
+    // Track 457B separately — it grows pre-retirement, draws proportionally in retirement
+    const prev457bBal = bnh457bBal;
     if (brennaRetired) {
+      const prop457b = beginBrenna > 0 ? Math.min(bnh457bBal / beginBrenna, 1) : 0;
+      const draw457b = dcDraw * brennaShare * prop457b;
+      bnh457bBal = Math.max(0, (bnh457bBal - draw457b) * (1 + retROR));
       brennaDC = Math.max(0, (beginBrenna - dcDraw * brennaShare) * (1 + retROR));
     } else {
+      bnh457bBal = bnh457bBal * (1 + ror) + annualContrib457b;
       brennaDC = beginBrenna * (1 + ror) + brennaAnnualContrib;
     }
     if (kevinRetired) {
@@ -2441,12 +2443,16 @@ function computeSummaryTimeline() {
       kevinDC = beginKevin * (1 + ror) + kevinAnnualContrib;
     }
 
+    // 457B is "exhausted" if Brenna is retired, Kevin is not, and 457B just hit $0
+    const bnh457bExhausted = brennaRetired && !kevinRetired && bnh457bBal === 0;
+
     if (yr >= recordFrom) {
       rows.push({
         yr, brennaRetired, kevinRetired,
         brennaSalIncome, kevinSalIncome,
         pensionIncome, suppIncome: suppThisYear,
         dcDraw,
+        bnh457bExhausted,
         totalIncome: pensionIncome + suppThisYear + brennaSalIncome + kevinSalIncome + dcDraw,
       });
     }
@@ -2620,15 +2626,15 @@ function renderSummaryTimeline() {
 
   const { rows } = timeline;
 
-  // Group consecutive rows by retirement/supplement state into phases
+  // Group consecutive rows by retirement/supplement/457b-exhaustion state into phases
   const phases = [];
   let cur = null;
   rows.forEach(row => {
-    const key = `${row.brennaRetired}|${row.kevinRetired}|${row.suppIncome > 0}`;
+    const key = `${row.brennaRetired}|${row.kevinRetired}|${row.suppIncome > 0}|${row.bnh457bExhausted}`;
     if (!cur || cur.key !== key) {
       cur = { key, startYear: row.yr, endYear: row.yr, firstRow: row,
               brennaRetired: row.brennaRetired, kevinRetired: row.kevinRetired,
-              suppActive: row.suppIncome > 0 };
+              suppActive: row.suppIncome > 0, bnh457bExhausted: row.bnh457bExhausted };
       phases.push(cur);
     } else {
       cur.endYear = row.yr;
@@ -2645,6 +2651,7 @@ function renderSummaryTimeline() {
     else if (!phase.brennaRetired && phase.kevinRetired) label = 'Kevin retired · Brenna working';
     else if  (phase.brennaRetired && phase.kevinRetired) label = 'Both retired';
     if (phase.suppActive) label += ' + Supplement';
+    if (phase.bnh457bExhausted) label += ' · 457B Exhausted';
 
     const yearRange = phase.startYear === phase.endYear
       ? String(phase.startYear) : `${phase.startYear}–${phase.endYear}`;
