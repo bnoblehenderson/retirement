@@ -110,7 +110,8 @@ tr:hover td{background:var(--bg);}
 .phase-label{font-size:0.8rem;font-weight:600;}
 .phase-total{font-size:1.05rem;font-weight:700;color:var(--primary);}
 .phase-detail{font-size:0.72rem;color:var(--muted);}
-.phase-breakdown{display:flex;flex-direction:column;gap:0.3rem;margin-top:0.4rem;padding-top:0.4rem;border-top:1px solid rgba(0,0,0,0.07);}
+.phase-breakdown{display:flex;flex-direction:column;gap:0.4rem;margin-top:0.4rem;padding-top:0.4rem;border-top:1px solid rgba(0,0,0,0.07);}
+.phase-person-group{display:flex;flex-direction:column;gap:0;}
 .phase-person{display:flex;justify-content:space-between;align-items:baseline;}
 .phase-person-name{font-size:0.78rem;font-weight:600;color:var(--text);}
 .phase-person-amt{font-size:0.85rem;font-weight:700;color:var(--primary);}
@@ -694,12 +695,14 @@ function renderPhases(tl) {
     const kRepl = r.kRet&&kTermSal>0 ? ` (${fmtD(r.kevinInc/kTermSal*100,1)}% replacement)` : '';
     const breakdown=showBrenna||showKevin
       ? `<div class="phase-breakdown">`
-        +(showBrenna?`<div class="phase-person"><span class="phase-person-name">Brenna</span><span class="phase-person-amt">${fmt$(r.brennaInc)}/yr</span></div>`
+        +(showBrenna?`<div class="phase-person-group"><div class="phase-person"><span class="phase-person-name">Brenna</span><span class="phase-person-amt">${fmt$(r.brennaInc)}/yr</span></div>`
           +(bRepl?`<div class="phase-repl">${bRepl}</div>`:'')
-          +(bParts.length?`<div class="phase-detail">${bParts.join(' · ')}</div>`:''):'')
-        +(showKevin?`<div class="phase-person"><span class="phase-person-name">Kevin</span><span class="phase-person-amt">${fmt$(r.kevinInc)}/yr</span></div>`
+          +(bParts.length?`<div class="phase-detail">${bParts.join(' · ')}</div>`:'')
+          +`</div>`:'')
+        +(showKevin?`<div class="phase-person-group"><div class="phase-person"><span class="phase-person-name">Kevin</span><span class="phase-person-amt">${fmt$(r.kevinInc)}/yr</span></div>`
           +(kRepl?`<div class="phase-repl">${kRepl}</div>`:'')
-          +(kParts.length?`<div class="phase-detail">${kParts.join(' · ')}</div>`:''):'')
+          +(kParts.length?`<div class="phase-detail">${kParts.join(' · ')}</div>`:'')
+          +`</div>`:'')
         +`</div>`
       : '';
     h+=`<div class="phase-card ${cls}"><div class="phase-top"><div><div class="phase-yr">${yr}</div><div class="phase-label">${label}</div></div><div class="phase-total">${fmt$(r.total)}/yr</div></div>${breakdown}</div>`;
