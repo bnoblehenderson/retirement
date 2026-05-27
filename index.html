@@ -636,7 +636,6 @@ function renderOverview() {
   }
   if (kRet)  h+=`<div class="stat-box"><div class="stat-label">Kevin Retires</div><div class="stat-value" style="font-size:1rem;">${fmtMo(kRet)}</div><div class="stat-sub">${kDC>0?fmt$(kDC)+' DC at ret.':'—'}</div></div>`;
   if (bDC||kDC) h+=`<div class="stat-box"><div class="stat-label">Combined DC</div><div class="stat-value">${fmt$(bDC+kDC)}</div><div class="stat-sub">at each retirement</div></div>`;
-  if (bPenMo||(bDC+kDC)) h+=`<div class="stat-box"><div class="stat-label">Est. Annual Income</div><div class="stat-value" style="font-size:1rem;">${fmt$(bPenMo*12+(bDC+kDC)*0.04)}/yr</div><div class="stat-sub">pension + 4% DC</div></div>`;
   h+=`</div>`;
 
   if (tl) {
