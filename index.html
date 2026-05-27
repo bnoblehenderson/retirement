@@ -751,7 +751,7 @@ function renderPhases(tl) {
           +`</div>`:'')
         +`</div>`
       : '';
-    const phaseBelowMin=state.minIncome>0&&(r.bRet||r.kRet)&&r.total<state.minIncome&&r.total>0;
+    const phaseBelowMin=state.minIncome>0&&(r.bRet||r.kRet)&&r.total<state.minIncome-0.005&&r.total>0;
     h+=`<div class="phase-card ${cls}"><div class="phase-top"><div><div class="phase-yr">${yr}</div><div class="phase-label">${label}</div></div><div class="phase-total" style="${phaseBelowMin?'color:#c0392b;':''}">${fmt$(r.total)}/yr${phaseBelowMin?` <span title="Below minimum income" style="font-size:0.8em;">⚠</span>`:''}</div></div>${breakdown}</div>`;
   });
   h+='</div>';
@@ -1304,7 +1304,7 @@ function renderFlow() {
       const f=row[p.id]; if(!f){h+=`<td>—</td><td>—</td><td>—</td>`;return;}
       h+=`<td>${fmtFlow(f.cashFlow)}</td><td>${fmtGain(f.invGain)}</td><td>${fmtBal(f.balEnd)}</td>`;
     });
-    const belowMin=state.minIncome>0&&(row.bRetired||row.kRetired)&&row.annualIncome<state.minIncome&&row.annualIncome>0;
+    const belowMin=state.minIncome>0&&(row.bRetired||row.kRetired)&&row.annualIncome<state.minIncome-0.005&&row.annualIncome>0;
     h+=`<td style="font-weight:600;${belowMin?'color:#c0392b;background:#fdf0ee;':''}">${row.annualIncome>0.5?fmt$(row.annualIncome):'—'}${belowMin?' ⚠':''}</td>`;
     h+=`</tr>`;
   });
