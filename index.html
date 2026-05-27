@@ -114,7 +114,7 @@ tr:hover td{background:var(--bg);}
 .phase-person{display:flex;justify-content:space-between;align-items:baseline;}
 .phase-person-name{font-size:0.78rem;font-weight:600;color:var(--text);}
 .phase-person-amt{font-size:0.85rem;font-weight:700;color:var(--primary);}
-.phase-repl{font-size:0.72rem;font-weight:400;color:var(--muted);margin-left:0.3rem;}
+.phase-repl{font-size:0.72rem;font-weight:400;color:var(--muted);}
 
 /* Modal */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;padding:1rem;}
@@ -691,9 +691,11 @@ function renderPhases(tl) {
     const kRepl = r.kRet&&kTermSal>0 ? ` (${fmtD(r.kevinInc/kTermSal*100,1)}% replacement)` : '';
     const breakdown=showBrenna||showKevin
       ? `<div class="phase-breakdown">`
-        +(showBrenna?`<div class="phase-person"><span class="phase-person-name">Brenna</span><span class="phase-person-amt">${fmt$(r.brennaInc)}/yr<span class="phase-repl">${bRepl}</span></span></div>`
+        +(showBrenna?`<div class="phase-person"><span class="phase-person-name">Brenna</span><span class="phase-person-amt">${fmt$(r.brennaInc)}/yr</span></div>`
+          +(bRepl?`<div class="phase-repl">${bRepl}</div>`:'')
           +(bParts.length?`<div class="phase-detail">${bParts.join(' · ')}</div>`:''):'')
-        +(showKevin?`<div class="phase-person"><span class="phase-person-name">Kevin</span><span class="phase-person-amt">${fmt$(r.kevinInc)}/yr<span class="phase-repl">${kRepl}</span></span></div>`
+        +(showKevin?`<div class="phase-person"><span class="phase-person-name">Kevin</span><span class="phase-person-amt">${fmt$(r.kevinInc)}/yr</span></div>`
+          +(kRepl?`<div class="phase-repl">${kRepl}</div>`:'')
           +(kParts.length?`<div class="phase-detail">${kParts.join(' · ')}</div>`:''):'')
         +`</div>`
       : '';
