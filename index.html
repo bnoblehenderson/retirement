@@ -567,20 +567,15 @@ function calcTimeline() {
     const canBOther = bRetired && b595ok;         // Brenna other DC: retired + 59.5
     const canKDC    = kRetired && k595ok;         // Kevin DC: retired + 59.5
 
-    const avail457   = can457    ? bDC457   : 0;
-    const availBOth  = canBOther ? bDCother : 0;
-    const availKDC   = canKDC    ? kDC      : 0;
-    const availTotal = avail457 + availBOth + availKDC;
-
     const mid = new Date(yr,6,1);
     const pInc = bRetired ? bPensionAnn : 0;
     const sInc = bRetired&&age62&&mid<age62 ? suppAnn : 0;
-    const dcDraw = availTotal>0 ? availTotal*0.04 : 0;
 
-    // Proportional draw from each pool
-    const d457   = availTotal>0 ? dcDraw*avail457  /availTotal : 0;
-    const dBOth  = availTotal>0 ? dcDraw*availBOth /availTotal : 0;
-    const dKDC   = availTotal>0 ? dcDraw*availKDC  /availTotal : 0;
+    // Each pool draws independently at 4% of its own balance
+    const d457  = can457    ? bDC457  *0.04 : 0;
+    const dBOth = canBOther ? bDCother*0.04 : 0;
+    const dKDC  = canKDC    ? kDC     *0.04 : 0;
+    const dcDraw = d457 + dBOth + dKDC;
 
     const prev457=bDC457;
 
