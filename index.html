@@ -608,14 +608,14 @@ function renderBrenna() {
   // Personal info
   h+=`<div class="card"><div class="card-header"><div class="card-title">Brenna's Information</div></div>
   <div class="form-grid">
-    <div class="field"><label>Date of Birth</label><input id="f-b-dob" type="date" value="${state.brenna.dob||''}" onchange="state.brenna.dob=this.value;saveState();renderAll();" /></div>
-    <div class="field"><label>Pension Start Date</label><input id="f-b-penstart" type="date" value="${state.brenna.pensionStart||''}" onchange="state.brenna.pensionStart=this.value;saveState();renderAll();" /></div>
-    <div class="field"><label>Annual Salary (current)</label><input id="f-b-salary" type="text" value="${state.brenna.salary?fmtMoney(state.brenna.salary):''}" onchange="state.brenna.salary=parseMoney(this.value);saveState();renderAll();" /></div>
-    <div class="field"><label>Annual Raise %</label><input id="f-b-raise" type="number" step="0.1" value="${state.brenna.raisePct??2.5}" onchange="state.brenna.raisePct=parseFloat(this.value)||0;saveState();renderAll();" /></div>
-    <div class="field"><label>Annual Salary Cap (this year)</label><input id="f-b-salcap" type="text" value="${state.brenna.salaryCap?fmtMoney(state.brenna.salaryCap):''}" onchange="state.brenna.salaryCap=parseMoney(this.value);saveState();renderAll();" /><div class="field-hint">Grows $10,000/yr. Used to cap pension salary.</div></div>
-    <div class="field"><label>Excess Salary → 401A %</label><input id="f-b-excess" type="number" step="1" value="${state.brenna.excess401aPct??20}" onchange="state.brenna.excess401aPct=parseFloat(this.value)||0;saveState();renderAll();" /><div class="field-hint">% of salary above cap contributed to 401A</div></div>
-    <div class="field"><label>Retirement Date</label><input id="f-b-retdate" type="date" value="${state.brenna.retireDate||''}" onchange="state.brenna.retireDate=this.value;saveState();renderAll();" /><div class="field-hint">Leave blank to auto-calculate from Rule of 80</div></div>
-    <div class="field"><label>Total Years Eligible to Purchase</label><input id="f-b-totalelig" type="number" step="0.00001" value="${state.brenna.totalEligible||''}" onchange="state.brenna.totalEligible=parseFloat(this.value)||0;saveState();renderAll();" /><div class="field-hint">Lifetime cap including years already purchased.</div></div>
+    <div class="field"><label>Date of Birth</label><input id="f-b-dob" type="date" value="${state.brenna.dob||''}" onchange="state.brenna.dob=this.value;saveState();scheduleRender();" /></div>
+    <div class="field"><label>Pension Start Date</label><input id="f-b-penstart" type="date" value="${state.brenna.pensionStart||''}" onchange="state.brenna.pensionStart=this.value;saveState();scheduleRender();" /></div>
+    <div class="field"><label>Annual Salary (current)</label><input id="f-b-salary" type="text" value="${state.brenna.salary?fmtMoney(state.brenna.salary):''}" onchange="state.brenna.salary=parseMoney(this.value);saveState();scheduleRender();" /></div>
+    <div class="field"><label>Annual Raise %</label><input id="f-b-raise" type="number" step="0.1" value="${state.brenna.raisePct??2.5}" onchange="state.brenna.raisePct=parseFloat(this.value)||0;saveState();scheduleRender();" /></div>
+    <div class="field"><label>Annual Salary Cap (this year)</label><input id="f-b-salcap" type="text" value="${state.brenna.salaryCap?fmtMoney(state.brenna.salaryCap):''}" onchange="state.brenna.salaryCap=parseMoney(this.value);saveState();scheduleRender();" /><div class="field-hint">Grows $10,000/yr. Used to cap pension salary.</div></div>
+    <div class="field"><label>Excess Salary → 401A %</label><input id="f-b-excess" type="number" step="1" value="${state.brenna.excess401aPct??20}" onchange="state.brenna.excess401aPct=parseFloat(this.value)||0;saveState();scheduleRender();" /><div class="field-hint">% of salary above cap contributed to 401A</div></div>
+    <div class="field"><label>Retirement Date</label><input id="f-b-retdate" type="date" value="${state.brenna.retireDate||''}" onchange="state.brenna.retireDate=this.value;saveState();scheduleRender();" /><div class="field-hint">Leave blank to auto-calculate from Rule of 80</div></div>
+    <div class="field"><label>Total Years Eligible to Purchase</label><input id="f-b-totalelig" type="number" step="0.00001" value="${state.brenna.totalEligible||''}" onchange="state.brenna.totalEligible=parseFloat(this.value)||0;saveState();scheduleRender();" /><div class="field-hint">Lifetime cap including years already purchased.</div></div>
   </div></div>`;
 
   // Pension status
@@ -754,11 +754,11 @@ function renderKevin() {
 
   h+=`<div class="card"><div class="card-header"><div class="card-title">Kevin's Information</div></div>
   <div class="form-grid">
-    <div class="field"><label>Date of Birth</label><input id="f-k-dob" type="date" value="${state.kevin.dob||''}" onchange="state.kevin.dob=this.value;autoKRetDate();saveState();renderAll();" /></div>
-    <div class="field"><label>Annual Salary (current)</label><input id="f-k-salary" type="text" value="${state.kevin.salary?fmtMoney(state.kevin.salary):''}" onchange="state.kevin.salary=parseMoney(this.value);saveState();renderAll();" /></div>
-    <div class="field"><label>Annual Raise %</label><input id="f-k-raise" type="number" step="0.1" value="${state.kevin.raisePct??2.5}" onchange="state.kevin.raisePct=parseFloat(this.value)||0;saveState();renderAll();" /></div>
-    <div class="field"><label>Target Retirement Age</label><input id="f-k-retage" type="number" step="0.5" value="${state.kevin.retireAge??62}" onchange="state.kevin.retireAge=parseFloat(this.value)||62;autoKRetDate();saveState();renderAll();" /></div>
-    <div class="field"><label>Retirement Date</label><input id="f-k-retdate" type="date" value="${state.kevin.retireDate||''}" onchange="state.kevin.retireDate=this.value;saveState();renderAll();" /><div class="field-hint">Leave blank to use target retirement age</div></div>
+    <div class="field"><label>Date of Birth</label><input id="f-k-dob" type="date" value="${state.kevin.dob||''}" onchange="state.kevin.dob=this.value;autoKRetDate();saveState();scheduleRender();" /></div>
+    <div class="field"><label>Annual Salary (current)</label><input id="f-k-salary" type="text" value="${state.kevin.salary?fmtMoney(state.kevin.salary):''}" onchange="state.kevin.salary=parseMoney(this.value);saveState();scheduleRender();" /></div>
+    <div class="field"><label>Annual Raise %</label><input id="f-k-raise" type="number" step="0.1" value="${state.kevin.raisePct??2.5}" onchange="state.kevin.raisePct=parseFloat(this.value)||0;saveState();scheduleRender();" /></div>
+    <div class="field"><label>Target Retirement Age</label><input id="f-k-retage" type="number" step="0.5" value="${state.kevin.retireAge??62}" onchange="state.kevin.retireAge=parseFloat(this.value)||62;autoKRetDate();saveState();scheduleRender();" /></div>
+    <div class="field"><label>Retirement Date</label><input id="f-k-retdate" type="date" value="${state.kevin.retireDate||''}" onchange="state.kevin.retireDate=this.value;saveState();scheduleRender();" /><div class="field-hint">Leave blank to use target retirement age</div></div>
   </div></div>`;
 
   h+=`<div class="card"><div class="card-header"><div class="card-title">Kevin's DC Plans</div></div>`;
@@ -803,9 +803,9 @@ function renderSettings() {
   el.innerHTML=`
   <div class="card"><div class="card-header"><div class="card-title">Rates & Assumptions</div></div>
     <div class="form-grid">
-      <div class="field"><label>Pre-Retirement Return %</label><input id="f-ror" type="number" step="0.1" value="${state.ror??7}" onchange="state.ror=parseFloat(this.value)||0;saveState();renderAll();" /></div>
-      <div class="field"><label>Post-Retirement Return %</label><input id="f-rror" type="number" step="0.1" value="${state.retRor??5}" onchange="state.retRor=parseFloat(this.value)||0;saveState();renderAll();" /></div>
-      <div class="field"><label>Annual Income Goal</label><input id="f-incomegoal" type="text" value="${state.incomeGoal?fmtMoney(state.incomeGoal):''}" onchange="state.incomeGoal=parseMoney(this.value);saveState();renderAll();" /></div>
+      <div class="field"><label>Pre-Retirement Return %</label><input id="f-ror" type="number" step="0.1" value="${state.ror??7}" onchange="state.ror=parseFloat(this.value)||0;saveState();scheduleRender();" /></div>
+      <div class="field"><label>Post-Retirement Return %</label><input id="f-rror" type="number" step="0.1" value="${state.retRor??5}" onchange="state.retRor=parseFloat(this.value)||0;saveState();scheduleRender();" /></div>
+      <div class="field"><label>Annual Income Goal</label><input id="f-incomegoal" type="text" value="${state.incomeGoal?fmtMoney(state.incomeGoal):''}" onchange="state.incomeGoal=parseMoney(this.value);saveState();scheduleRender();" /></div>
     </div>
   </div>
   <div class="card"><div class="card-header"><div class="card-title">GitHub Sync</div></div>
@@ -831,7 +831,13 @@ function renderSettings() {
 }
 
 // ── Render all ────────────────────────────────────────────────
+let _renderT;
+function scheduleRender() {
+  clearTimeout(_renderT);
+  _renderT = setTimeout(renderAll, 1500);
+}
 function renderAll() {
+  clearTimeout(_renderT);
   const ae = document.activeElement;
   const fid = ae?.id;
   const fval = ae?.value;
@@ -858,8 +864,8 @@ function switchTab(name) {
 }
 
 // ── Event helpers ─────────────────────────────────────────────
-function setBPlan(id,f,v){ const p=state.brenna.plans.find(x=>x.id===id); if(p){p[f]=v;saveState();renderAll();} }
-function setKPlan(id,f,v){ const p=state.kevin.plans.find(x=>x.id===id);  if(p){p[f]=v;saveState();renderAll();} }
+function setBPlan(id,f,v){ const p=state.brenna.plans.find(x=>x.id===id); if(p){p[f]=v;saveState();scheduleRender();} }
+function setKPlan(id,f,v){ const p=state.kevin.plans.find(x=>x.id===id);  if(p){p[f]=v;saveState();scheduleRender();} }
 function autoKRetDate() {
   if (state.kevin.dob&&state.kevin.retireAge&&!state.kevin.retireDate) {
     state.kevin.retireDate=ageDate(state.kevin.dob,state.kevin.retireAge).toISOString().slice(0,10);
