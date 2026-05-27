@@ -959,14 +959,17 @@ function openSM(idx=null) {
   document.getElementById('sm-sal').value=s?.salaryOverride?fmtMoney(s.salaryOverride):'';
   const alreadyPurch = totalPurchased();
   const otherScenYrs = (state.brenna.purchaseScenarios||[])
-    .reduce((sum,sc,i)=>sum+(i!==idx?parseFloat(sc.yearsToPurchase)||0:0),0);
+    .reduce((sum,sc,i)=>{ if(i===idx) return sum; return sum+calcScenario(sc).yrs; },0);
   const totalEl = state.brenna.totalEligible||0;
   const remaining = totalEl>0 ? totalEl-alreadyPurch-otherScenYrs : null;
-  const remStr = remaining!==null
-    ? ` &nbsp;·&nbsp; Remaining eligible: <strong style="color:${remaining<0?'var(--danger)':'var(--primary)'}">${fmtD(remaining,5)} yrs</strong>`
-    : '';
+  const remColor = remaining!=null ? (remaining<0?'var(--danger)':'var(--primary)') : '';
   document.getElementById('sm-context').innerHTML=
-    `Purchased: <strong>${fmtD(alreadyPurch,5)} yrs</strong> &nbsp;·&nbsp; Other scenarios: <strong>${fmtD(otherScenYrs,2)} yrs</strong>${remStr}`;
+    remaining!=null
+      ? `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.25rem;">
+           <span style="color:var(--muted)">Limit <strong style="color:inherit">${fmtD(totalEl,5)}</strong> &minus; purchased <strong style="color:inherit">${fmtD(alreadyPurch,5)}</strong>${otherScenYrs>0?` &minus; other scenarios <strong style="color:inherit">${fmtD(otherScenYrs,5)}</strong>`:''}</span>
+           <span style="font-size:0.9rem;">Available: <strong style="color:${remColor}">${fmtD(remaining,5)} yrs</strong></span>
+         </div>`
+      : `Purchased: <strong>${fmtD(alreadyPurch,5)} yrs</strong>`;
   document.getElementById('scenario-modal').classList.add('open');
 }
 function closeScenarioModal(){ document.getElementById('scenario-modal').classList.remove('open'); _smIdx=null; }
