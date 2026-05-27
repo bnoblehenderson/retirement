@@ -583,6 +583,7 @@ function calcTimeline() {
   const k595DayFrac      = kAge595 ? dayFrac(kAge595, k595Yr) : 1;
   const bAge595DayFracTL = bAge595 ? dayFrac(bAge595, b595Yr) : 1;
   const startYr = now.getFullYear();
+  const nowFracTL  = dayFrac(now, startYr);
   const endYr   = 2087;
   // Purchase costs deducted from 457B by year
   const purchCostByYr={};
@@ -613,8 +614,12 @@ function calcTimeline() {
       yr===bAge62Yr ? age62SuppFrac :
       yr===bRetYr ? bRetPenFrac : 1;
     const sInc = suppFracTL > 0 ? suppAnn * suppFracTL : 0;
-    const bSal  = yr<=bRetYr && state.brenna.salary ? brennaAnnSal(yr) * (yr===bRetYr ? bRetSalFrac : 1) : 0;
-    const kSal  = yr<=kRetYr && state.kevin.salary  ? kevinSalAt(mid)  * (yr===kRetYr ? kRetSalFrac : 1) : 0;
+    const bSal  = yr<=bRetYr && state.brenna.salary ? brennaAnnSal(yr) * (
+      yr===startYr&&yr===bRetYr ? Math.max(0,bRetSalFrac-(1-nowFracTL)) :
+      yr===startYr ? nowFracTL : yr===bRetYr ? bRetSalFrac : 1) : 0;
+    const kSal  = yr<=kRetYr && state.kevin.salary  ? kevinSalAt(mid)  * (
+      yr===startYr&&yr===kRetYr ? Math.max(0,kRetSalFrac-(1-nowFracTL)) :
+      yr===startYr ? nowFracTL : yr===kRetYr ? kRetSalFrac : 1) : 0;
 
     // Priority-based DC draws: Kevin first → Brenna eligible DC → 457B emergency pre-62
     const wRate = (state.withdrawalPct??4)/100;
@@ -1175,6 +1180,12 @@ function renderFlow() {
   const runBal={};
   allPlans.forEach(p=>{runBal[p.id]=parseFloat(p.balance)||0;});
   const startYr=now.getFullYear();
+  const nowFracFL=dayFracFL(now,startYr);
+  const planBalFracFL={};
+  allPlans.forEach(p=>{
+    const bd=p.balDate?new Date(p.balDate):null;
+    planBalFracFL[p.id]=bd&&!isNaN(bd)&&bd.getFullYear()===startYr?dayFracFL(bd,startYr):1;
+  });
   const milestoneLabels={};
   if(bRet) milestoneLabels[bRetYr]=(milestoneLabels[bRetYr]?milestoneLabels[bRetYr]+' / ':'')+'Brenna retires';
   if(kRet) milestoneLabels[kRetYr]=(milestoneLabels[kRetYr]?milestoneLabels[kRetYr]+' / ':'')+'Kevin retires';
@@ -1194,8 +1205,12 @@ function renderFlow() {
     const bAge595okFL=yr>=b595Yr;
     const can457=bRetired&&bAge62okFL, canBOther=bRetired&&bAge595okFL, canKDC=kRetired&&k595ok;
     const mid=new Date(yr,6,1);
-    const bSalYr=yr<=bRetYr&&state.brenna.salary?brennaAnnSal(yr)*(yr===bRetYr?bRetSalFracFL:1):0;
-    const kSalYr=yr<=kRetYr&&state.kevin.salary ?kevinSalAt(mid) *(yr===kRetYr?kRetSalFracFL:1):0;
+    const bSalYr=yr<=bRetYr&&state.brenna.salary?brennaAnnSal(yr)*(
+      yr===startYr&&yr===bRetYr?Math.max(0,bRetSalFracFL-(1-nowFracFL)):
+      yr===startYr?nowFracFL:yr===bRetYr?bRetSalFracFL:1):0;
+    const kSalYr=yr<=kRetYr&&state.kevin.salary ?kevinSalAt(mid) *(
+      yr===startYr&&yr===kRetYr?Math.max(0,kRetSalFracFL-(1-nowFracFL)):
+      yr===startYr?nowFracFL:yr===kRetYr?kRetSalFracFL:1):0;
     const bPenColaYrsFL=bRetired?Math.max(0,yr-bRetYr-1):0;
     const bPenColaFL=Math.pow(1+PENSION_COLA,bPenColaYrsFL);
     const bPenInc=bRetired?bPenAnn*bPenColaFL*(yr===bRetYr?bRetPenFracFL:1):0;
@@ -1250,11 +1265,13 @@ function renderFlow() {
         withdrawal=planDrawsFL[p.id]||0;
       }
       const purchFVfl=purchase*Math.pow(1+r,0.25);
-      let b=balStart*(1+r);
-      if(!retired){b+=fvAnnuity(annContrib+extra,r);if(isB457)b=Math.max(0,b-purchFVfl);}
+      const balFrac=yr===startYr?(planBalFracFL[p.id]||1):1;
+      const scaledContrib=(annContrib+extra)*balFrac;
+      let b=balStart*Math.pow(1+r,balFrac);
+      if(!retired){b+=fvAnnuity(scaledContrib,r);if(isB457)b=Math.max(0,b-purchFVfl);}
       if(withdrawal>0) b=Math.max(0,b-fvAnnuity(withdrawal,r));
       runBal[p.id]=b;
-      const cashFlow=annContrib+extra-purchase-withdrawal;
+      const cashFlow=scaledContrib-purchase-withdrawal;
       const invGain=b-balStart-cashFlow;
       rowData[p.id]={cashFlow,invGain,balEnd:b,withdrawal};
     });
