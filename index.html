@@ -577,6 +577,8 @@ function calcTimeline() {
     const mid = new Date(yr,6,1);
     const pInc = bRetired ? bPensionAnn : 0;
     const sInc = bRetired&&age62&&mid<age62 ? suppAnn : 0;
+    const bSal = !bRetired && state.brenna.salary ? brennaSalAt(mid) : 0;
+    const kSal = !kRetired && state.kevin.salary  ? kevinSalAt(mid)  : 0;
 
     // Each pool can draw up to withdrawalPct% of its balance; limit total draw to income goal gap
     const wRate = (state.withdrawalPct??4)/100;
@@ -584,7 +586,7 @@ function calcTimeline() {
     const dBOth_max = canBOther ? bDCother*wRate : 0;
     const dKDC_max  = canKDC    ? kDC     *wRate : 0;
     const dcMax = d457_max + dBOth_max + dKDC_max;
-    const nonDCInc  = pInc + sInc;
+    const nonDCInc  = pInc + sInc + bSal + kSal;
     const dcNeeded  = (state.incomeGoal>0 && dcMax>0) ? Math.max(0, state.incomeGoal - nonDCInc) : dcMax;
     const dcDraw    = Math.min(dcMax, dcNeeded);
     const scale     = dcMax>0 ? dcDraw/dcMax : 0;
@@ -608,8 +610,6 @@ function calcTimeline() {
     else           kDC = kDC*(1+ror)+kDCc;
 
     const ex457 = bRetired && bDC457===0 && prev457>0;
-    const bSal  = !bRetired && state.brenna.salary ? brennaSalAt(mid) : 0;
-    const kSal  = !kRetired && state.kevin.salary  ? kevinSalAt(mid)  : 0;
 
     if (yr>=Math.min(bRetYr===Infinity?endYr:bRetYr, kRetYr===Infinity?endYr:kRetYr)) {
       const brennaInc = bSal+pInc+sInc+d457+dBOth;
@@ -972,7 +972,10 @@ function renderDC() {
     const rowVals={yr};
     let anyPositive=false;
     // Compute income-goal withdrawal scale for this year
-    const nonDCInc=(bRetired?bPenAnn:0)+(bRetired&&yr<age62Yr?bSuppAnn:0);
+    const midDC=new Date(yr,6,1);
+    const bSalDC=!bRetired&&state.brenna.salary?brennaSalAt(midDC):0;
+    const kSalDC=!kRetired&&state.kevin.salary ?kevinSalAt(midDC) :0;
+    const nonDCInc=(bRetired?bPenAnn:0)+(bRetired&&yr<age62Yr?bSuppAnn:0)+bSalDC+kSalDC;
     const dcMaxYr=plans.reduce((s,p)=>{
       const isB457=p.id==='b457b', isBOther=p.owner==='brenna'&&!isB457, isKDC=p.owner==='kevin';
       const canDraw=(isB457&&can457)||(isBOther&&canBOther)||(isKDC&&canKDC);
