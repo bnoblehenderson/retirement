@@ -679,8 +679,15 @@ function renderPhases(tl) {
     }
     const cls=!r.bRet&&!r.kRet?'pre':r.bRet&&r.kRet?'full':'partial';
     const bParts=[], kParts=[];
-    if(r.d457>0)  bParts.push(`457B ${fmt$(r.d457)}/yr`);
-    if(r.dBOth>0) bParts.push(`Other DC ${fmt$(r.dBOth)}/yr`);
+    if(r.bRet) {
+      if(r.pInc)   bParts.push(`Pension ${fmt$(r.pInc)}/yr`);
+      if(r.sInc)   bParts.push(`Supplement ${fmt$(r.sInc)}/yr`);
+      if(r.d457>0) bParts.push(`457B ${fmt$(r.d457)}/yr`);
+      if(r.dBOth>0)bParts.push(`Other DC ${fmt$(r.dBOth)}/yr`);
+    } else {
+      if(r.d457>0) bParts.push(`457B ${fmt$(r.d457)}/yr`);
+      if(r.dBOth>0)bParts.push(`Other DC ${fmt$(r.dBOth)}/yr`);
+    }
     if(r.dKDC>0)  kParts.push(`401K ${fmt$(r.dKDC)}/yr`);
     const showBrenna=(r.bSal||r.bRet)&&r.brennaInc>0, showKevin=(r.kSal||r.kRet)&&r.kevinInc>0;
     const bRepl = r.bRet&&bTermSal>0 ? ` (${fmtD(r.brennaInc/bTermSal*100,1)}% replacement)` : '';
