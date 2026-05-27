@@ -596,7 +596,10 @@ function renderOverview() {
 
   // Stat grid
   h+=`<div class="stat-grid">`;
-  if (bRet) h+=`<div class="stat-box"><div class="stat-label">Brenna Retires</div><div class="stat-value" style="font-size:1rem;">${fmtMo(bRet)}</div><div class="stat-sub">${bPenMo>0?fmt$(bPenMo)+'/mo pension':'—'}</div></div>`;
+  if (bRet) {
+    const bSub=[]; if(bPenMo>0) bSub.push(fmt$(bPenMo)+'/mo pension'); if(bDC>0) bSub.push(fmt$(bDC)+' DC at ret.');
+    h+=`<div class="stat-box"><div class="stat-label">Brenna Retires</div><div class="stat-value" style="font-size:1rem;">${fmtMo(bRet)}</div><div class="stat-sub">${bSub.length?bSub.join(' · '):'—'}</div></div>`;
+  }
   if (kRet)  h+=`<div class="stat-box"><div class="stat-label">Kevin Retires</div><div class="stat-value" style="font-size:1rem;">${fmtMo(kRet)}</div><div class="stat-sub">${kDC>0?fmt$(kDC)+' DC at ret.':'—'}</div></div>`;
   if (bDC||kDC) h+=`<div class="stat-box"><div class="stat-label">Combined DC</div><div class="stat-value">${fmt$(bDC+kDC)}</div><div class="stat-sub">at each retirement</div></div>`;
   if (bPenMo||(bDC+kDC)) h+=`<div class="stat-box"><div class="stat-label">Est. Annual Income</div><div class="stat-value" style="font-size:1rem;">${fmt$(bPenMo*12+(bDC+kDC)*0.04)}/yr</div><div class="stat-sub">pension + 4% DC</div></div>`;
