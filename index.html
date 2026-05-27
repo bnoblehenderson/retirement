@@ -632,8 +632,8 @@ function calcTimeline() {
     const dBOth = dBOth_max * scale;
     const dKDC  = dKDC_max  * scale;
     // Gap-fill 457B: before age 62, both retired, income goal set — draw to cover shortfall
-    const gap457ok = !bAge62ok && bRetired && kRetired && state.incomeGoal > 0;
-    const d457_gap = gap457ok ? Math.max(0, Math.min(bDC457*wRate, state.incomeGoal - nonDCInc - dcDraw1)) : 0;
+    const gap457ok = !bAge62ok && bRetired && kRetired && state.minIncome > 0;
+    const d457_gap = gap457ok ? Math.max(0, Math.min(bDC457*wRate, state.minIncome - nonDCInc - dcDraw1)) : 0;
     d457 += d457_gap;
     const dcDraw = dcDraw1 + d457_gap;
 
@@ -1057,8 +1057,8 @@ function renderDC() {
     const dcNeededYr=(state.incomeGoal>0&&dcMaxYr>0)?Math.max(0,state.incomeGoal-nonDCInc):dcMaxYr;
     const drawScale=dcMaxYr>0?Math.min(1,dcNeededYr/dcMaxYr):0;
     const dcDraw1DC=dcMaxYr*drawScale;
-    const gap457okDC=!bAge62okDC&&bRetired&&kRetired&&state.incomeGoal>0;
-    const d457GapDC=gap457okDC?Math.max(0,Math.min((runBal['b457b']||0)*wRate,state.incomeGoal-nonDCInc-dcDraw1DC)):0;
+    const gap457okDC=!bAge62okDC&&bRetired&&kRetired&&state.minIncome>0;
+    const d457GapDC=gap457okDC?Math.max(0,Math.min((runBal['b457b']||0)*wRate,state.minIncome-nonDCInc-dcDraw1DC)):0;
 
     plans.forEach(p=>{
       const isB457=p.id==='b457b';
@@ -1198,8 +1198,8 @@ function renderFlow() {
     const dcNeededYr=(state.incomeGoal>0&&dcMaxYr>0)?Math.max(0,state.incomeGoal-nonDCInc):dcMaxYr;
     const drawScale=dcMaxYr>0?Math.min(1,dcNeededYr/dcMaxYr):0;
     const dcDraw1Yr=dcMaxYr*drawScale;
-    const gap457okFL=!bAge62okFL&&bRetired&&kRetired&&state.incomeGoal>0;
-    const d457GapFL=gap457okFL?Math.max(0,Math.min((runBal['b457b']||0)*wRate,state.incomeGoal-nonDCInc-dcDraw1Yr)):0;
+    const gap457okFL=!bAge62okFL&&bRetired&&kRetired&&state.minIncome>0;
+    const d457GapFL=gap457okFL?Math.max(0,Math.min((runBal['b457b']||0)*wRate,state.minIncome-nonDCInc-dcDraw1Yr)):0;
     const rowData={yr,bSal:bSalYr,kSal:kSalYr,bPenInc,bSuppInc,bRetired,kRetired};
     allPlans.forEach(p=>{
       const balStart=runBal[p.id];
