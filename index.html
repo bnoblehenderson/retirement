@@ -556,7 +556,7 @@ function calcTimeline() {
   const b595Yr  = bAge595 ? bAge595.getFullYear() : Infinity;
   const k595Yr  = kAge595 ? kAge595.getFullYear() : Infinity;
   const startYr = now.getFullYear();
-  const endYr   = Math.max(bRetYr===Infinity?startYr+5:bRetYr, kRetYr===Infinity?startYr+5:kRetYr)+30;
+  const endYr   = 2087;
   // Purchase costs deducted from 457B by year
   const purchCostByYr={};
   (state.brenna.purchaseScenarios||[]).map(calcScenario).forEach(i=>{
@@ -953,7 +953,7 @@ function renderDC() {
   const startYr=now.getFullYear();
   const rows=[];
   let yr=startYr;
-  const maxYr=startYr+70;
+  const maxYr=2087;
   // running balances
   const runBal={};
   plans.forEach(p=>{ runBal[p.id]=balMap[p.id].bal; });
