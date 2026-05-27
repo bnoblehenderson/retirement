@@ -224,7 +224,7 @@ const PENSION_COLA  = 0.02;  // annual pension COLA starting 2nd Jan of drawing
 // ── Default state ────────────────────────────────────────────
 const DEFAULT = {
   brenna: {
-    dob: '', pensionStart: '', retireDate: '', salary: 0, raisePct: 2.5,
+    dob: '', pensionStart: '', retireDate: '', retireAge: null, salary: 0, raisePct: 2.5,
     salaryCap: 0, excess401aPct: 20, totalEligible: 11.50274,
     servicePurchases: [
       { id: 'init', date: '2020-09-15', years: 1.21416, cost: 0, notes: 'Initial purchased service credit' }
@@ -774,11 +774,12 @@ function renderBrenna() {
   <div class="form-grid">
     <div class="field"><label>Date of Birth</label><input id="f-b-dob" type="date" value="${state.brenna.dob||''}" onchange="state.brenna.dob=this.value;saveState();scheduleRender();" /></div>
     <div class="field"><label>Pension Service Start Date</label><input id="f-b-penstart" type="date" value="${state.brenna.pensionStart||''}" onchange="state.brenna.pensionStart=this.value;saveState();scheduleRender();" /><div class="field-hint">Date BNH pension service began accruing.</div></div>
-    <div class="field"><label>Retirement Date</label><input id="f-b-retdate" type="date" value="${state.brenna.retireDate||''}" onchange="state.brenna.retireDate=this.value;saveState();scheduleRender();" /><div class="field-hint">Leave blank to auto-calculate from Rule of 80.</div></div>
+    <div class="field"><label>Retirement Age</label><input id="f-b-retage" type="number" step="0.5" value="${state.brenna.retireAge??''}" onchange="state.brenna.retireAge=parseFloat(this.value)||null;if(state.brenna.dob&&state.brenna.retireAge)state.brenna.retireDate=ageDate(state.brenna.dob,state.brenna.retireAge).toISOString().slice(0,10);saveState();scheduleRender();" /></div>
+    <div class="field"><label>Retirement Date</label><input id="f-b-retdate" type="date" value="${state.brenna.retireDate||''}" onchange="state.brenna.retireDate=this.value;if(this.value&&state.brenna.dob)state.brenna.retireAge=Math.round(ageAt(state.brenna.dob,new Date(this.value))*2)/2;saveState();scheduleRender();" /><div class="field-hint">Leave blank to auto-calculate from Rule of 80.</div></div>
     <div class="field"><label>Annual Salary (current)</label><input id="f-b-salary" type="text" value="${state.brenna.salary?fmtMoney(state.brenna.salary):''}" onchange="state.brenna.salary=parseMoney(this.value);saveState();scheduleRender();" /></div>
-    <div class="field"><label>Annual Raise %</label><input id="f-b-raise" type="number" step="0.1" value="${state.brenna.raisePct??2.5}" onchange="state.brenna.raisePct=parseFloat(this.value)||0;saveState();scheduleRender();" /></div>
+    <div class="field"><label>Annual Raise</label><input id="f-b-raise" type="number" step="0.1" value="${state.brenna.raisePct??2.5}" onchange="state.brenna.raisePct=parseFloat(this.value)||0;saveState();scheduleRender();" /></div>
     <div class="field"><label>Annual Salary Cap (this year)</label><input id="f-b-salcap" type="text" value="${state.brenna.salaryCap?fmtMoney(state.brenna.salaryCap):''}" onchange="state.brenna.salaryCap=parseMoney(this.value);saveState();scheduleRender();" /><div class="field-hint">Grows $10,000/yr. Used to cap pension salary.</div></div>
-    <div class="field"><label>Excess Salary → 401A %</label><input id="f-b-excess" type="number" step="1" value="${state.brenna.excess401aPct??20}" onchange="state.brenna.excess401aPct=parseFloat(this.value)||0;saveState();scheduleRender();" /><div class="field-hint">% of salary above cap contributed to 401A</div></div>
+    <div class="field"><label>Excess Salary → 401A</label><input id="f-b-excess" type="number" step="1" value="${state.brenna.excess401aPct??20}" onchange="state.brenna.excess401aPct=parseFloat(this.value)||0;saveState();scheduleRender();" /><div class="field-hint">% of salary above cap contributed to 401A</div></div>
     <div class="field"><label>Total Years Eligible to Purchase</label><input id="f-b-totalelig" type="number" step="0.00001" value="${state.brenna.totalEligible||''}" onchange="state.brenna.totalEligible=parseFloat(this.value)||0;saveState();scheduleRender();" /><div class="field-hint">Lifetime cap including years already purchased.</div></div>
   </div></div>`;
 
@@ -932,9 +933,9 @@ function renderKevin() {
   <div class="form-grid">
     <div class="field"><label>Date of Birth</label><input id="f-k-dob" type="date" value="${state.kevin.dob||''}" onchange="state.kevin.dob=this.value;autoKRetDate();saveState();scheduleRender();" /></div>
     <div class="field"><label>Annual Salary (current)</label><input id="f-k-salary" type="text" value="${state.kevin.salary?fmtMoney(state.kevin.salary):''}" onchange="state.kevin.salary=parseMoney(this.value);saveState();scheduleRender();" /></div>
-    <div class="field"><label>Annual Raise %</label><input id="f-k-raise" type="number" step="0.1" value="${state.kevin.raisePct??2.5}" onchange="state.kevin.raisePct=parseFloat(this.value)||0;saveState();scheduleRender();" /></div>
-    <div class="field"><label>Target Retirement Age</label><input id="f-k-retage" type="number" step="0.5" value="${state.kevin.retireAge??62}" onchange="state.kevin.retireAge=parseFloat(this.value)||62;autoKRetDate();saveState();scheduleRender();" /></div>
-    <div class="field"><label>Retirement Date</label><input id="f-k-retdate" type="date" value="${state.kevin.retireDate||''}" onchange="state.kevin.retireDate=this.value;saveState();scheduleRender();" /><div class="field-hint">Leave blank to use target retirement age</div></div>
+    <div class="field"><label>Annual Raise</label><input id="f-k-raise" type="number" step="0.1" value="${state.kevin.raisePct??2.5}" onchange="state.kevin.raisePct=parseFloat(this.value)||0;saveState();scheduleRender();" /></div>
+    <div class="field"><label>Retirement Age</label><input id="f-k-retage" type="number" step="0.5" value="${state.kevin.retireAge??62}" onchange="state.kevin.retireAge=parseFloat(this.value)||62;autoKRetDate();saveState();scheduleRender();" /></div>
+    <div class="field"><label>Retirement Date</label><input id="f-k-retdate" type="date" value="${state.kevin.retireDate||''}" onchange="state.kevin.retireDate=this.value;if(this.value&&state.kevin.dob)state.kevin.retireAge=Math.round(ageAt(state.kevin.dob,new Date(this.value))*2)/2;saveState();scheduleRender();" /><div class="field-hint">Updating either field syncs the other.</div></div>
   </div></div>`;
 
   h+=`<div class="card"><div class="card-header"><div class="card-title">Kevin's DC Plans</div></div>`;
@@ -1330,9 +1331,9 @@ function renderSettings() {
   el.innerHTML=`
   <div class="card"><div class="card-header"><div class="card-title">Rates & Assumptions</div></div>
     <div class="form-grid">
-      <div class="field"><label>Pre-Retirement Return %</label><input id="f-ror" type="number" step="0.1" value="${state.ror??7}" onchange="state.ror=parseFloat(this.value)||0;saveState();scheduleRender();" /></div>
-      <div class="field"><label>Post-Retirement Return %</label><input id="f-rror" type="number" step="0.1" value="${state.retRor??5}" onchange="state.retRor=parseFloat(this.value)||0;saveState();scheduleRender();" /></div>
-      <div class="field"><label>Maximum Annual DC Withdrawal %</label><input id="f-wpct" type="number" step="0.1" value="${state.withdrawalPct??4}" onchange="state.withdrawalPct=parseFloat(this.value)||4;saveState();scheduleRender();" /><div class="field-hint">% of each DC balance withdrawn per year post-retirement (default 4%)</div></div>
+      <div class="field"><label>Pre-Retirement Return</label><input id="f-ror" type="number" step="0.1" value="${state.ror??7}" onchange="state.ror=parseFloat(this.value)||0;saveState();scheduleRender();" /></div>
+      <div class="field"><label>Post-Retirement Return</label><input id="f-rror" type="number" step="0.1" value="${state.retRor??5}" onchange="state.retRor=parseFloat(this.value)||0;saveState();scheduleRender();" /></div>
+      <div class="field"><label>Maximum Annual DC Withdrawal</label><input id="f-wpct" type="number" step="0.1" value="${state.withdrawalPct??4}" onchange="state.withdrawalPct=parseFloat(this.value)||4;saveState();scheduleRender();" /><div class="field-hint">% of each DC balance withdrawn per year post-retirement (default 4%)</div></div>
       <div class="field"><label>Annual Income Goal</label><input id="f-incomegoal" type="text" value="${state.incomeGoal?fmtMoney(state.incomeGoal):''}" onchange="state.incomeGoal=parseMoney(this.value);saveState();scheduleRender();" /></div>
       <div class="field"><label>Minimum Annual Income</label><input id="f-minincome" type="text" value="${state.minIncome?fmtMoney(state.minIncome):''}" onchange="state.minIncome=parseMoney(this.value);saveState();scheduleRender();" /><div class="field-hint">Flags years where income falls below this floor due to withdrawal % limits</div></div>
     </div>
@@ -1403,7 +1404,7 @@ function kevinRetDate() {
   return null;
 }
 function autoKRetDate() {
-  if (state.kevin.dob&&state.kevin.retireAge&&!state.kevin.retireDate) {
+  if (state.kevin.dob&&state.kevin.retireAge) {
     state.kevin.retireDate=ageDate(state.kevin.dob,state.kevin.retireAge).toISOString().slice(0,10);
   }
 }
