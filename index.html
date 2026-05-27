@@ -316,7 +316,12 @@ function totalPurchased() {
 function plannedByDate(atDate) {
   return (state.brenna.purchaseScenarios||[])
     .filter(sc=>new Date(sc.windowYear+1,8,30)<=new Date(atDate))
-    .reduce((s,sc)=>s+(parseFloat(sc.yearsToPurchase)||0),0);
+    .reduce((s,sc)=>s+calcScenario(sc).yrs,0);
+}
+function brennaRetDate() {
+  if (state.brenna.retireDate) return new Date(state.brenna.retireDate);
+  const scenYrs=(state.brenna.purchaseScenarios||[]).reduce((s,sc)=>s+calcScenario(sc).yrs,0);
+  return projRetireDate(scenYrs);
 }
 function svcYrs(atDate, extra=0) {
   if (!state.brenna.pensionStart) return 0;
@@ -491,7 +496,7 @@ function calcAllScenarios() {
 
 // ── Income timeline ───────────────────────────────────────────
 function calcTimeline() {
-  const bRet = state.brenna.retireDate ? new Date(state.brenna.retireDate) : projRetireDate();
+  const bRet = brennaRetDate();
   const kRet = kevinRetDate();
   if (!bRet&&!kRet) return null;
 
@@ -583,7 +588,7 @@ function calcTimeline() {
 // ── Render: Overview ──────────────────────────────────────────
 function renderOverview() {
   const el=document.getElementById('ov-content'); if(!el) return;
-  const bRet=state.brenna.retireDate?new Date(state.brenna.retireDate):projRetireDate();
+  const bRet=brennaRetDate();
   const kRet=kevinRetDate();
   const bDC=bRet?brennaDCatDate(bRet):0;
   const kDC=kRet?kevinDCatDate(kRet):0;
@@ -668,12 +673,9 @@ function renderBrenna() {
   // Pension status
   if (state.brenna.dob&&state.brenna.pensionStart) {
     const r80=r80at(now), pct=Math.min(100,r80/RULE_TARGET*100), elig=r80>=RULE_TARGET;
-    const retDate=state.brenna.retireDate?new Date(state.brenna.retireDate):projRetireDate();
-    // Earliest retirement with all planned purchases
-    const scenItems=(state.brenna.purchaseScenarios||[]).map(calcScenario);
-    const scenYrs=scenItems.reduce((s,i)=>s+i.yrs,0);
-    const withPurchRet=!state.brenna.retireDate&&scenYrs>0?projRetireDate(scenYrs):null;
-    const mosSaved=withPurchRet&&retDate?(retDate-withPurchRet)/(30.44*24*3600*1000):0;
+    const retDate=brennaRetDate();
+    const baseRetDate=!state.brenna.retireDate?projRetireDate():null; // baseline without purchases
+    const mosSaved=baseRetDate&&retDate&&retDate<baseRetDate?(baseRetDate-retDate)/(30.44*24*3600*1000):0;
     h+=`<div class="card"><div class="card-header"><div class="card-title">Pension Status</div></div>
     <div class="progress-wrap">
       <div class="progress-labels"><span>Rule of ${RULE_TARGET} Progress</span><span>${fmtD(r80,2)} / ${RULE_TARGET}</span></div>
@@ -686,8 +688,8 @@ function renderBrenna() {
       const sup=state.brenna.dob&&ageAt(state.brenna.dob,retDate)<62?suppMo(svc,avg):0;
       const cap=pensionCapAt(retDate);
       h+=`<div class="stat-grid" style="margin-top:0.75rem;">
-        <div class="stat-box"><div class="stat-label">Retirement Date</div><div class="stat-value" style="font-size:0.95rem;">${fmtDate(retDate)}</div><div class="stat-sub">${state.brenna.retireDate?'Manual':'Rule of 80'}</div></div>
-        ${withPurchRet?`<div class="stat-box"><div class="stat-label">With All Purchases</div><div class="stat-value" style="font-size:0.95rem;color:var(--primary)">${fmtDate(withPurchRet)}</div><div class="stat-sub">${fmtD(mosSaved,1)} mo earlier · ${fmtD(scenYrs,3)} yrs added</div></div>`:''}
+        <div class="stat-box"><div class="stat-label">Retirement Date</div><div class="stat-value" style="font-size:0.95rem;">${fmtDate(retDate)}</div><div class="stat-sub">${state.brenna.retireDate?'Manual':mosSaved>0?`${fmtD(mosSaved,1)} mo earlier w/ purchases`:'Rule of 80'}</div></div>
+        ${baseRetDate&&mosSaved>0?`<div class="stat-box"><div class="stat-label">Without Purchases</div><div class="stat-value" style="font-size:0.95rem;color:var(--muted)">${fmtDate(baseRetDate)}</div><div class="stat-sub">Rule of 80 baseline</div></div>`:''}
         <div class="stat-box"><div class="stat-label">Service Years</div><div class="stat-value">${fmtD(svc,2)}</div><div class="stat-sub">${fmtD(totalPurchased(),2)} purchased</div></div>
         <div class="stat-box"><div class="stat-label">Avg 36-mo Salary</div><div class="stat-value" style="font-size:0.95rem;">${fmt$(avg)}/mo</div><div class="stat-sub">Cap: ${cap===Infinity?'None':fmt$(cap/12)+'/mo'}</div></div>
         <div class="stat-box"><div class="stat-label">Pension</div><div class="stat-value" style="font-size:0.95rem;">${fmt$(pen)}/mo</div><div class="stat-sub">${fmt$(pen*12)}/yr</div></div>
@@ -699,7 +701,7 @@ function renderBrenna() {
 
   // DC plans
   h+=`<div class="card"><div class="card-header"><div class="card-title">Brenna's DC Plans</div></div>`;
-  const bRetDate=state.brenna.retireDate?new Date(state.brenna.retireDate):projRetireDate();
+  const bRetDate=brennaRetDate();
   state.brenna.plans.forEach(plan=>{
     let proj=0;
     if (bRetDate) {
