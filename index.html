@@ -1137,11 +1137,14 @@ function renderFlow() {
       if(canDraw)b=Math.max(0,b-withdrawal);
       runBal[p.id]=b;
     });
+    const dcDrawTotal=allPlans.reduce((s,p)=>s+(rowData[p.id]?.withdrawal||0),0);
+    rowData.annualIncome=bSalYr+kSalYr+(bRetired?bPenAnn:0)+(bRetired&&yr<age62Yr?bSuppAnn:0)+dcDrawTotal;
     rows.push(rowData);
     const allZero=allPlans.every(p=>runBal[p.id]<0.5);
     if(allZero&&bRetired&&kRetired&&yr>Math.max(bRetYr===Infinity?startYr:bRetYr,kRetYr===Infinity?startYr:kRetYr)+3) break;
   }
   // Render table
+  const totalCols=2+state.brenna.plans.length+1+state.kevin.plans.length+1;
   const fmtFlow=v=>v>0.5?`<span style="color:var(--primary)">${fmt$(v)}</span>`:v<-0.5?`<span style="color:#c0392b">(${fmt$(Math.abs(v))})</span>`:'—';
   let h=`<div class="card"><div class="card-header"><div class="card-title">Annual Salary &amp; DC Contributions / Withdrawals</div></div>
   <div class="table-wrap"><table><thead><tr>
@@ -1149,10 +1152,10 @@ function renderFlow() {
   state.brenna.plans.forEach(p=>{h+=`<th>Brenna ${p.name}</th>`;});
   h+=`<th>Kevin Salary</th>`;
   state.kevin.plans.forEach(p=>{h+=`<th>Kevin ${p.name}</th>`;});
-  h+=`</tr></thead><tbody>`;
+  h+=`<th>Annual Income</th></tr></thead><tbody>`;
   rows.forEach(row=>{
     const ms=milestoneLabels[row.yr];
-    if(ms) h+=`<tr><td colspan="${2+state.brenna.plans.length+1+state.kevin.plans.length}" style="text-align:center;font-size:0.72rem;font-weight:600;color:var(--primary);background:var(--bg);padding:0.3rem 0.75rem;">${ms}</td></tr>`;
+    if(ms) h+=`<tr><td colspan="${totalCols}" style="text-align:center;font-size:0.72rem;font-weight:600;color:var(--primary);background:var(--bg);padding:0.3rem 0.75rem;">${ms}</td></tr>`;
     const rowStyle=row.bRetired&&row.kRetired?'background:#f0faf4;':row.bRetired||row.kRetired?'background:#f0f7fd;':'';
     h+=`<tr style="${rowStyle}"><td>${row.yr}</td>`;
     h+=`<td>${row.bSal>0.5?fmt$(row.bSal):'$0.00'}</td>`;
@@ -1167,6 +1170,7 @@ function renderFlow() {
       const net=f.contrib-f.withdrawal;
       h+=`<td>${fmtFlow(net)}</td>`;
     });
+    h+=`<td style="font-weight:600;">${row.annualIncome>0.5?fmt$(row.annualIncome):'—'}</td>`;
     h+=`</tr>`;
   });
   h+=`</tbody></table></div></div>`;
