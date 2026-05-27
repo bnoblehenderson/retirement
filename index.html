@@ -408,18 +408,35 @@ function brennaDCatDate(retDate) {
   const ret=new Date(retDate), now=today();
   const age65=state.brenna.dob?ageDate(state.brenna.dob,65):null;
   const r=state.ror/100;
+  const cutoff=age65&&age65<ret?age65:ret;
+  // Purchase costs are drawn from 457B at each purchase date (before retirement)
+  const purchases=(state.brenna.purchaseScenarios||[]).map(calcScenario)
+    .filter(i=>i.purchDate<=cutoff).sort((a,b)=>a.purchDate-b.purchDate);
   return state.brenna.plans.reduce((tot,plan)=>{
     const bal=parseFloat(plan.balance)||0;
     const periods=plan.periods||24;
-    const cutoff=age65&&age65<ret?age65:ret;
     const balFrom=plan.balDate?new Date(plan.balDate):now;
-    const balYrs=Math.max(0,yFrac(balFrom,cutoff));
-    const contribGrow = plan.id==='b401a' ? state.brenna.raisePct : 0;
-    let fv = bal*Math.pow(1+r,balYrs)
-           + projectContribsFV(parseFloat(plan.contrib)||0,periods,now,cutoff,state.ror,contribGrow);
-    if (plan.id==='b401a') fv+=extra401aFV(cutoff);
+    const contribGrow=plan.id==='b401a'?state.brenna.raisePct:0;
+    let fv;
+    if (plan.id==='b457b'&&purchases.length) {
+      // Project segment-by-segment, deducting each purchase cost
+      fv=bal; let from=balFrom;
+      for (const sc of purchases) {
+        fv=fv*Math.pow(1+r,Math.max(0,yFrac(from,sc.purchDate)))
+          +projectContribsFV(parseFloat(plan.contrib)||0,periods,from,sc.purchDate,state.ror,0);
+        fv=Math.max(0,fv-sc.cost);
+        from=sc.purchDate;
+      }
+      fv=fv*Math.pow(1+r,Math.max(0,yFrac(from,cutoff)))
+        +projectContribsFV(parseFloat(plan.contrib)||0,periods,from,cutoff,state.ror,0);
+    } else {
+      const balYrs=Math.max(0,yFrac(balFrom,cutoff));
+      fv=bal*Math.pow(1+r,balYrs)
+        +projectContribsFV(parseFloat(plan.contrib)||0,periods,now,cutoff,state.ror,contribGrow);
+      if (plan.id==='b401a') fv+=extra401aFV(cutoff);
+    }
     if (cutoff<ret) fv=projectDC(fv,0,yFrac(cutoff,ret),state.ror);
-    return tot+fv;
+    return tot+Math.max(0,fv);
   },0);
 }
 function kevinDCatDate(retDate) {
@@ -533,6 +550,12 @@ function calcTimeline() {
   const k595Yr  = kAge595 ? kAge595.getFullYear() : Infinity;
   const startYr = now.getFullYear();
   const endYr   = Math.max(bRetYr===Infinity?startYr+5:bRetYr, kRetYr===Infinity?startYr+5:kRetYr)+30;
+  // Purchase costs deducted from 457B by year
+  const purchCostByYr={};
+  (state.brenna.purchaseScenarios||[]).map(calcScenario).forEach(i=>{
+    const yr=i.purchDate.getFullYear();
+    purchCostByYr[yr]=(purchCostByYr[yr]||0)+i.cost;
+  });
 
   const rows=[];
   for (let yr=startYr; yr<=endYr; yr++) {
@@ -564,7 +587,7 @@ function calcTimeline() {
     // Grow / draw each pool
     if (can457)    bDC457   = Math.max(0,(bDC457  -d457 )*(1+rRor));
     else if (bRetired) bDC457 = bDC457*(1+rRor)+bDC457c; // retired, no draw yet — still grows, no new contrib after retirement
-    else           bDC457   = bDC457*(1+ror)+bDC457c;
+    else { bDC457 = Math.max(0,bDC457*(1+ror)+bDC457c-(purchCostByYr[yr]||0)); }
 
     if (canBOther) bDCother = Math.max(0,(bDCother-dBOth)*(1+rRor));
     else if (bRetired) bDCother = bDCother*(1+rRor);     // retired, waiting for 59.5
