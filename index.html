@@ -348,6 +348,43 @@ function projectDC(bal, annContrib, yrs, ratePct, growPct=0) {
   if (Math.abs(r-g)<1e-9) return bal*rv + annContrib*n*Math.pow(1+r,n-1);
   return bal*rv + annContrib*(rv-Math.pow(1+g,n))/(r-g);
 }
+// Returns payment dates for a given year based on contribution frequency.
+// 24 = 15th and last calendar day of each month.
+// 12 = last calendar day of each month.
+// Other = evenly distributed through the year.
+function contribDatesForYear(year, periods) {
+  if (periods===24) {
+    const dates=[];
+    for (let m=0;m<12;m++){
+      dates.push(new Date(year,m,15));
+      dates.push(new Date(year,m+1,0)); // last day of month
+    }
+    return dates;
+  }
+  if (periods===12) {
+    return Array.from({length:12},(_,m)=>new Date(year,m+1,0));
+  }
+  return Array.from({length:periods},(_,i)=>{
+    const ms=new Date(year,0,1).getTime(), me=new Date(year+1,0,1).getTime();
+    return new Date(ms+(i+1)*(me-ms)/periods);
+  });
+}
+// FV of per-period contributions with exact payment-date compounding.
+// Growth rate applies annually to the per-period amount.
+function projectContribsFV(perPeriodContrib, periods, fromDate, toDate, annROR, annGrow) {
+  if (!perPeriodContrib||perPeriodContrib<=0) return 0;
+  const r=annROR/100, g=annGrow/100;
+  const from=new Date(fromDate), to=new Date(toDate);
+  const fromYr=from.getFullYear();
+  let fv=0;
+  for (let yr=fromYr; yr<=to.getFullYear(); yr++) {
+    const yearContrib=perPeriodContrib*Math.pow(1+g,yr-fromYr);
+    for (const d of contribDatesForYear(yr,periods)) {
+      if (d>=from&&d<=to) fv+=yearContrib*Math.pow(1+r,yFrac(d,to));
+    }
+  }
+  return fv;
+}
 function extra401aFV(toDate) {
   const exPct=(state.brenna.excess401aPct||0)/100;
   if (!exPct) return 0;
@@ -367,12 +404,12 @@ function brennaDCatDate(retDate) {
   const r=state.ror/100;
   return state.brenna.plans.reduce((tot,plan)=>{
     const bal=parseFloat(plan.balance)||0;
-    const ac=(parseFloat(plan.contrib)||0)*(plan.periods||24);
+    const periods=plan.periods||24;
     const cutoff=age65&&age65<ret?age65:ret;
     const balFrom=plan.balDate?new Date(plan.balDate):now;
     const balYrs=Math.max(0,yFrac(balFrom,cutoff));
-    const contYrs=Math.max(0,yFrac(now,cutoff));
-    let fv = bal*Math.pow(1+r,balYrs) + projectDC(0,ac,contYrs,state.ror,state.brenna.raisePct);
+    let fv = bal*Math.pow(1+r,balYrs)
+           + projectContribsFV(parseFloat(plan.contrib)||0,periods,now,cutoff,state.ror,state.brenna.raisePct);
     if (plan.id==='b401a') fv+=extra401aFV(cutoff);
     if (cutoff<ret) fv=projectDC(fv,0,yFrac(cutoff,ret),state.ror);
     return tot+fv;
@@ -384,12 +421,12 @@ function kevinDCatDate(retDate) {
   const r=state.ror/100;
   return state.kevin.plans.reduce((tot,plan)=>{
     const bal=parseFloat(plan.balance)||0;
-    const ac=(parseFloat(plan.contrib)||0)*(plan.periods||26);
+    const periods=plan.periods||26;
     const cutoff=age65&&age65<ret?age65:ret;
     const balFrom=plan.balDate?new Date(plan.balDate):now;
     const balYrs=Math.max(0,yFrac(balFrom,cutoff));
-    const contYrs=Math.max(0,yFrac(now,cutoff));
-    let fv = bal*Math.pow(1+r,balYrs) + projectDC(0,ac,contYrs,state.ror,state.kevin.raisePct);
+    let fv = bal*Math.pow(1+r,balYrs)
+           + projectContribsFV(parseFloat(plan.contrib)||0,periods,now,cutoff,state.ror,state.kevin.raisePct);
     if (cutoff<ret) fv=projectDC(fv,0,yFrac(cutoff,ret),state.ror);
     return tot+fv;
   },0);
@@ -405,9 +442,11 @@ function calcScenario(sc) {
   const cost = yrs*effAnn*COST_FACTOR;
   const b457 = state.brenna.plans.find(p=>p.id==='b457b');
   const bal457 = parseFloat(b457?.balance||0);
-  const ac457  = (parseFloat(b457?.contrib||0))*(b457?.periods||24);
-  const y2p = Math.max(0,yFrac(today(),purchDate));
-  const bal457atPurch = projectDC(bal457,ac457,y2p,state.ror,state.brenna.raisePct);
+  const per457 = b457?.periods||24;
+  const now457 = today();
+  const balFrom457 = b457?.balDate?new Date(b457.balDate):now457;
+  const bal457atPurch = bal457*Math.pow(1+state.ror/100,Math.max(0,yFrac(balFrom457,purchDate)))
+    + projectContribsFV(parseFloat(b457?.contrib||0),per457,now457,purchDate,state.ror,state.brenna.raisePct);
   return { sc, cost, yrs, bal457atPurch, canAfford: bal457atPurch>=cost, purchDate };
 }
 function calcAllScenarios() {
@@ -609,13 +648,13 @@ function renderBrenna() {
   state.brenna.plans.forEach(plan=>{
     let proj=0;
     if (bRetDate) {
-      const bal=parseFloat(plan.balance)||0, ac=(parseFloat(plan.contrib)||0)*(plan.periods||24);
+      const bal=parseFloat(plan.balance)||0, periods=plan.periods||24;
       const age65=state.brenna.dob?ageDate(state.brenna.dob,65):null;
       const cut=age65&&age65<bRetDate?age65:bRetDate;
-      const yrs=Math.max(0,yFrac(now,cut));
-      proj = plan.id==='b401a'
-        ? projectDC(bal,ac,yrs,state.ror,state.brenna.raisePct)+extra401aFV(cut)
-        : projectDC(bal,ac,yrs,state.ror,state.brenna.raisePct);
+      const balFrom=plan.balDate?new Date(plan.balDate):now;
+      proj = bal*Math.pow(1+state.ror/100,Math.max(0,yFrac(balFrom,cut)))
+           + projectContribsFV(parseFloat(plan.contrib)||0,periods,now,cut,state.ror,state.brenna.raisePct);
+      if (plan.id==='b401a') proj+=extra401aFV(cut);
       if (cut<bRetDate) proj=projectDC(proj,0,yFrac(cut,bRetDate),state.ror);
     }
     h+=`<div class="plan-row">
@@ -704,13 +743,22 @@ function renderKevin() {
     <div class="field"><label>Date of Birth</label><input type="date" value="${state.kevin.dob||''}" onchange="state.kevin.dob=this.value;autoKRetDate();saveState();renderAll();" /></div>
     <div class="field"><label>Annual Salary (current)</label><input type="text" value="${state.kevin.salary?fmtMoney(state.kevin.salary):''}" onchange="state.kevin.salary=parseMoney(this.value);saveState();renderAll();" /></div>
     <div class="field"><label>Annual Raise %</label><input type="number" step="0.1" value="${state.kevin.raisePct??2.5}" onchange="state.kevin.raisePct=parseFloat(this.value)||0;saveState();renderAll();" /></div>
-    <div class="field"><label>Target Retirement Age</label><input type="number" step="1" value="${state.kevin.retireAge??62}" onchange="state.kevin.retireAge=parseFloat(this.value)||62;autoKRetDate();saveState();renderAll();" /></div>
+    <div class="field"><label>Target Retirement Age</label><input type="number" step="0.5" value="${state.kevin.retireAge??62}" onchange="state.kevin.retireAge=parseFloat(this.value)||62;autoKRetDate();saveState();renderAll();" /></div>
     <div class="field"><label>Retirement Date</label><input type="date" value="${state.kevin.retireDate||''}" onchange="state.kevin.retireDate=this.value;saveState();renderAll();" /><div class="field-hint">Leave blank to use target retirement age</div></div>
   </div></div>`;
 
   h+=`<div class="card"><div class="card-header"><div class="card-title">Kevin's DC Plans</div></div>`;
+  const kNow=today(), kAge65=state.kevin.dob?ageDate(state.kevin.dob,65):null;
   state.kevin.plans.forEach(plan=>{
-    let proj=kRet?kevinDCatDate(kRet):0;
+    let proj=0;
+    if (kRet) {
+      const bal=parseFloat(plan.balance)||0, periods=plan.periods||26;
+      const cutoff=kAge65&&kAge65<kRet?kAge65:kRet;
+      const balFrom=plan.balDate?new Date(plan.balDate):kNow;
+      proj = bal*Math.pow(1+state.ror/100,Math.max(0,yFrac(balFrom,cutoff)))
+           + projectContribsFV(parseFloat(plan.contrib)||0,periods,kNow,cutoff,state.ror,state.kevin.raisePct);
+      if (cutoff<kRet) proj=projectDC(proj,0,yFrac(cutoff,kRet),state.ror);
+    }
     h+=`<div class="plan-row">
       <div class="plan-header"><span class="plan-name">${plan.name}</span><span class="plan-badge">${plan.type}</span></div>
       <div class="form-grid">
