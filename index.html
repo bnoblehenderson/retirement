@@ -485,7 +485,7 @@ function calcAllScenarios() {
 // ── Income timeline ───────────────────────────────────────────
 function calcTimeline() {
   const bRet = state.brenna.retireDate ? new Date(state.brenna.retireDate) : projRetireDate();
-  const kRet = state.kevin.retireDate  ? new Date(state.kevin.retireDate)  : null;
+  const kRet = kevinRetDate();
   if (!bRet&&!kRet) return null;
 
   const ror=state.ror/100, rRor=state.retRor/100, now=today();
@@ -546,7 +546,7 @@ function calcTimeline() {
 function renderOverview() {
   const el=document.getElementById('ov-content'); if(!el) return;
   const bRet=state.brenna.retireDate?new Date(state.brenna.retireDate):projRetireDate();
-  const kRet=state.kevin.retireDate ?new Date(state.kevin.retireDate) :null;
+  const kRet=kevinRetDate();
   const bDC=bRet?brennaDCatDate(bRet):0;
   const kDC=kRet?kevinDCatDate(kRet):0;
   let bPenMo=0;
@@ -747,7 +747,7 @@ function renderScenarioSection() {
 // ── Render: Kevin ─────────────────────────────────────────────
 function renderKevin() {
   const el=document.getElementById('kv-content'); if(!el) return;
-  const kRet=state.kevin.retireDate?new Date(state.kevin.retireDate):null;
+  const kRet=kevinRetDate();
   const kDC=kRet?kevinDCatDate(kRet):0;
   let h='';
 
@@ -865,6 +865,11 @@ function switchTab(name) {
 // ── Event helpers ─────────────────────────────────────────────
 function setBPlan(id,f,v){ const p=state.brenna.plans.find(x=>x.id===id); if(p){p[f]=v;saveState();scheduleRender();} }
 function setKPlan(id,f,v){ const p=state.kevin.plans.find(x=>x.id===id);  if(p){p[f]=v;saveState();scheduleRender();} }
+function kevinRetDate() {
+  if (state.kevin.retireDate) return new Date(state.kevin.retireDate);
+  if (state.kevin.dob&&state.kevin.retireAge) return ageDate(state.kevin.dob,state.kevin.retireAge);
+  return null;
+}
 function autoKRetDate() {
   if (state.kevin.dob&&state.kevin.retireAge&&!state.kevin.retireDate) {
     state.kevin.retireDate=ageDate(state.kevin.dob,state.kevin.retireAge).toISOString().slice(0,10);
