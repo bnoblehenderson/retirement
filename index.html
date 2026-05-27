@@ -188,9 +188,10 @@ tr:hover td{background:var(--bg);}
     <h3 id="sm-title">Add Purchase Scenario</h3>
     <div class="modal-fields">
       <div id="sm-context" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:0.5rem 0.75rem;font-size:0.8rem;color:var(--muted);margin-bottom:0.25rem;"></div>
-      <div class="field"><label>Fiscal Year Start</label><input type="number" id="sm-year" step="1" placeholder="e.g. 2025" /><div class="field-hint">Fiscal year Oct 1 YYYY – Sep 30 YYYY+1. Purchase is made Sep 30 of YYYY+1.</div></div>
+      <div class="field"><label>Purchase Year</label><input type="number" id="sm-year" step="1" placeholder="e.g. 2026" /><div class="field-hint">Year the purchase is made (Sep 30 of this year).</div></div>
       <div class="field"><label>Max Eligible Years in Window</label><input type="number" id="sm-max" step="0.01" min="0" placeholder="e.g. 1.0" /><div class="field-hint">From your PEERS eligibility notice. Leave blank if unknown.</div></div>
-      <div class="field"><label>Years to Purchase</label><input type="number" id="sm-yrs" step="0.5" min="0.5" placeholder="e.g. 1.0" /></div>
+      <div class="field"><label>Years to Purchase</label><input type="number" id="sm-yrs" step="0.5" min="0.5" placeholder="e.g. 1.0" /><div class="field-hint">Enter years OR a dollar amount below — not both.</div></div>
+      <div class="field"><label>Dollar Amount to Spend (optional)</label><input type="text" id="sm-dollar" placeholder="e.g. 5,000 — calculates years automatically" /></div>
       <div class="field"><label>Annual Salary Override (optional)</label><input type="text" id="sm-sal" placeholder="Leave blank to use projected salary" /></div>
     </div>
     <div class="modal-actions">
@@ -439,8 +440,14 @@ function calcScenario(sc) {
   const rawAnn = sc.salaryOverride || brennaSalAt(purchDate);
   const cap = pensionCapAt(purchDate);
   const effAnn = cap===Infinity ? rawAnn : Math.min(rawAnn, cap);
-  const yrs = parseFloat(sc.yearsToPurchase)||0;
-  const cost = yrs*effAnn*COST_FACTOR;
+  let yrs, cost;
+  if (sc.dollarAmount && !sc.yearsToPurchase) {
+    cost = parseFloat(sc.dollarAmount)||0;
+    yrs = effAnn>0 ? cost/(effAnn*COST_FACTOR) : 0;
+  } else {
+    yrs = parseFloat(sc.yearsToPurchase)||0;
+    cost = yrs*effAnn*COST_FACTOR;
+  }
   const b457 = state.brenna.plans.find(p=>p.id==='b457b');
   const bal457 = parseFloat(b457?.balance||0);
   const per457 = b457?.periods||24;
@@ -496,50 +503,81 @@ function calcTimeline() {
     bPensionAnn=pensionMo(svc,avg)*12;
     if (state.brenna.dob&&ageAt(state.brenna.dob,bRet)<62) suppAnn=suppMo(svc,avg)*12;
   }
-  const age62 = state.brenna.dob ? ageDate(state.brenna.dob,62) : null;
+  const age62   = state.brenna.dob ? ageDate(state.brenna.dob,62)   : null;
+  const bAge595 = state.brenna.dob ? ageDate(state.brenna.dob,59.5) : null;
+  const kAge595 = state.kevin.dob  ? ageDate(state.kevin.dob, 59.5) : null;
 
-  // Starting DC balances
-  let bDC=0, bDC457=0, bDC457c=0, bDCc=0, kDC=0, kDCc=0;
+  // Track three separate pools:
+  //   bDC457   – Brenna 457B  (withdrawable any age after retirement)
+  //   bDCother – Brenna 401A+IRA (withdrawable after retirement AND age 59.5)
+  //   kDC      – Kevin DC plans  (withdrawable after retirement AND age 59.5)
+  let bDC457=0, bDC457c=0, bDCother=0, bDCotherC=0, kDC=0, kDCc=0;
   state.brenna.plans.forEach(p=>{
     const b=parseFloat(p.balance)||0, c=(parseFloat(p.contrib)||0)*(p.periods||24);
-    bDC+=b; bDCc+=c;
-    if (p.id==='b457b'){bDC457=b;bDC457c=c;}
+    if (p.id==='b457b'){bDC457=b; bDC457c=c;}
+    else {bDCother+=b; bDCotherC+=c;}
   });
   state.kevin.plans.forEach(p=>{
     kDC+=parseFloat(p.balance)||0;
     kDCc+=(parseFloat(p.contrib)||0)*(p.periods||26);
   });
 
-  const bRetYr=bRet?bRet.getFullYear():Infinity;
-  const kRetYr=kRet?kRet.getFullYear():Infinity;
-  const startYr=now.getFullYear();
-  const endYr=Math.max(bRetYr===Infinity?startYr+5:bRetYr, kRetYr===Infinity?startYr+5:kRetYr)+30;
+  const bRetYr  = bRet   ? bRet.getFullYear()   : Infinity;
+  const kRetYr  = kRet   ? kRet.getFullYear()   : Infinity;
+  const b595Yr  = bAge595 ? bAge595.getFullYear() : Infinity;
+  const k595Yr  = kAge595 ? kAge595.getFullYear() : Infinity;
+  const startYr = now.getFullYear();
+  const endYr   = Math.max(bRetYr===Infinity?startYr+5:bRetYr, kRetYr===Infinity?startYr+5:kRetYr)+30;
 
   const rows=[];
   for (let yr=startYr; yr<=endYr; yr++) {
-    const bRet2=yr>=bRetYr, kRet2=yr>=kRetYr;
-    const bB=bDC, kB=kDC;
-    const avail=(bRet2?bB:0)+(kRet2?kB:0);
-    const mid=new Date(yr,6,1);
-    const pInc=bRet2?bPensionAnn:0;
-    const sInc=bRet2&&age62&&mid<age62?suppAnn:0;
-    const dcDraw=avail>0?avail*0.04:0;
-    const bSh=avail>0?bB/avail:0, kSh=avail>0?kB/avail:0;
+    const bRetired = yr>=bRetYr, kRetired = yr>=kRetYr;
+    const b595ok = yr>=b595Yr, k595ok = yr>=k595Yr;
+
+    // What can be drawn this year
+    const can457    = bRetired;                   // 457B: any age after retirement
+    const canBOther = bRetired && b595ok;         // Brenna other DC: retired + 59.5
+    const canKDC    = kRetired && k595ok;         // Kevin DC: retired + 59.5
+
+    const avail457   = can457    ? bDC457   : 0;
+    const availBOth  = canBOther ? bDCother : 0;
+    const availKDC   = canKDC    ? kDC      : 0;
+    const availTotal = avail457 + availBOth + availKDC;
+
+    const mid = new Date(yr,6,1);
+    const pInc = bRetired ? bPensionAnn : 0;
+    const sInc = bRetired&&age62&&mid<age62 ? suppAnn : 0;
+    const dcDraw = availTotal>0 ? availTotal*0.04 : 0;
+
+    // Proportional draw from each pool
+    const d457   = availTotal>0 ? dcDraw*avail457  /availTotal : 0;
+    const dBOth  = availTotal>0 ? dcDraw*availBOth /availTotal : 0;
+    const dKDC   = availTotal>0 ? dcDraw*availKDC  /availTotal : 0;
+
     const prev457=bDC457;
-    if (bRet2) {
-      const p457=bB>0?Math.min(bDC457/bB,1):0;
-      bDC457=Math.max(0,(bDC457-dcDraw*bSh*p457)*(1+rRor));
-      bDC=Math.max(0,(bB-dcDraw*bSh)*(1+rRor));
-    } else { bDC457=bDC457*(1+ror)+bDC457c; bDC=bB*(1+ror)+bDCc; }
-    if (kRet2) kDC=Math.max(0,(kB-dcDraw*kSh)*(1+rRor));
-    else kDC=kB*(1+ror)+kDCc;
-    const ex457=bRet2&&!kRet2&&bDC457===0&&prev457>0;
+
+    // Grow / draw each pool
+    if (can457)    bDC457   = Math.max(0,(bDC457  -d457 )*(1+rRor));
+    else if (bRetired) bDC457 = bDC457*(1+rRor)+bDC457c; // retired, no draw yet — still grows, no new contrib after retirement
+    else           bDC457   = bDC457*(1+ror)+bDC457c;
+
+    if (canBOther) bDCother = Math.max(0,(bDCother-dBOth)*(1+rRor));
+    else if (bRetired) bDCother = bDCother*(1+rRor);     // retired, waiting for 59.5
+    else           bDCother = bDCother*(1+ror)+bDCotherC;
+
+    if (canKDC)    kDC = Math.max(0,(kDC-dKDC)*(1+rRor));
+    else if (kRetired) kDC = kDC*(1+rRor);               // retired, waiting for 59.5
+    else           kDC = kDC*(1+ror)+kDCc;
+
+    const ex457 = bRetired && bDC457===0 && prev457>0;
+
     if (yr>=Math.min(bRetYr===Infinity?endYr:bRetYr, kRetYr===Infinity?endYr:kRetYr)) {
-      rows.push({ yr, bRet:bRet2, kRet:kRet2, pInc, sInc, dcDraw, ex457,
+      rows.push({ yr, bRet:bRetired, kRet:kRetired, pInc, sInc, dcDraw, ex457,
+        can457, canBOther, canKDC, b595ok, k595ok,
         total:pInc+sInc+dcDraw });
     }
   }
-  return { rows, bPensionAnn, suppAnn, age62 };
+  return { rows, bPensionAnn, suppAnn, age62, bAge595, kAge595 };
 }
 
 // ── Render: Overview ──────────────────────────────────────────
@@ -578,7 +616,7 @@ function renderPhases(tl) {
   const {rows}=tl; if(!rows.length) return '';
   const phases=[]; let cur=null;
   rows.forEach(r=>{
-    const key=`${r.bRet}|${r.kRet}|${r.sInc>0}|${r.ex457}`;
+    const key=`${r.bRet}|${r.kRet}|${r.sInc>0}|${r.can457}|${r.canBOther}|${r.canKDC}`;
     if (!cur||cur.key!==key){cur={key,startYr:r.yr,endYr:r.yr,r};phases.push(cur);}
     else cur.endYr=r.yr;
   });
@@ -587,7 +625,13 @@ function renderPhases(tl) {
     const r=p.r, yr=p.startYr===p.endYr?`${p.startYr}`:`${p.startYr}–${p.endYr}`;
     let label=!r.bRet&&!r.kRet?'Both Working':r.bRet&&r.kRet?'Both Retired':r.bRet?'Brenna Retired · Kevin Working':'Kevin Retired · Brenna Working';
     if (r.sInc>0) label+=' · Supplement';
-    if (r.ex457) label+=' · 457B Exhausted';
+    if (r.bRet||r.kRet) {
+      const dcParts=[];
+      if (r.can457) dcParts.push('457B');
+      if (r.canBOther) dcParts.push('Brenna DC');
+      if (r.canKDC) dcParts.push('Kevin DC');
+      if (dcParts.length) label+=` · ${dcParts.join('+')} Accessible`;
+    }
     const cls=!r.bRet&&!r.kRet?'pre':r.bRet&&r.kRet?'full':'partial';
     const parts=[];
     if(r.pInc) parts.push(`Pension ${fmt$(r.pInc)}/yr`);
@@ -904,9 +948,10 @@ function delPurchase(i){ if(!confirm('Delete this purchase?'))return; state.bren
 function openSM(idx=null) {
   _smIdx=idx; const s=idx!==null?state.brenna.purchaseScenarios[idx]:null;
   document.getElementById('sm-title').textContent=s?'Edit Scenario':'Add Purchase Scenario';
-  document.getElementById('sm-year').value=s?.windowYear||new Date().getFullYear();
+  document.getElementById('sm-year').value=s?.windowYear!=null?s.windowYear+1:new Date().getFullYear()+1;
   document.getElementById('sm-max').value=s?.maxEligible||'';
   document.getElementById('sm-yrs').value=s?.yearsToPurchase||'';
+  document.getElementById('sm-dollar').value=s?.dollarAmount?fmtMoney(s.dollarAmount):'';
   document.getElementById('sm-sal').value=s?.salaryOverride?fmtMoney(s.salaryOverride):'';
   const alreadyPurch = totalPurchased();
   const otherScenYrs = (state.brenna.purchaseScenarios||[])
@@ -922,11 +967,14 @@ function openSM(idx=null) {
 }
 function closeScenarioModal(){ document.getElementById('scenario-modal').classList.remove('open'); _smIdx=null; }
 function saveScenario() {
-  const yr=parseInt(document.getElementById('sm-year').value);
+  const purchYr=parseInt(document.getElementById('sm-year').value);
+  const yr=purchYr-1; // windowYear = fiscal year start = purchaseYear - 1
   const yrs=parseFloat(document.getElementById('sm-yrs').value);
-  if (!yr||!yrs||yrs<=0){alert('Enter a valid window year and years to purchase.');return;}
+  const dollarAmt=parseMoney(document.getElementById('sm-dollar').value)||0;
+  if (!purchYr){alert('Enter a valid purchase year.');return;}
+  if (!yrs&&!dollarAmt){alert('Enter years to purchase or a dollar amount.');return;}
   const maxEl=parseFloat(document.getElementById('sm-max').value)||0;
-  const e={windowYear:yr, yearsToPurchase:yrs, maxEligible:maxEl||null, salaryOverride:parseMoney(document.getElementById('sm-sal').value)||0};
+  const e={windowYear:yr, yearsToPurchase:yrs||null, dollarAmount:dollarAmt||null, maxEligible:maxEl||null, salaryOverride:parseMoney(document.getElementById('sm-sal').value)||0};
   if (_smIdx!==null) state.brenna.purchaseScenarios[_smIdx]=e;
   else state.brenna.purchaseScenarios.push(e);
   state.brenna.purchaseScenarios.sort((a,b)=>a.windowYear-b.windowYear);
