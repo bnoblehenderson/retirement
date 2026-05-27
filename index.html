@@ -597,12 +597,14 @@ function calcTimeline() {
     else           kDC = kDC*(1+ror)+kDCc;
 
     const ex457 = bRetired && bDC457===0 && prev457>0;
+    const bSal  = !bRetired && state.brenna.salary ? brennaSalAt(mid) : 0;
+    const kSal  = !kRetired && state.kevin.salary  ? kevinSalAt(mid)  : 0;
 
     if (yr>=Math.min(bRetYr===Infinity?endYr:bRetYr, kRetYr===Infinity?endYr:kRetYr)) {
-      const brennaInc = pInc+sInc+d457+dBOth;
-      const kevinInc  = dKDC;
+      const brennaInc = bSal+pInc+sInc+d457+dBOth;
+      const kevinInc  = kSal+dKDC;
       rows.push({ yr, bRet:bRetired, kRet:kRetired, pInc, sInc, d457, dBOth, dKDC, dcDraw, ex457,
-        can457, canBOther, canKDC, b595ok, k595ok,
+        bSal, kSal, can457, canBOther, canKDC, b595ok, k595ok,
         brennaInc, kevinInc, total:brennaInc+kevinInc });
     }
   }
@@ -666,12 +668,14 @@ function renderPhases(tl) {
     }
     const cls=!r.bRet&&!r.kRet?'pre':r.bRet&&r.kRet?'full':'partial';
     const bParts=[], kParts=[];
+    if(r.bSal)   bParts.push(`Salary ${fmt$(r.bSal)}/yr`);
     if(r.pInc)   bParts.push(`Pension ${fmt$(r.pInc)}/yr`);
     if(r.sInc)   bParts.push(`Supplement ${fmt$(r.sInc)}/yr`);
     if(r.d457)   bParts.push(`457B ${fmt$(r.d457)}/yr`);
     if(r.dBOth)  bParts.push(`Other DC ${fmt$(r.dBOth)}/yr`);
+    if(r.kSal)   kParts.push(`Salary ${fmt$(r.kSal)}/yr`);
     if(r.dKDC)   kParts.push(`DC ${fmt$(r.dKDC)}/yr`);
-    const showBrenna=r.bRet&&r.brennaInc>0, showKevin=r.kRet&&r.kevinInc>0;
+    const showBrenna=(r.bSal||r.bRet)&&r.brennaInc>0, showKevin=(r.kSal||r.kRet)&&r.kevinInc>0;
     const breakdown=showBrenna||showKevin
       ? `<div class="phase-breakdown">`
         +(showBrenna?`<div class="phase-person"><span class="phase-person-name">Brenna</span><span class="phase-person-amt">${fmt$(r.brennaInc)}/yr</span></div>`
