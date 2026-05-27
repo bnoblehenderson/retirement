@@ -661,7 +661,7 @@ function renderPhases(tl) {
   const {rows,bTermSal,kTermSal}=tl; if(!rows.length) return '';
   const phases=[]; let cur=null;
   rows.forEach(r=>{
-    const key=`${r.bRet}|${r.kRet}|${r.sInc>0}|${r.can457}|${r.canBOther}|${r.canKDC}`;
+    const key=`${r.bRet}|${r.kRet}|${r.sInc>0}|${r.d457>0}|${r.dBOth>0}|${r.dKDC>0}`;
     if (!cur||cur.key!==key){cur={key,startYr:r.yr,endYr:r.yr,r};phases.push(cur);}
     else cur.endYr=r.yr;
   });
@@ -672,20 +672,16 @@ function renderPhases(tl) {
     if (r.sInc>0) label+=' · Supplement';
     if (r.bRet||r.kRet) {
       const dcParts=[];
-      if (r.can457) dcParts.push('457B');
-      if (r.canBOther) dcParts.push('Brenna DC');
-      if (r.canKDC) dcParts.push('Kevin DC');
-      if (dcParts.length) label+=` · ${dcParts.join('+')} Accessible`;
+      if (r.d457>0)  dcParts.push('457B');
+      if (r.dBOth>0) dcParts.push('Brenna DC');
+      if (r.dKDC>0)  dcParts.push('Kevin DC');
+      if (dcParts.length) label+=` · ${dcParts.join('+')} Withdrawn`;
     }
     const cls=!r.bRet&&!r.kRet?'pre':r.bRet&&r.kRet?'full':'partial';
     const bParts=[], kParts=[];
-    if(r.bSal)   bParts.push(`Salary ${fmt$(r.bSal)}/yr`);
-    if(r.pInc)   bParts.push(`Pension ${fmt$(r.pInc)}/yr`);
-    if(r.sInc)   bParts.push(`Supplement ${fmt$(r.sInc)}/yr`);
-    if(r.d457)   bParts.push(`457B ${fmt$(r.d457)}/yr`);
-    if(r.dBOth)  bParts.push(`Other DC ${fmt$(r.dBOth)}/yr`);
-    if(r.kSal)   kParts.push(`Salary ${fmt$(r.kSal)}/yr`);
-    if(r.dKDC)   kParts.push(`DC ${fmt$(r.dKDC)}/yr`);
+    if(r.d457>0)  bParts.push(`457B ${fmt$(r.d457)}/yr`);
+    if(r.dBOth>0) bParts.push(`Other DC ${fmt$(r.dBOth)}/yr`);
+    if(r.dKDC>0)  kParts.push(`401K ${fmt$(r.dKDC)}/yr`);
     const showBrenna=(r.bSal||r.bRet)&&r.brennaInc>0, showKevin=(r.kSal||r.kRet)&&r.kevinInc>0;
     const bRepl = r.bRet&&bTermSal>0 ? ` (${fmtD(r.brennaInc/bTermSal*100,1)}% replacement)` : '';
     const kRepl = r.kRet&&kTermSal>0 ? ` (${fmtD(r.kevinInc/kTermSal*100,1)}% replacement)` : '';
