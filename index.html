@@ -408,8 +408,9 @@ function brennaDCatDate(retDate) {
     const cutoff=age65&&age65<ret?age65:ret;
     const balFrom=plan.balDate?new Date(plan.balDate):now;
     const balYrs=Math.max(0,yFrac(balFrom,cutoff));
+    const contribGrow = plan.id==='b401a' ? state.brenna.raisePct : 0;
     let fv = bal*Math.pow(1+r,balYrs)
-           + projectContribsFV(parseFloat(plan.contrib)||0,periods,now,cutoff,state.ror,state.brenna.raisePct);
+           + projectContribsFV(parseFloat(plan.contrib)||0,periods,now,cutoff,state.ror,contribGrow);
     if (plan.id==='b401a') fv+=extra401aFV(cutoff);
     if (cutoff<ret) fv=projectDC(fv,0,yFrac(cutoff,ret),state.ror);
     return tot+fv;
@@ -446,7 +447,7 @@ function calcScenario(sc) {
   const now457 = today();
   const balFrom457 = b457?.balDate?new Date(b457.balDate):now457;
   const bal457atPurch = bal457*Math.pow(1+state.ror/100,Math.max(0,yFrac(balFrom457,purchDate)))
-    + projectContribsFV(parseFloat(b457?.contrib||0),per457,now457,purchDate,state.ror,state.brenna.raisePct);
+    + projectContribsFV(parseFloat(b457?.contrib||0),per457,now457,purchDate,state.ror,0);
   return { sc, cost, yrs, bal457atPurch, canAfford: bal457atPurch>=cost, purchDate };
 }
 function calcAllScenarios() {
@@ -652,8 +653,9 @@ function renderBrenna() {
       const age65=state.brenna.dob?ageDate(state.brenna.dob,65):null;
       const cut=age65&&age65<bRetDate?age65:bRetDate;
       const balFrom=plan.balDate?new Date(plan.balDate):now;
+      const dispGrow = plan.id==='b401a' ? state.brenna.raisePct : 0;
       proj = bal*Math.pow(1+state.ror/100,Math.max(0,yFrac(balFrom,cut)))
-           + projectContribsFV(parseFloat(plan.contrib)||0,periods,now,cut,state.ror,state.brenna.raisePct);
+           + projectContribsFV(parseFloat(plan.contrib)||0,periods,now,cut,state.ror,dispGrow);
       if (plan.id==='b401a') proj+=extra401aFV(cut);
       if (cut<bRetDate) proj=projectDC(proj,0,yFrac(cut,bRetDate),state.ror);
     }
