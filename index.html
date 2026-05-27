@@ -114,6 +114,7 @@ tr:hover td{background:var(--bg);}
 .phase-person{display:flex;justify-content:space-between;align-items:baseline;}
 .phase-person-name{font-size:0.78rem;font-weight:600;color:var(--text);}
 .phase-person-amt{font-size:0.85rem;font-weight:700;color:var(--primary);}
+.phase-repl{font-size:0.72rem;font-weight:400;color:var(--muted);margin-left:0.3rem;}
 
 /* Modal */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;padding:1rem;}
@@ -608,7 +609,9 @@ function calcTimeline() {
         brennaInc, kevinInc, total:brennaInc+kevinInc });
     }
   }
-  return { rows, bPensionAnn, suppAnn, age62, bAge595, kAge595 };
+  const bTermSal = bRet ? brennaSalAt(bRet) : 0;
+  const kTermSal = kRet ? kevinSalAt(kRet)  : 0;
+  return { rows, bPensionAnn, suppAnn, age62, bAge595, kAge595, bTermSal, kTermSal };
 }
 
 // ── Render: Overview ──────────────────────────────────────────
@@ -647,7 +650,7 @@ function renderOverview() {
 }
 
 function renderPhases(tl) {
-  const {rows}=tl; if(!rows.length) return '';
+  const {rows,bTermSal,kTermSal}=tl; if(!rows.length) return '';
   const phases=[]; let cur=null;
   rows.forEach(r=>{
     const key=`${r.bRet}|${r.kRet}|${r.sInc>0}|${r.can457}|${r.canBOther}|${r.canKDC}`;
@@ -676,11 +679,13 @@ function renderPhases(tl) {
     if(r.kSal)   kParts.push(`Salary ${fmt$(r.kSal)}/yr`);
     if(r.dKDC)   kParts.push(`DC ${fmt$(r.dKDC)}/yr`);
     const showBrenna=(r.bSal||r.bRet)&&r.brennaInc>0, showKevin=(r.kSal||r.kRet)&&r.kevinInc>0;
+    const bRepl = r.bRet&&bTermSal>0 ? ` (${fmtD(r.brennaInc/bTermSal*100,1)}% replacement)` : '';
+    const kRepl = r.kRet&&kTermSal>0 ? ` (${fmtD(r.kevinInc/kTermSal*100,1)}% replacement)` : '';
     const breakdown=showBrenna||showKevin
       ? `<div class="phase-breakdown">`
-        +(showBrenna?`<div class="phase-person"><span class="phase-person-name">Brenna</span><span class="phase-person-amt">${fmt$(r.brennaInc)}/yr</span></div>`
+        +(showBrenna?`<div class="phase-person"><span class="phase-person-name">Brenna</span><span class="phase-person-amt">${fmt$(r.brennaInc)}/yr<span class="phase-repl">${bRepl}</span></span></div>`
           +(bParts.length?`<div class="phase-detail">${bParts.join(' · ')}</div>`:''):'')
-        +(showKevin?`<div class="phase-person"><span class="phase-person-name">Kevin</span><span class="phase-person-amt">${fmt$(r.kevinInc)}/yr</span></div>`
+        +(showKevin?`<div class="phase-person"><span class="phase-person-name">Kevin</span><span class="phase-person-amt">${fmt$(r.kevinInc)}/yr<span class="phase-repl">${kRepl}</span></span></div>`
           +(kParts.length?`<div class="phase-detail">${kParts.join(' · ')}</div>`:''):'')
         +`</div>`
       : '';
