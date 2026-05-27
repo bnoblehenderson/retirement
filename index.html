@@ -110,6 +110,10 @@ tr:hover td{background:var(--bg);}
 .phase-label{font-size:0.8rem;font-weight:600;}
 .phase-total{font-size:1.05rem;font-weight:700;color:var(--primary);}
 .phase-detail{font-size:0.72rem;color:var(--muted);}
+.phase-breakdown{display:flex;flex-direction:column;gap:0.3rem;margin-top:0.4rem;padding-top:0.4rem;border-top:1px solid rgba(0,0,0,0.07);}
+.phase-person{display:flex;justify-content:space-between;align-items:baseline;}
+.phase-person-name{font-size:0.78rem;font-weight:600;color:var(--text);}
+.phase-person-amt{font-size:0.85rem;font-weight:700;color:var(--primary);}
 
 /* Modal */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;padding:1rem;}
@@ -595,9 +599,11 @@ function calcTimeline() {
     const ex457 = bRetired && bDC457===0 && prev457>0;
 
     if (yr>=Math.min(bRetYr===Infinity?endYr:bRetYr, kRetYr===Infinity?endYr:kRetYr)) {
-      rows.push({ yr, bRet:bRetired, kRet:kRetired, pInc, sInc, dcDraw, ex457,
+      const brennaInc = pInc+sInc+d457+dBOth;
+      const kevinInc  = dKDC;
+      rows.push({ yr, bRet:bRetired, kRet:kRetired, pInc, sInc, d457, dBOth, dKDC, dcDraw, ex457,
         can457, canBOther, canKDC, b595ok, k595ok,
-        total:pInc+sInc+dcDraw });
+        brennaInc, kevinInc, total:brennaInc+kevinInc });
     }
   }
   return { rows, bPensionAnn, suppAnn, age62, bAge595, kAge595 };
@@ -659,11 +665,22 @@ function renderPhases(tl) {
       if (dcParts.length) label+=` · ${dcParts.join('+')} Accessible`;
     }
     const cls=!r.bRet&&!r.kRet?'pre':r.bRet&&r.kRet?'full':'partial';
-    const parts=[];
-    if(r.pInc) parts.push(`Pension ${fmt$(r.pInc)}/yr`);
-    if(r.sInc) parts.push(`Supplement ${fmt$(r.sInc)}/yr`);
-    if(r.dcDraw) parts.push(`4% DC ${fmt$(r.dcDraw)}/yr`);
-    h+=`<div class="phase-card ${cls}"><div class="phase-top"><div><div class="phase-yr">${yr}</div><div class="phase-label">${label}</div></div><div class="phase-total">${fmt$(r.total)}/yr</div></div>${parts.length?`<div class="phase-detail">${parts.join(' · ')}</div>`:''}</div>`;
+    const bParts=[], kParts=[];
+    if(r.pInc)   bParts.push(`Pension ${fmt$(r.pInc)}/yr`);
+    if(r.sInc)   bParts.push(`Supplement ${fmt$(r.sInc)}/yr`);
+    if(r.d457)   bParts.push(`457B ${fmt$(r.d457)}/yr`);
+    if(r.dBOth)  bParts.push(`Other DC ${fmt$(r.dBOth)}/yr`);
+    if(r.dKDC)   kParts.push(`DC ${fmt$(r.dKDC)}/yr`);
+    const showBrenna=r.bRet&&r.brennaInc>0, showKevin=r.kRet&&r.kevinInc>0;
+    const breakdown=showBrenna||showKevin
+      ? `<div class="phase-breakdown">`
+        +(showBrenna?`<div class="phase-person"><span class="phase-person-name">Brenna</span><span class="phase-person-amt">${fmt$(r.brennaInc)}/yr</span></div>`
+          +(bParts.length?`<div class="phase-detail">${bParts.join(' · ')}</div>`:''):'')
+        +(showKevin?`<div class="phase-person"><span class="phase-person-name">Kevin</span><span class="phase-person-amt">${fmt$(r.kevinInc)}/yr</span></div>`
+          +(kParts.length?`<div class="phase-detail">${kParts.join(' · ')}</div>`:''):'')
+        +`</div>`
+      : '';
+    h+=`<div class="phase-card ${cls}"><div class="phase-top"><div><div class="phase-yr">${yr}</div><div class="phase-label">${label}</div></div><div class="phase-total">${fmt$(r.total)}/yr</div></div>${breakdown}</div>`;
   });
   h+='</div>';
   return h;
