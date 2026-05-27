@@ -188,7 +188,7 @@ tr:hover td{background:var(--bg);}
     <h3 id="sm-title">Add Purchase Scenario</h3>
     <div class="modal-fields">
       <div id="sm-context" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:0.5rem 0.75rem;font-size:0.8rem;color:var(--muted);margin-bottom:0.25rem;"></div>
-      <div class="field"><label>Purchase Window Year</label><input type="number" id="sm-year" step="1" placeholder="e.g. 2025" /><div class="field-hint">Oct 1 of this year – Sep 30 of next year. Purchase date is Sep 30 of next year.</div></div>
+      <div class="field"><label>Fiscal Year Start</label><input type="number" id="sm-year" step="1" placeholder="e.g. 2025" /><div class="field-hint">Fiscal year Oct 1 YYYY – Sep 30 YYYY+1. Purchase is made Sep 30 of YYYY+1.</div></div>
       <div class="field"><label>Max Eligible Years in Window</label><input type="number" id="sm-max" step="0.01" min="0" placeholder="e.g. 1.0" /><div class="field-hint">From your PEERS eligibility notice. Leave blank if unknown.</div></div>
       <div class="field"><label>Years to Purchase</label><input type="number" id="sm-yrs" step="0.5" min="0.5" placeholder="e.g. 1.0" /></div>
       <div class="field"><label>Annual Salary Override (optional)</label><input type="text" id="sm-sal" placeholder="Leave blank to use projected salary" /></div>
@@ -712,7 +712,7 @@ function renderScenarioSection() {
     const remEl=maxEl!==null?Math.max(0,maxEl-sc.yrs):null;
     h+=`<div style="border:1px solid var(--border);border-radius:8px;padding:0.875rem;margin-bottom:0.5rem;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;">
-        <div><span class="fw6">FY${sc.sc.windowYear}–${sc.sc.windowYear+1}</span><span style="color:var(--muted);font-size:0.8rem;margin-left:0.5rem;">${sc.yrs} yr${sc.yrs!==1?'s':''} · ${fmt$(sc.cost)} · Purchase: ${fmtDate(sc.purchDate)}</span></div>
+        <div><span class="fw6">${sc.purchDate.getFullYear()}</span><span style="color:var(--muted);font-size:0.8rem;margin-left:0.5rem;">${sc.yrs} yr${sc.yrs!==1?'s':''} · ${fmt$(sc.cost)} · ${fmtDate(sc.purchDate)}</span></div>
         <div class="flex-row"><button class="btn btn-secondary btn-xs" onclick="openSM(${i})">Edit</button><button class="btn btn-danger btn-xs" onclick="delScenario(${i})">✕</button></div>
       </div>
       <div style="font-size:0.8rem;display:flex;gap:1rem;flex-wrap:wrap;">
