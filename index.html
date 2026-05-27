@@ -213,7 +213,7 @@ const CAP_GROW      = 10000; // annual salary cap growth per year
 const DEFAULT = {
   brenna: {
     dob: '', pensionStart: '', salary: 0, raisePct: 2.5,
-    salaryCap: 0, excess401aPct: 20, retireDate: '',
+    salaryCap: 0, excess401aPct: 20, retireDate: '', totalEligible: 11.50274,
     servicePurchases: [
       { id: 'init', date: '2020-09-15', years: 1.21416, cost: 0, notes: 'Initial purchased service credit' }
     ],
@@ -615,6 +615,7 @@ function renderBrenna() {
     <div class="field"><label>Annual Salary Cap (this year)</label><input type="text" value="${state.brenna.salaryCap?fmtMoney(state.brenna.salaryCap):''}" onchange="state.brenna.salaryCap=parseMoney(this.value);saveState();renderAll();" /><div class="field-hint">Grows $10,000/yr. Used to cap pension salary.</div></div>
     <div class="field"><label>Excess Salary → 401A %</label><input type="number" step="1" value="${state.brenna.excess401aPct??20}" onchange="state.brenna.excess401aPct=parseFloat(this.value)||0;saveState();renderAll();" /><div class="field-hint">% of salary above cap contributed to 401A</div></div>
     <div class="field"><label>Retirement Date</label><input type="date" value="${state.brenna.retireDate||''}" onchange="state.brenna.retireDate=this.value;saveState();renderAll();" /><div class="field-hint">Leave blank to auto-calculate from Rule of 80</div></div>
+    <div class="field"><label>Total Years Eligible to Purchase</label><input type="number" step="0.00001" value="${state.brenna.totalEligible||''}" onchange="state.brenna.totalEligible=parseFloat(this.value)||0;saveState();renderAll();" /><div class="field-hint">Lifetime cap including years already purchased.</div></div>
   </div></div>`;
 
   // Pension status
@@ -681,6 +682,17 @@ function renderBrenna() {
     });
     h+=`</tbody></table></div>`;
   } else h+=`<div style="color:var(--muted);font-size:0.8rem;">No purchases recorded.</div>`;
+  if (state.brenna.totalEligible>0) {
+    const scenYrs=(state.brenna.purchaseScenarios||[]).reduce((s,sc)=>s+(parseFloat(sc.yearsToPurchase)||0),0);
+    const remaining=state.brenna.totalEligible-totalPurchased()-scenYrs;
+    const remColor=remaining<0?'var(--danger)':remaining===0?'var(--muted)':'var(--primary)';
+    h+=`<div style="display:flex;gap:1.25rem;flex-wrap:wrap;font-size:0.8rem;margin-top:0.6rem;padding-top:0.6rem;border-top:1px solid var(--border);">
+      <span style="color:var(--muted);">Eligible: <strong>${fmtD(state.brenna.totalEligible,5)} yrs</strong></span>
+      <span style="color:var(--muted);">Purchased: <strong>${fmtD(totalPurchased(),5)} yrs</strong></span>
+      <span style="color:var(--muted);">Scenarios: <strong>${fmtD(scenYrs,2)} yrs</strong></span>
+      <span>Remaining: <strong style="color:${remColor}">${fmtD(remaining,5)} yrs</strong></span>
+    </div>`;
+  }
   h+=`</div>`;
 
   // Purchase scenarios
@@ -874,8 +886,13 @@ function openSM(idx=null) {
   const alreadyPurch = totalPurchased();
   const otherScenYrs = (state.brenna.purchaseScenarios||[])
     .reduce((sum,sc,i)=>sum+(i!==idx?parseFloat(sc.yearsToPurchase)||0:0),0);
+  const totalEl = state.brenna.totalEligible||0;
+  const remaining = totalEl>0 ? totalEl-alreadyPurch-otherScenYrs : null;
+  const remStr = remaining!==null
+    ? ` &nbsp;·&nbsp; Remaining eligible: <strong style="color:${remaining<0?'var(--danger)':'var(--primary)'}">${fmtD(remaining,5)} yrs</strong>`
+    : '';
   document.getElementById('sm-context').innerHTML=
-    `Already purchased: <strong>${fmtD(alreadyPurch,5)} yrs</strong> &nbsp;·&nbsp; Other scenarios: <strong>${fmtD(otherScenYrs,2)} yrs</strong>`;
+    `Purchased: <strong>${fmtD(alreadyPurch,5)} yrs</strong> &nbsp;·&nbsp; Other scenarios: <strong>${fmtD(otherScenYrs,2)} yrs</strong>${remStr}`;
   document.getElementById('scenario-modal').classList.add('open');
 }
 function closeScenarioModal(){ document.getElementById('scenario-modal').classList.remove('open'); _smIdx=null; }
