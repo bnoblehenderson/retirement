@@ -53,6 +53,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .tab-btn.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600;}
 .tab-panel{display:none;padding:1rem;max-width:860px;margin:0 auto;}
 .tab-panel.active{display:block;}
+#tab-flow{max-width:none;}
 
 /* Cards */
 .card{background:var(--card);border-radius:10px;padding:1.25rem;margin-bottom:0.875rem;box-shadow:var(--shadow);}
@@ -163,14 +164,12 @@ tr:hover td{background:var(--bg);}
     <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
     <button class="tab-btn" onclick="switchTab('brenna')">Brenna</button>
     <button class="tab-btn" onclick="switchTab('kevin')">Kevin</button>
-    <button class="tab-btn" onclick="switchTab('dc')">DC Balances</button>
     <button class="tab-btn" onclick="switchTab('flow')">Annual Flow</button>
     <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
   </div>
   <div class="tab-panel active" id="tab-overview"><div id="ov-content"></div></div>
   <div class="tab-panel" id="tab-brenna"><div id="br-content"></div></div>
   <div class="tab-panel" id="tab-kevin"><div id="kv-content"></div></div>
-  <div class="tab-panel" id="tab-dc"><div id="dc-content"></div></div>
   <div class="tab-panel" id="tab-flow"><div id="fl-content"></div></div>
   <div class="tab-panel" id="tab-settings"><div id="st-content"></div></div>
 </div>
@@ -219,6 +218,7 @@ const SUPP_MULT     = 0.8  / 100;
 const COST_FACTOR   = 0.1372;
 const RULE_TARGET   = 80;
 const CAP_GROW      = 10000; // annual salary cap growth per year
+const PENSION_COLA  = 0.02;  // annual pension COLA starting 2nd Jan of drawing
 
 // ── Default state ────────────────────────────────────────────
 const DEFAULT = {
@@ -241,7 +241,7 @@ const DEFAULT = {
       { id: 'k401k', name: '401K', type: '401K', balance: 0, balDate: '', contrib: 0, periods: 26 },
     ],
   },
-  ror: 7, retRor: 5, withdrawalPct: 4, incomeGoal: 0,
+  ror: 7, retRor: 5, withdrawalPct: 4, incomeGoal: 0, minIncome: 0,
 };
 
 let state = JSON.parse(JSON.stringify(DEFAULT));
@@ -560,6 +560,16 @@ function calcTimeline() {
   const k595Yr  = kAge595 ? kAge595.getFullYear() : Infinity;
   const bAge62  = state.brenna.dob ? ageDate(state.brenna.dob, 62) : null;
   const bAge62Yr= bAge62 ? bAge62.getFullYear() : Infinity;
+  const age62DayFracTL = bAge62 ? Math.max(0,(new Date(bAge62Yr,11,31)-bAge62)/(365.25*24*3600*1000)) : 1;
+  // Retirement-year proration fractions (salary before retirement, pension/DC after)
+  const msPerDay=24*3600*1000, daysInYr=365.25;
+  const dayFrac=(from,toEndOfYr)=>Math.max(0,Math.min(1,(new Date(toEndOfYr,11,31)-from)/(daysInYr*msPerDay)));
+  const yearFrac=(fromStartOfYr,to)=>Math.max(0,Math.min(1,(to-new Date(fromStartOfYr,0,1))/(daysInYr*msPerDay)));
+  const bRetSalFrac = bRet ? yearFrac(bRetYr, bRet) : 1;
+  const bRetPenFrac = bRet ? dayFrac(bRet, bRetYr)  : 1;
+  const kRetSalFrac = kRet ? yearFrac(kRetYr, kRet) : 1;
+  const kRetDCFrac  = kRet ? dayFrac(kRet, kRetYr)  : 1;
+  const k595DayFrac = kAge595 ? dayFrac(kAge595, k595Yr) : 1;
   const startYr = now.getFullYear();
   const endYr   = 2087;
   // Purchase costs deducted from 457B by year
@@ -581,16 +591,22 @@ function calcTimeline() {
     const canKDC    = kRetired && k595ok;          // Kevin DC: retired + 59.5
 
     const mid = new Date(yr,6,1);
-    const pInc = bRetired ? bPensionAnn : 0;
-    const sInc = bRetired&&age62&&mid<age62 ? suppAnn : 0;
-    const bSal = !bRetired && state.brenna.salary ? brennaSalAt(mid) : 0;
-    const kSal = !kRetired && state.kevin.salary  ? kevinSalAt(mid)  : 0;
+    const colaYrs = bRetired ? Math.max(0, yr - bRetYr - 1) : 0;
+    const colaF   = Math.pow(1+PENSION_COLA, colaYrs);
+    const pBase = bRetired ? bPensionAnn * colaF : 0;
+    const pInc  = bRetired ? pBase * (yr===bRetYr ? bRetPenFrac : 1) : 0;
+    const sInc  = bRetired&&age62&&mid<age62 ? suppAnn * (yr===bRetYr ? bRetPenFrac : 1) : 0;
+    const bSal  = !bRetired && state.brenna.salary ? brennaSalAt(mid) * (yr===bRetYr ? bRetSalFrac : 1) : 0;
+    const kSal  = !kRetired && state.kevin.salary  ? kevinSalAt(mid)  * (yr===kRetYr ? kRetSalFrac : 1) : 0;
 
     // Each pool can draw up to withdrawalPct% of its balance; limit total draw to income goal gap
     const wRate = (state.withdrawalPct??4)/100;
-    const d457_max  = can457    ? bDC457  *wRate : 0;
-    const dBOth_max = canBOther ? bDCother*wRate : 0;
-    const dKDC_max  = canKDC    ? kDC     *wRate : 0;
+    const bAge62Frac = (bAge62 && yr===bAge62Yr) ? age62DayFracTL : 1;
+    // Kevin DC proration: retirement year if already past 59.5, else 59.5 year if already retired
+    const kDCFrac = (kRetYr>=k595Yr&&yr===kRetYr) ? kRetDCFrac : (kRetYr<k595Yr&&yr===k595Yr) ? k595DayFrac : 1;
+    const d457_max  = can457    ? bDC457  *wRate*bAge62Frac : 0;
+    const dBOth_max = canBOther ? bDCother*wRate*bAge62Frac : 0;
+    const dKDC_max  = canKDC    ? kDC     *wRate*kDCFrac : 0;
     const dcMax = d457_max + dBOth_max + dKDC_max;
     const nonDCInc  = pInc + sInc + bSal + kSal;
     const dcNeeded  = (state.incomeGoal>0 && dcMax>0) ? Math.max(0, state.incomeGoal - nonDCInc) : dcMax;
@@ -710,7 +726,8 @@ function renderPhases(tl) {
           +`</div>`:'')
         +`</div>`
       : '';
-    h+=`<div class="phase-card ${cls}"><div class="phase-top"><div><div class="phase-yr">${yr}</div><div class="phase-label">${label}</div></div><div class="phase-total">${fmt$(r.total)}/yr</div></div>${breakdown}</div>`;
+    const phaseBelowMin=state.minIncome>0&&(r.bRet||r.kRet)&&r.total<state.minIncome&&r.total>0;
+    h+=`<div class="phase-card ${cls}"><div class="phase-top"><div><div class="phase-yr">${yr}</div><div class="phase-label">${label}</div></div><div class="phase-total" style="${phaseBelowMin?'color:#c0392b;':''}">${fmt$(r.total)}/yr${phaseBelowMin?` <span title="Below minimum income" style="font-size:0.8em;">⚠</span>`:''}</div></div>${breakdown}</div>`;
   });
   h+='</div>';
   return h;
@@ -946,6 +963,13 @@ function renderDC() {
   const bPenAnn=bSvc?pensionMo(bSvc,bAvg)*12:0;
   const bSuppAnn=bRet&&state.brenna.dob&&ageAt(state.brenna.dob,bRet)<62?suppMo(bSvc,bAvg)*12:0;
   const age62Yr=state.brenna.dob?ageDate(state.brenna.dob,62).getFullYear():Infinity;
+  const msPerDayDC=24*3600*1000, daysInYrDC=365.25;
+  const dayFracDCfn=(from,endYr)=>Math.max(0,Math.min(1,(new Date(endYr,11,31)-from)/(daysInYrDC*msPerDayDC)));
+  const yrFracDCfn=(startYr,to)=>Math.max(0,Math.min(1,(to-new Date(startYr,0,1))/(daysInYrDC*msPerDayDC)));
+  const bRetSalFracDC=bRet?yrFracDCfn(bRetYr,bRet):1;
+  const kRetSalFracDC=kRet?yrFracDCfn(kRetYr,kRet):1;
+  const kRetDCFracDCv=kRet?dayFracDCfn(kRet,kRetYr):1;
+  const k595DayFracDCv=kAge595?dayFracDCfn(kAge595,k595Yr):1;
 
   // Purchase costs by year for 457B
   const purchCostByYr={};
@@ -975,6 +999,7 @@ function renderDC() {
 
   const bAge62dc=state.brenna.dob?ageDate(state.brenna.dob,62):null;
   const bAge62YrDC=bAge62dc?bAge62dc.getFullYear():Infinity;
+  const age62DayFracDC=bAge62dc?Math.max(0,(new Date(bAge62YrDC,11,31)-bAge62dc)/(365.25*24*3600*1000)):1;
   while(yr<=maxYr) {
     const dec31=new Date(yr,11,31);
     const bRetired=yr>=bRetYr, kRetired=yr>=kRetYr;
@@ -986,13 +1011,20 @@ function renderDC() {
     let anyPositive=false;
     // Compute income-goal withdrawal scale for this year
     const midDC=new Date(yr,6,1);
-    const bSalDC=!bRetired&&state.brenna.salary?brennaSalAt(midDC):0;
-    const kSalDC=!kRetired&&state.kevin.salary ?kevinSalAt(midDC) :0;
-    const nonDCInc=(bRetired?bPenAnn:0)+(bRetired&&yr<age62Yr?bSuppAnn:0)+bSalDC+kSalDC;
+    const bSalDC=!bRetired&&state.brenna.salary?brennaSalAt(midDC)*(yr===bRetYr?bRetSalFracDC:1):0;
+    const kSalDC=!kRetired&&state.kevin.salary ?kevinSalAt(midDC) *(yr===kRetYr?kRetSalFracDC:1):0;
+    const bPenColaYrs=bRetired?Math.max(0,yr-bRetYr-1):0;
+    const bPenCola=Math.pow(1+PENSION_COLA,bPenColaYrs);
+    const bPenIncDC=(bRetired?bPenAnn*bPenCola*(yr===bRetYr?dayFracDCfn(bRet,bRetYr):1):0);
+    const bSuppIncDC=(bRetired&&yr<age62Yr?bSuppAnn*(yr===bRetYr?dayFracDCfn(bRet,bRetYr):1):0);
+    const nonDCInc=bPenIncDC+bSuppIncDC+bSalDC+kSalDC;
+    const bAge62FracDC=(bAge62dc&&yr===bAge62YrDC)?age62DayFracDC:1;
+    const kDCFracDC=(kRetYr>=k595Yr&&yr===kRetYr)?kRetDCFracDCv:(kRetYr<k595Yr&&yr===k595Yr)?k595DayFracDCv:1;
     const dcMaxYr=plans.reduce((s,p)=>{
       const isB457=p.id==='b457b', isBOther=p.owner==='brenna'&&!isB457, isKDC=p.owner==='kevin';
       const canDraw=(isB457&&can457)||(isBOther&&canBOther)||(isKDC&&canKDC);
-      return s+(canDraw?runBal[p.id]*wRate:0);
+      const frac=isKDC?kDCFracDC:bAge62FracDC;
+      return s+(canDraw?runBal[p.id]*wRate*frac:0);
     },0);
     const dcNeededYr=(state.incomeGoal>0&&dcMaxYr>0)?Math.max(0,state.incomeGoal-nonDCInc):dcMaxYr;
     const drawScale=dcMaxYr>0?Math.min(1,dcNeededYr/dcMaxYr):0;
@@ -1021,8 +1053,9 @@ function renderDC() {
         }
       }
       if(isB457&&!bRetired) b=Math.max(0,b-(purchCostByYr[yr]||0));
-      // Withdraw up to wRate%, scaled down if income goal already met
-      if(canDraw) b=Math.max(0,b-b*wRate*drawScale);
+      // Withdraw up to wRate%, scaled down if income goal already met; prorate in transition years
+      const pFrac=isKDC?kDCFracDC:bAge62FracDC;
+      if(canDraw) b=Math.max(0,b-b*wRate*pFrac*drawScale);
 
       runBal[p.id]=b;
       rowVals[p.id]=b;
@@ -1079,6 +1112,14 @@ function renderFlow() {
   const bPenAnn=bSvc?pensionMo(bSvc,bAvg)*12:0;
   const bSuppAnn=bRet&&state.brenna.dob&&ageAt(state.brenna.dob,bRet)<62?suppMo(bSvc,bAvg)*12:0;
   const age62Yr=state.brenna.dob?ageDate(state.brenna.dob,62).getFullYear():Infinity;
+  const msPerDayFL=24*3600*1000, daysInYrFL=365.25;
+  const dayFracFL=(from,endYr)=>Math.max(0,Math.min(1,(new Date(endYr,11,31)-from)/(daysInYrFL*msPerDayFL)));
+  const yrFracFL=(startYr,to)=>Math.max(0,Math.min(1,(to-new Date(startYr,0,1))/(daysInYrFL*msPerDayFL)));
+  const bRetSalFracFL=bRet?yrFracFL(bRetYr,bRet):1;
+  const bRetPenFracFL=bRet?dayFracFL(bRet,bRetYr):1;
+  const kRetSalFracFL=kRet?yrFracFL(kRetYr,kRet):1;
+  const kRetDCFracFL =kRet?dayFracFL(kRet,kRetYr):1;
+  const k595DayFracFL=kAge595?dayFracFL(kAge595,k595Yr):1;
   const purchCostByYr={};
   (state.brenna.purchaseScenarios||[]).map(calcScenario).forEach(i=>{
     purchCostByYr[i.purchDate.getFullYear()]=(purchCostByYr[i.purchDate.getFullYear()]||0)+i.cost;
@@ -1097,6 +1138,8 @@ function renderFlow() {
   if(kAge595) milestoneLabels[k595Yr]=(milestoneLabels[k595Yr]?milestoneLabels[k595Yr]+' / ':'')+'Kevin 59½';
   const bAge62fl=state.brenna.dob?ageDate(state.brenna.dob,62):null;
   const bAge62YrFL=bAge62fl?bAge62fl.getFullYear():Infinity;
+  // Fraction of year remaining from age-62 birthday through Dec 31 (for prorated withdrawal)
+  const age62DayFrac=bAge62fl?Math.max(0,(new Date(bAge62YrFL,11,31)-bAge62fl)/(365.25*24*3600*1000)):1;
   if(bAge62fl) milestoneLabels[bAge62YrFL]=(milestoneLabels[bAge62YrFL]?milestoneLabels[bAge62YrFL]+' / ':'')+'Brenna 62 — DC draws begin';
   const rows=[];
   for(let yr=startYr;yr<=2087;yr++){
@@ -1104,18 +1147,26 @@ function renderFlow() {
     const k595ok=yr>=k595Yr;
     const can457=bRetired&&yr>=bAge62YrFL, canBOther=bRetired&&yr>=bAge62YrFL, canKDC=kRetired&&k595ok;
     const mid=new Date(yr,6,1);
-    const bSalYr=!bRetired&&state.brenna.salary?brennaSalAt(mid):0;
-    const kSalYr=!kRetired&&state.kevin.salary ?kevinSalAt(mid) :0;
-    const nonDCInc=(bRetired?bPenAnn:0)+(bRetired&&yr<age62Yr?bSuppAnn:0)+bSalYr+kSalYr;
+    const bSalYr=!bRetired&&state.brenna.salary?brennaSalAt(mid)*(yr===bRetYr?bRetSalFracFL:1):0;
+    const kSalYr=!kRetired&&state.kevin.salary ?kevinSalAt(mid) *(yr===kRetYr?kRetSalFracFL:1):0;
+    const bPenColaYrsFL=bRetired?Math.max(0,yr-bRetYr-1):0;
+    const bPenColaFL=Math.pow(1+PENSION_COLA,bPenColaYrsFL);
+    const bPenInc=bRetired?bPenAnn*bPenColaFL*(yr===bRetYr?bRetPenFracFL:1):0;
+    const bSuppInc=bRetired&&yr<age62Yr?bSuppAnn*(yr===bRetYr?bRetPenFracFL:1):0;
+    const nonDCInc=bPenInc+bSuppInc+bSalYr+kSalYr;
+    const bDCFrac=(bAge62fl&&yr===bAge62YrFL)?age62DayFrac:1;
+    const kDCFracFL=(kRetYr>=k595Yr&&yr===kRetYr)?kRetDCFracFL:(kRetYr<k595Yr&&yr===k595Yr)?k595DayFracFL:1;
     const dcMaxYr=allPlans.reduce((s,p)=>{
       const isB457=p.id==='b457b',isBOther=p.owner==='brenna'&&!isB457,isKDC=p.owner==='kevin';
       const canDraw=(isB457&&can457)||(isBOther&&canBOther)||(isKDC&&canKDC);
-      return s+(canDraw?runBal[p.id]*wRate:0);
+      const frac=isKDC?kDCFracFL:bDCFrac;
+      return s+(canDraw?runBal[p.id]*wRate*frac:0);
     },0);
     const dcNeededYr=(state.incomeGoal>0&&dcMaxYr>0)?Math.max(0,state.incomeGoal-nonDCInc):dcMaxYr;
     const drawScale=dcMaxYr>0?Math.min(1,dcNeededYr/dcMaxYr):0;
-    const rowData={yr,bSal:bSalYr,kSal:kSalYr,bRetired,kRetired};
+    const rowData={yr,bSal:bSalYr,kSal:kSalYr,bPenInc,bSuppInc,bRetired,kRetired};
     allPlans.forEach(p=>{
+      const balStart=runBal[p.id];
       const isB457=p.id==='b457b',isBOther=p.owner==='brenna'&&!isB457,isKDC=p.owner==='kevin';
       const canDraw=(isB457&&can457)||(isBOther&&canBOther)||(isKDC&&canKDC);
       const retired=p.owner==='brenna'?bRetired:kRetired;
@@ -1128,49 +1179,63 @@ function renderFlow() {
         if(p.id==='b401a'){const sal=brennaSalAt(mid),cap=pensionCapAt(mid),exPct=(state.brenna.excess401aPct||0)/100;if(cap!==Infinity&&sal>cap)extra=(sal-cap)*exPct;}
         if(isB457) purchase=purchCostByYr[yr]||0;
       } else if(canDraw){
-        withdrawal=runBal[p.id]*wRate*drawScale;
+        const frac=isKDC?kDCFracFL:bDCFrac;
+        withdrawal=balStart*wRate*frac*drawScale;
       }
-      rowData[p.id]={contrib:annContrib+extra, purchase, withdrawal};
-      // Update running balance
-      let b=runBal[p.id]*(1+r);
+      let b=balStart*(1+r);
       if(!retired){b+=annContrib+extra; if(isB457)b=Math.max(0,b-purchase);}
       if(canDraw)b=Math.max(0,b-withdrawal);
       runBal[p.id]=b;
+      const cashFlow=annContrib+extra-purchase-withdrawal;
+      const invGain=b-balStart-cashFlow;
+      rowData[p.id]={cashFlow,invGain,balEnd:b,withdrawal};
     });
     const dcDrawTotal=allPlans.reduce((s,p)=>s+(rowData[p.id]?.withdrawal||0),0);
-    rowData.annualIncome=bSalYr+kSalYr+(bRetired?bPenAnn:0)+(bRetired&&yr<age62Yr?bSuppAnn:0)+dcDrawTotal;
+    rowData.annualIncome=bSalYr+kSalYr+bPenInc+bSuppInc+dcDrawTotal;
     rows.push(rowData);
     const allZero=allPlans.every(p=>runBal[p.id]<0.5);
     if(allZero&&bRetired&&kRetired&&yr>Math.max(bRetYr===Infinity?startYr:bRetYr,kRetYr===Infinity?startYr:kRetYr)+3) break;
   }
-  // Render table
-  const totalCols=2+state.brenna.plans.length+1+state.kevin.plans.length+1;
+  // Build combined table with grouped Brenna/Kevin headers
+  const bCols=2+3*state.brenna.plans.length;
+  const kCols=1+3*state.kevin.plans.length;
+  const totalCols=1+bCols+kCols+1;
   const fmtFlow=v=>v>0.5?`<span style="color:var(--primary)">${fmt$(v)}</span>`:v<-0.5?`<span style="color:#c0392b">(${fmt$(Math.abs(v))})</span>`:'—';
-  let h=`<div class="card"><div class="card-header"><div class="card-title">Annual Salary &amp; DC Contributions / Withdrawals</div></div>
-  <div class="table-wrap"><table><thead><tr>
-    <th>Year</th><th>Brenna Salary</th>`;
-  state.brenna.plans.forEach(p=>{h+=`<th>Brenna ${p.name}</th>`;});
-  h+=`<th>Kevin Salary</th>`;
-  state.kevin.plans.forEach(p=>{h+=`<th>Kevin ${p.name}</th>`;});
-  h+=`<th>Annual Income</th></tr></thead><tbody>`;
+  const fmtGain=v=>v>0.5?`<span style="color:#888">${fmt$(v)}</span>`:'—';
+  const fmtBal=v=>v>0.5?fmt$(v):'—';
+  let h=`<div class="card"><div class="card-header"><div class="card-title">Annual Flow</div></div>
+  <div class="table-wrap"><table style="min-width:max-content;white-space:nowrap;"><thead>
+  <tr>
+    <th rowspan="2">Year</th>
+    <th colspan="${bCols}" style="text-align:center;background:#e8f4fd;border-bottom:2px solid #b8d9f0;">Brenna</th>
+    <th colspan="${kCols}" style="text-align:center;background:#e8f7ee;border-bottom:2px solid #b0ddc0;">Kevin</th>
+    <th rowspan="2">Annual Income</th>
+  </tr>
+  <tr>
+    <th>Salary</th><th>Pension</th>`;
+  state.brenna.plans.forEach(p=>{h+=`<th>${p.name} CF</th><th>${p.name} Gain</th><th>${p.name} Balance</th>`;});
+  h+=`<th>Salary</th>`;
+  state.kevin.plans.forEach(p=>{h+=`<th>${p.name} CF</th><th>${p.name} Gain</th><th>${p.name} Balance</th>`;});
+  h+=`</tr></thead><tbody>`;
   rows.forEach(row=>{
     const ms=milestoneLabels[row.yr];
     if(ms) h+=`<tr><td colspan="${totalCols}" style="text-align:center;font-size:0.72rem;font-weight:600;color:var(--primary);background:var(--bg);padding:0.3rem 0.75rem;">${ms}</td></tr>`;
     const rowStyle=row.bRetired&&row.kRetired?'background:#f0faf4;':row.bRetired||row.kRetired?'background:#f0f7fd;':'';
     h+=`<tr style="${rowStyle}"><td>${row.yr}</td>`;
     h+=`<td>${row.bSal>0.5?fmt$(row.bSal):'$0.00'}</td>`;
+    const penDisplay=(row.bPenInc||0)+(row.bSuppInc||0);
+    h+=`<td>${penDisplay>0.5?fmt$(penDisplay):'—'}</td>`;
     state.brenna.plans.forEach(p=>{
-      const f=row[p.id]; if(!f){h+=`<td>—</td>`;return;}
-      const net=f.contrib-f.purchase-f.withdrawal;
-      h+=`<td>${fmtFlow(net)}</td>`;
+      const f=row[p.id]; if(!f){h+=`<td>—</td><td>—</td><td>—</td>`;return;}
+      h+=`<td>${fmtFlow(f.cashFlow)}</td><td>${fmtGain(f.invGain)}</td><td>${fmtBal(f.balEnd)}</td>`;
     });
     h+=`<td>${row.kSal>0.5?fmt$(row.kSal):'$0.00'}</td>`;
     state.kevin.plans.forEach(p=>{
-      const f=row[p.id]; if(!f){h+=`<td>—</td>`;return;}
-      const net=f.contrib-f.withdrawal;
-      h+=`<td>${fmtFlow(net)}</td>`;
+      const f=row[p.id]; if(!f){h+=`<td>—</td><td>—</td><td>—</td>`;return;}
+      h+=`<td>${fmtFlow(f.cashFlow)}</td><td>${fmtGain(f.invGain)}</td><td>${fmtBal(f.balEnd)}</td>`;
     });
-    h+=`<td style="font-weight:600;">${row.annualIncome>0.5?fmt$(row.annualIncome):'—'}</td>`;
+    const belowMin=state.minIncome>0&&(row.bRetired||row.kRetired)&&row.annualIncome<state.minIncome&&row.annualIncome>0;
+    h+=`<td style="font-weight:600;${belowMin?'color:#c0392b;background:#fdf0ee;':''}">${row.annualIncome>0.5?fmt$(row.annualIncome):'—'}${belowMin?' ⚠':''}</td>`;
     h+=`</tr>`;
   });
   h+=`</tbody></table></div></div>`;
@@ -1186,6 +1251,7 @@ function renderSettings() {
       <div class="field"><label>Post-Retirement Return %</label><input id="f-rror" type="number" step="0.1" value="${state.retRor??5}" onchange="state.retRor=parseFloat(this.value)||0;saveState();scheduleRender();" /></div>
       <div class="field"><label>Annual DC Withdrawal %</label><input id="f-wpct" type="number" step="0.1" value="${state.withdrawalPct??4}" onchange="state.withdrawalPct=parseFloat(this.value)||4;saveState();scheduleRender();" /><div class="field-hint">% of each DC balance withdrawn per year post-retirement (default 4%)</div></div>
       <div class="field"><label>Annual Income Goal</label><input id="f-incomegoal" type="text" value="${state.incomeGoal?fmtMoney(state.incomeGoal):''}" onchange="state.incomeGoal=parseMoney(this.value);saveState();scheduleRender();" /></div>
+      <div class="field"><label>Minimum Annual Income</label><input id="f-minincome" type="text" value="${state.minIncome?fmtMoney(state.minIncome):''}" onchange="state.minIncome=parseMoney(this.value);saveState();scheduleRender();" /><div class="field-hint">Flags years where income falls below this floor due to withdrawal % limits</div></div>
     </div>
   </div>
   <div class="card"><div class="card-header"><div class="card-title">GitHub Sync</div></div>
@@ -1227,7 +1293,6 @@ function renderAll() {
   renderOverview();
   renderBrenna();
   renderKevin();
-  renderDC();
   renderFlow();
   renderSettings();
 
@@ -1241,7 +1306,7 @@ function renderAll() {
   }
 }
 function switchTab(name) {
-  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['overview','brenna','kevin','dc','flow','settings'][i]===name));
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['overview','brenna','kevin','flow','settings'][i]===name));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
 }
 
