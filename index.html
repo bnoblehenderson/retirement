@@ -236,7 +236,7 @@ const DEFAULT = {
       { id: 'k401k', name: '401K', type: '401K', balance: 0, balDate: '', contrib: 0, periods: 26 },
     ],
   },
-  ror: 7, retRor: 5, incomeGoal: 0,
+  ror: 7, retRor: 5, withdrawalPct: 4, incomeGoal: 0,
 };
 
 let state = JSON.parse(JSON.stringify(DEFAULT));
@@ -507,7 +507,7 @@ function calcAllScenarios() {
   (state.brenna.servicePurchases||[]).forEach(p=>{
     const c=parseMoney(p.cost); if(c>0) oppFV+=c*Math.pow(1+r,Math.max(0,yFrac(p.date,retDate)));
   });
-  const draw4 = oppFV*0.04;
+  const draw4 = oppFV*(state.withdrawalPct??4)/100;
   const worthIt = totalPensionGainAnn>draw4;
   const breakEven = totalPensionGainAnn>0 ? oppFV/totalPensionGainAnn : Infinity;
   const mosSaved = baseRet&&withRet ? (baseRet-withRet)/(30.44*24*3600*1000) : 0;
@@ -576,10 +576,11 @@ function calcTimeline() {
     const pInc = bRetired ? bPensionAnn : 0;
     const sInc = bRetired&&age62&&mid<age62 ? suppAnn : 0;
 
-    // Each pool draws independently at 4% of its own balance
-    const d457  = can457    ? bDC457  *0.04 : 0;
-    const dBOth = canBOther ? bDCother*0.04 : 0;
-    const dKDC  = canKDC    ? kDC     *0.04 : 0;
+    // Each pool draws independently at withdrawalPct% of its own balance
+    const wRate = (state.withdrawalPct??4)/100;
+    const d457  = can457    ? bDC457  *wRate : 0;
+    const dBOth = canBOther ? bDCother*wRate : 0;
+    const dKDC  = canKDC    ? kDC     *wRate : 0;
     const dcDraw = d457 + dBOth + dKDC;
 
     const prev457=bDC457;
@@ -839,12 +840,12 @@ function renderScenarioSection() {
         <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Pension Gain/mo (planned)</div><div class="fw7">${fmt$(res.pensionGain)}</div></div>
         <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Total Pension Gain/yr (all)</div><div class="fw7">${fmt$(res.totalPensionGainAnn)}/yr</div></div>
         <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Opp. Cost at Retirement</div><div class="fw7">${fmt$(res.oppFV)}</div></div>
-        <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">4% Draw on Opp. Cost</div><div class="fw7">${fmt$(res.draw4)}/yr</div></div>
-        <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Pension vs 4% Draw</div><div class="fw7">${res.totalPensionGainAnn>res.draw4?'+':''}${fmt$(res.totalPensionGainAnn-res.draw4)}/yr</div></div>
+        <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">${state.withdrawalPct??4}% Draw on Opp. Cost</div><div class="fw7">${fmt$(res.draw4)}/yr</div></div>
+        <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Pension vs ${state.withdrawalPct??4}% Draw</div><div class="fw7">${res.totalPensionGainAnn>res.draw4?'+':''}${fmt$(res.totalPensionGainAnn-res.draw4)}/yr</div></div>
         <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Break-Even After Ret.</div><div class="fw7">${isFinite(res.breakEven)?fmtD(res.breakEven,1)+' yrs':'N/A'}</div></div>
       </div>
       <div style="margin-top:0.75rem;padding:0.45rem 0.75rem;border-radius:6px;font-size:0.8rem;font-weight:700;text-align:center;background:${res.worthIt?'rgba(255,255,255,0.18)':'rgba(0,0,0,0.14)'};">
-        ${res.worthIt?'✓ Purchases worth it — pension gain exceeds 4% draw on opportunity cost':'✗ Pension gain is below 4% draw on opportunity cost'}
+        ${res.worthIt?`✓ Purchases worth it — pension gain exceeds ${state.withdrawalPct??4}% draw on opportunity cost`:`✗ Pension gain is below ${state.withdrawalPct??4}% draw on opportunity cost`}
       </div>
       <div style="font-size:0.72rem;opacity:0.6;margin-top:0.5rem;">Opp. cost = all purchase costs (prior + planned) grown at ${state.ror}% to retirement. Break-even = years of pension income to recover total cost.</div>
     </div>`;
@@ -898,7 +899,7 @@ function renderKevin() {
     <div class="stat-grid">
       <div class="stat-box"><div class="stat-label">Retirement Date</div><div class="stat-value" style="font-size:0.95rem;">${fmtDate(kRet)}</div></div>
       <div class="stat-box"><div class="stat-label">DC at Retirement</div><div class="stat-value">${fmt$(kDC)}</div></div>
-      <div class="stat-box"><div class="stat-label">4% Annual Draw</div><div class="stat-value" style="font-size:1rem;">${fmt$(kDC*0.04)}/yr</div><div class="stat-sub">${fmt$(kDC*0.04/12)}/mo</div></div>
+      <div class="stat-box"><div class="stat-label">${state.withdrawalPct??4}% Annual Draw</div><div class="stat-value" style="font-size:1rem;">${fmt$(kDC*(state.withdrawalPct??4)/100)}/yr</div><div class="stat-sub">${fmt$(kDC*(state.withdrawalPct??4)/100/12)}/mo</div></div>
     </div></div>`;
   }
   el.innerHTML=h;
@@ -912,6 +913,7 @@ function renderSettings() {
     <div class="form-grid">
       <div class="field"><label>Pre-Retirement Return %</label><input id="f-ror" type="number" step="0.1" value="${state.ror??7}" onchange="state.ror=parseFloat(this.value)||0;saveState();scheduleRender();" /></div>
       <div class="field"><label>Post-Retirement Return %</label><input id="f-rror" type="number" step="0.1" value="${state.retRor??5}" onchange="state.retRor=parseFloat(this.value)||0;saveState();scheduleRender();" /></div>
+      <div class="field"><label>Annual DC Withdrawal %</label><input id="f-wpct" type="number" step="0.1" value="${state.withdrawalPct??4}" onchange="state.withdrawalPct=parseFloat(this.value)||4;saveState();scheduleRender();" /><div class="field-hint">% of each DC balance withdrawn per year post-retirement (default 4%)</div></div>
       <div class="field"><label>Annual Income Goal</label><input id="f-incomegoal" type="text" value="${state.incomeGoal?fmtMoney(state.incomeGoal):''}" onchange="state.incomeGoal=parseMoney(this.value);saveState();scheduleRender();" /></div>
     </div>
   </div>
