@@ -578,12 +578,19 @@ function calcTimeline() {
     const pInc = bRetired ? bPensionAnn : 0;
     const sInc = bRetired&&age62&&mid<age62 ? suppAnn : 0;
 
-    // Each pool draws independently at withdrawalPct% of its own balance
+    // Each pool can draw up to withdrawalPct% of its balance; limit total draw to income goal gap
     const wRate = (state.withdrawalPct??4)/100;
-    const d457  = can457    ? bDC457  *wRate : 0;
-    const dBOth = canBOther ? bDCother*wRate : 0;
-    const dKDC  = canKDC    ? kDC     *wRate : 0;
-    const dcDraw = d457 + dBOth + dKDC;
+    const d457_max  = can457    ? bDC457  *wRate : 0;
+    const dBOth_max = canBOther ? bDCother*wRate : 0;
+    const dKDC_max  = canKDC    ? kDC     *wRate : 0;
+    const dcMax = d457_max + dBOth_max + dKDC_max;
+    const nonDCInc  = pInc + sInc;
+    const dcNeeded  = (state.incomeGoal>0 && dcMax>0) ? Math.max(0, state.incomeGoal - nonDCInc) : dcMax;
+    const dcDraw    = Math.min(dcMax, dcNeeded);
+    const scale     = dcMax>0 ? dcDraw/dcMax : 0;
+    const d457  = d457_max  * scale;
+    const dBOth = dBOth_max * scale;
+    const dKDC  = dKDC_max  * scale;
 
     const prev457=bDC457;
 
@@ -634,8 +641,7 @@ function renderOverview() {
   // Stat grid
   h+=`<div class="stat-grid">`;
   if (bRet) {
-    const bSub=[]; if(bPenMo>0) bSub.push(fmt$(bPenMo)+'/mo pension'); if(bDC>0) bSub.push(fmt$(bDC)+' DC at ret.');
-    h+=`<div class="stat-box"><div class="stat-label">Brenna Retires</div><div class="stat-value" style="font-size:1rem;">${fmtMo(bRet)}</div><div class="stat-sub">${bSub.length?bSub.join(' · '):'—'}</div></div>`;
+    h+=`<div class="stat-box"><div class="stat-label">Brenna Retires</div><div class="stat-value" style="font-size:1rem;">${fmtMo(bRet)}</div>${bPenMo>0?`<div class="stat-sub">${fmt$(bPenMo)}/mo pension</div>`:''} ${bDC>0?`<div class="stat-sub">${fmt$(bDC)} DC at ret.</div>`:''}</div>`;
   }
   if (kRet)  h+=`<div class="stat-box"><div class="stat-label">Kevin Retires</div><div class="stat-value" style="font-size:1rem;">${fmtMo(kRet)}</div><div class="stat-sub">${kDC>0?fmt$(kDC)+' DC at ret.':'—'}</div></div>`;
   if (bDC||kDC) h+=`<div class="stat-box"><div class="stat-label">Combined DC</div><div class="stat-value">${fmt$(bDC+kDC)}</div><div class="stat-sub">at each retirement</div></div>`;
@@ -921,6 +927,12 @@ function renderDC() {
   const kRetYr=kRet?kRet.getFullYear():Infinity;
   const b595Yr=bAge595?bAge595.getFullYear():Infinity;
   const k595Yr=kAge595?kAge595.getFullYear():Infinity;
+  // Non-DC retirement income (pension + supplement) for income-goal cap
+  const bSvc=bRet&&state.brenna.pensionStart?svcYrs(bRet,plannedByDate(bRet)):0;
+  const bAvg=bRet?avg36Month(bRet):0;
+  const bPenAnn=bSvc?pensionMo(bSvc,bAvg)*12:0;
+  const bSuppAnn=bRet&&state.brenna.dob&&ageAt(state.brenna.dob,bRet)<62?suppMo(bSvc,bAvg)*12:0;
+  const age62Yr=state.brenna.dob?ageDate(state.brenna.dob,62).getFullYear():Infinity;
 
   // Purchase costs by year for 457B
   const purchCostByYr={};
@@ -957,6 +969,15 @@ function renderDC() {
     const canKDC=kRetired&&k595ok;
     const rowVals={yr};
     let anyPositive=false;
+    // Compute income-goal withdrawal scale for this year
+    const nonDCInc=(bRetired?bPenAnn:0)+(bRetired&&yr<age62Yr?bSuppAnn:0);
+    const dcMaxYr=plans.reduce((s,p)=>{
+      const isB457=p.id==='b457b', isBOther=p.owner==='brenna'&&!isB457, isKDC=p.owner==='kevin';
+      const canDraw=(isB457&&can457)||(isBOther&&canBOther)||(isKDC&&canKDC);
+      return s+(canDraw?runBal[p.id]*wRate:0);
+    },0);
+    const dcNeededYr=(state.incomeGoal>0&&dcMaxYr>0)?Math.max(0,state.incomeGoal-nonDCInc):dcMaxYr;
+    const drawScale=dcMaxYr>0?Math.min(1,dcNeededYr/dcMaxYr):0;
 
     plans.forEach(p=>{
       const isB457=p.id==='b457b';
@@ -967,29 +988,23 @@ function renderDC() {
       const r=retired?rRor:ror;
       let b=runBal[p.id];
 
-      // Balance as-of date: grow/contribute from balDate to Jan 1 of startYr on first pass
-      // (handled by starting from the stored balance already projected by prior years)
-      // Contributions (stop at retirement)
       const annContrib=retired?0:(parseFloat(p.contrib)||0)*(p.periods||(p.owner==='kevin'?26:24));
       const contribGrow=p.id==='b401a'?state.brenna.raisePct/100:p.id==='k401k'?state.kevin.raisePct/100:0;
       const yrsFrom=yr-startYr;
 
-      // Grow balance for this year
       b=b*(1+r);
       if(!retired) {
         b+=annContrib*Math.pow(1+contribGrow,yrsFrom);
         if(p.id==='b401a') {
-          // Add extra401a for this year: single year estimate
           const mid=new Date(yr,6,1);
           const sal=brennaSalAt(mid), cap=pensionCapAt(mid);
           const exPct=(state.brenna.excess401aPct||0)/100;
           if(cap!==Infinity&&sal>cap) b+=(sal-cap)*exPct;
         }
       }
-      // Deduct purchase costs from 457B
       if(isB457&&!bRetired) b=Math.max(0,b-(purchCostByYr[yr]||0));
-      // Withdrawal
-      if(canDraw) b=Math.max(0,b-b*wRate);
+      // Withdraw up to wRate%, scaled down if income goal already met
+      if(canDraw) b=Math.max(0,b-b*wRate*drawScale);
 
       runBal[p.id]=b;
       rowVals[p.id]=b;
