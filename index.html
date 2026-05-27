@@ -162,11 +162,13 @@ tr:hover td{background:var(--bg);}
     <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
     <button class="tab-btn" onclick="switchTab('brenna')">Brenna</button>
     <button class="tab-btn" onclick="switchTab('kevin')">Kevin</button>
+    <button class="tab-btn" onclick="switchTab('dc')">DC Balances</button>
     <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
   </div>
   <div class="tab-panel active" id="tab-overview"><div id="ov-content"></div></div>
   <div class="tab-panel" id="tab-brenna"><div id="br-content"></div></div>
   <div class="tab-panel" id="tab-kevin"><div id="kv-content"></div></div>
+  <div class="tab-panel" id="tab-dc"><div id="dc-content"></div></div>
   <div class="tab-panel" id="tab-settings"><div id="st-content"></div></div>
 </div>
 
@@ -906,6 +908,126 @@ function renderKevin() {
 }
 
 // ── Render: Settings ──────────────────────────────────────────
+// ── Render: DC Balances ───────────────────────────────────────
+function renderDC() {
+  const el=document.getElementById('dc-content'); if(!el) return;
+  const now=today();
+  const bRet=brennaRetDate(), kRet=kevinRetDate();
+  const bAge595=state.brenna.dob?ageDate(state.brenna.dob,59.5):null;
+  const kAge595=state.kevin.dob ?ageDate(state.kevin.dob, 59.5):null;
+  const ror=state.ror/100, rRor=state.retRor/100;
+  const wRate=(state.withdrawalPct??4)/100;
+  const bRetYr=bRet?bRet.getFullYear():Infinity;
+  const kRetYr=kRet?kRet.getFullYear():Infinity;
+  const b595Yr=bAge595?bAge595.getFullYear():Infinity;
+  const k595Yr=kAge595?kAge595.getFullYear():Infinity;
+
+  // Purchase costs by year for 457B
+  const purchCostByYr={};
+  (state.brenna.purchaseScenarios||[]).map(calcScenario).forEach(i=>{
+    const yr=i.purchDate.getFullYear();
+    purchCostByYr[yr]=(purchCostByYr[yr]||0)+i.cost;
+  });
+
+  // Initialise per-plan balances
+  const plans=[
+    ...state.brenna.plans.map(p=>({...p,owner:'brenna'})),
+    ...state.kevin.plans.map(p=>({...p,owner:'kevin'})),
+  ];
+  const balMap={};
+  plans.forEach(p=>{
+    balMap[p.id]={ bal:parseFloat(p.balance)||0, balDate:p.balDate?new Date(p.balDate):now };
+  });
+
+  // Build year-by-year rows
+  const startYr=now.getFullYear();
+  const rows=[];
+  let yr=startYr;
+  const maxYr=startYr+70;
+  // running balances
+  const runBal={};
+  plans.forEach(p=>{ runBal[p.id]=balMap[p.id].bal; });
+
+  while(yr<=maxYr) {
+    const dec31=new Date(yr,11,31);
+    const bRetired=yr>=bRetYr, kRetired=yr>=kRetYr;
+    const b595ok=yr>=b595Yr, k595ok=yr>=k595Yr;
+    const can457=bRetired;
+    const canBOther=bRetired&&b595ok;
+    const canKDC=kRetired&&k595ok;
+    const rowVals={yr};
+    let anyPositive=false;
+
+    plans.forEach(p=>{
+      const isB457=p.id==='b457b';
+      const isBOther=p.owner==='brenna'&&!isB457;
+      const isKDC=p.owner==='kevin';
+      const canDraw=(isB457&&can457)||(isBOther&&canBOther)||(isKDC&&canKDC);
+      const retired=p.owner==='brenna'?bRetired:kRetired;
+      const r=retired?rRor:ror;
+      let b=runBal[p.id];
+
+      // Balance as-of date: grow/contribute from balDate to Jan 1 of startYr on first pass
+      // (handled by starting from the stored balance already projected by prior years)
+      // Contributions (stop at retirement)
+      const annContrib=retired?0:(parseFloat(p.contrib)||0)*(p.periods||(p.owner==='kevin'?26:24));
+      const contribGrow=p.id==='b401a'?state.brenna.raisePct/100:p.id==='k401k'?state.kevin.raisePct/100:0;
+      const yrsFrom=yr-startYr;
+
+      // Grow balance for this year
+      b=b*(1+r);
+      if(!retired) {
+        b+=annContrib*Math.pow(1+contribGrow,yrsFrom);
+        if(p.id==='b401a') {
+          // Add extra401a for this year: single year estimate
+          const mid=new Date(yr,6,1);
+          const sal=brennaSalAt(mid), cap=pensionCapAt(mid);
+          const exPct=(state.brenna.excess401aPct||0)/100;
+          if(cap!==Infinity&&sal>cap) b+=(sal-cap)*exPct;
+        }
+      }
+      // Deduct purchase costs from 457B
+      if(isB457&&!bRetired) b=Math.max(0,b-(purchCostByYr[yr]||0));
+      // Withdrawal
+      if(canDraw) b=Math.max(0,b-b*wRate);
+
+      runBal[p.id]=b;
+      rowVals[p.id]=b;
+      if(b>0.5) anyPositive=true;
+    });
+
+    rowVals.bRetired=bRetired; rowVals.kRetired=kRetired;
+    rows.push(rowVals);
+    if(!anyPositive&&yr>Math.max(bRetYr===Infinity?startYr:bRetYr,kRetYr===Infinity?startYr:kRetYr)+5) break;
+    yr++;
+  }
+
+  // Render table
+  const retLabels={};
+  if(bRet) retLabels[bRetYr]=(retLabels[bRetYr]?retLabels[bRetYr]+' / ':'')+'Brenna retires';
+  if(kRet) retLabels[kRetYr]=(retLabels[kRetYr]?retLabels[kRetYr]+' / ':'')+'Kevin retires';
+  if(bAge595) retLabels[b595Yr]=(retLabels[b595Yr]?retLabels[b595Yr]+' / ':'')+'Brenna 59½';
+  if(kAge595) retLabels[k595Yr]=(retLabels[k595Yr]?retLabels[k595Yr]+' / ':'')+'Kevin 59½';
+
+  let h=`<div class="card"><div class="card-header"><div class="card-title">DC Balance Projections</div></div>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Year</th>`;
+  plans.forEach(p=>{ h+=`<th>${p.name}</th>`; });
+  h+=`<th>Total</th></tr></thead><tbody>`;
+
+  rows.forEach(row=>{
+    const milestone=retLabels[row.yr];
+    if(milestone) h+=`<tr><td colspan="${plans.length+2}" style="text-align:center;font-size:0.72rem;font-weight:600;color:var(--primary);background:var(--bg);padding:0.3rem 0.75rem;">${milestone}</td></tr>`;
+    const total=plans.reduce((s,p)=>s+(row[p.id]||0),0);
+    const rowStyle=row.bRetired&&row.kRetired?'background:#f0faf4;':row.bRetired||row.kRetired?'background:#f0f7fd;':'';
+    h+=`<tr style="${rowStyle}"><td>${row.yr}</td>`;
+    plans.forEach(p=>{ h+=`<td>${row[p.id]>0.5?fmt$(row[p.id]):'—'}</td>`; });
+    h+=`<td style="font-weight:600;">${total>0.5?fmt$(total):'—'}</td></tr>`;
+  });
+  h+=`</tbody></table></div></div>`;
+  el.innerHTML=h;
+}
+
 function renderSettings() {
   const el=document.getElementById('st-content'); if(!el) return;
   el.innerHTML=`
@@ -956,6 +1078,7 @@ function renderAll() {
   renderOverview();
   renderBrenna();
   renderKevin();
+  renderDC();
   renderSettings();
 
   if (fid) {
@@ -968,7 +1091,7 @@ function renderAll() {
   }
 }
 function switchTab(name) {
-  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['overview','brenna','kevin','settings'][i]===name));
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['overview','brenna','kevin','dc','settings'][i]===name));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
 }
 
