@@ -242,7 +242,7 @@ const DEFAULT = {
       { id: 'k401k', name: '401K', type: '401K', balance: 0, balDate: '', contrib: 0, periods: 26 },
     ],
   },
-  ror: 7, retRor: 5, withdrawalPct: 4, incomeGoal: 0, minIncome: 0,
+  ror: 7, retRor: 5, withdrawalPct: 4, kevinWithdrawalPct: 4, brennaWithdrawalPct: 4, incomeGoal: 0, minIncome: 0,
 };
 
 let state = JSON.parse(JSON.stringify(DEFAULT));
@@ -521,7 +521,7 @@ function calcAllScenarios() {
   (state.brenna.servicePurchases||[]).forEach(p=>{
     const c=parseMoney(p.cost); if(c>0) oppFV+=c*Math.pow(1+r,Math.max(0,yFrac(p.date,retDate)));
   });
-  const draw4 = oppFV*(state.withdrawalPct??4)/100;
+  const draw4 = oppFV*(state.brennaWithdrawalPct??4)/100;
   const worthIt = totalPensionGainAnn>draw4;
   const breakEven = totalPensionGainAnn>0 ? oppFV/totalPensionGainAnn : Infinity;
   const mosSaved = baseRet&&withRet ? (baseRet-withRet)/(30.44*24*3600*1000) : 0;
@@ -622,7 +622,8 @@ function calcTimeline() {
       yr===startYr ? nowFracTL : yr===kRetYr ? kRetSalFrac : 1) : 0;
 
     // Priority-based DC draws: Kevin first → Brenna eligible DC → 457B emergency pre-62
-    const wRate = (state.withdrawalPct??4)/100;
+    const kWRateTL = (state.kevinWithdrawalPct??4)/100;
+    const bWRateTL = (state.brennaWithdrawalPct??4)/100;
     const bAge62Frac  = (bAge62 && yr===bAge62Yr) ? age62DayFracTL : 1;
     // Brenna 401A/IRA: prorate the year eligibility first begins (later of retirement vs 59.5)
     const bBotherFrac = (bRetYr>=b595Yr && yr===bRetYr) ? bRetPenFrac :
@@ -632,12 +633,12 @@ function calcTimeline() {
     const drawFloor = state.minIncome > 0 ? state.minIncome : state.incomeGoal > 0 ? state.incomeGoal : null;
     let gap = drawFloor !== null ? Math.max(0, drawFloor - nonDCInc) : Infinity;
     // Step 1: Kevin's DC (first priority)
-    const dKDC_max = canKDC ? kDC * wRate * kDCFrac : 0;
+    const dKDC_max = canKDC ? kDC * kWRateTL * kDCFrac : 0;
     const dKDC = drawFloor !== null ? Math.min(dKDC_max, gap) : dKDC_max;
     gap = Math.max(0, gap - dKDC);
     // Step 2: Brenna's eligible DC pro-rata (457B post-62, 401A+IRA post-59.5)
-    const d457_max  = can457    ? bDC457   * wRate * bAge62Frac  : 0;
-    const dBOth_max = canBOther ? bDCother * wRate * bBotherFrac : 0;
+    const d457_max  = can457    ? bDC457   * bWRateTL * bAge62Frac  : 0;
+    const dBOth_max = canBOther ? bDCother * bWRateTL * bBotherFrac : 0;
     const bPool_max = d457_max + dBOth_max;
     const bPool_drw = drawFloor !== null ? Math.min(bPool_max, gap) : bPool_max;
     const bScale    = bPool_max > 0 ? bPool_drw / bPool_max : 0;
@@ -646,7 +647,7 @@ function calcTimeline() {
     gap = Math.max(0, gap - bPool_drw);
     // Step 3: 457B emergency pre-62 (only to meet minIncome floor)
     const d457_gap = (!bAge62ok && bRetired && kRetired && state.minIncome > 0 && gap > 0)
-      ? Math.max(0, Math.min(bDC457 * wRate, gap)) : 0;
+      ? Math.max(0, Math.min(bDC457 * bWRateTL, gap)) : 0;
     d457 += d457_gap;
     const dcDraw = dKDC + dBOth + d457;
 
@@ -909,12 +910,12 @@ function renderScenarioSection() {
         <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Pension Gain/mo (planned)</div><div class="fw7">${fmt$(res.pensionGain)}</div></div>
         <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Total Pension Gain/yr (all)</div><div class="fw7">${fmt$(res.totalPensionGainAnn)}/yr</div></div>
         <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Opp. Cost at Retirement</div><div class="fw7">${fmt$(res.oppFV)}</div></div>
-        <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">${state.withdrawalPct??4}% Draw on Opp. Cost</div><div class="fw7">${fmt$(res.draw4)}/yr</div></div>
-        <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Pension vs ${state.withdrawalPct??4}% Draw</div><div class="fw7">${res.totalPensionGainAnn>res.draw4?'+':''}${fmt$(res.totalPensionGainAnn-res.draw4)}/yr</div></div>
+        <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">${state.brennaWithdrawalPct??4}% Draw on Opp. Cost</div><div class="fw7">${fmt$(res.draw4)}/yr</div></div>
+        <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Pension vs ${state.brennaWithdrawalPct??4}% Draw</div><div class="fw7">${res.totalPensionGainAnn>res.draw4?'+':''}${fmt$(res.totalPensionGainAnn-res.draw4)}/yr</div></div>
         <div><div style="opacity:0.65;font-size:0.72rem;text-transform:uppercase;margin-bottom:0.1rem;">Break-Even After Ret.</div><div class="fw7">${isFinite(res.breakEven)?fmtD(res.breakEven,1)+' yrs':'N/A'}</div></div>
       </div>
       <div style="margin-top:0.75rem;padding:0.45rem 0.75rem;border-radius:6px;font-size:0.8rem;font-weight:700;text-align:center;background:${res.worthIt?'rgba(255,255,255,0.18)':'rgba(0,0,0,0.14)'};">
-        ${res.worthIt?`✓ Purchases worth it — pension gain exceeds ${state.withdrawalPct??4}% draw on opportunity cost`:`✗ Pension gain is below ${state.withdrawalPct??4}% draw on opportunity cost`}
+        ${res.worthIt?`✓ Purchases worth it — pension gain exceeds ${state.brennaWithdrawalPct??4}% draw on opportunity cost`:`✗ Pension gain is below ${state.brennaWithdrawalPct??4}% draw on opportunity cost`}
       </div>
       <div style="font-size:0.72rem;opacity:0.6;margin-top:0.5rem;">Opp. cost = all purchase costs (prior + planned) grown at ${state.ror}% to retirement. Break-even = years of pension income to recover total cost.</div>
     </div>`;
@@ -968,7 +969,7 @@ function renderKevin() {
     <div class="stat-grid">
       <div class="stat-box"><div class="stat-label">Retirement Date</div><div class="stat-value" style="font-size:0.95rem;">${fmtDate(kRet)}</div></div>
       <div class="stat-box"><div class="stat-label">DC at Retirement</div><div class="stat-value">${fmt$(kDC)}</div></div>
-      <div class="stat-box"><div class="stat-label">${state.withdrawalPct??4}% Annual Draw</div><div class="stat-value" style="font-size:1rem;">${fmt$(kDC*(state.withdrawalPct??4)/100)}/yr</div><div class="stat-sub">${fmt$(kDC*(state.withdrawalPct??4)/100/12)}/mo</div></div>
+      <div class="stat-box"><div class="stat-label">${state.kevinWithdrawalPct??4}% Annual Draw</div><div class="stat-value" style="font-size:1rem;">${fmt$(kDC*(state.kevinWithdrawalPct??4)/100)}/yr</div><div class="stat-sub">${fmt$(kDC*(state.kevinWithdrawalPct??4)/100/12)}/mo</div></div>
     </div></div>`;
   }
   el.innerHTML=h;
@@ -983,7 +984,8 @@ function renderDC() {
   const bAge595=state.brenna.dob?ageDate(state.brenna.dob,59.5):null;
   const kAge595=state.kevin.dob ?ageDate(state.kevin.dob, 59.5):null;
   const ror=state.ror/100, rRor=state.retRor/100;
-  const wRate=(state.withdrawalPct??4)/100;
+  const kWRate=(state.kevinWithdrawalPct??4)/100;
+  const bWRate=(state.brennaWithdrawalPct??4)/100;
   const bRetYr=bRet?bRet.getFullYear():Infinity;
   const kRetYr=kRet?kRet.getFullYear():Infinity;
   const b595Yr=bAge595?bAge595.getFullYear():Infinity;
@@ -1064,7 +1066,7 @@ function renderDC() {
     let gapDC=drawFloorDC!==null?Math.max(0,drawFloorDC-nonDCInc):Infinity;
     const planDrawsDC={};
     plans.filter(p=>p.owner==='kevin').forEach(p=>{
-      const max=canKDC?runBal[p.id]*wRate*kDCFracDC:0;
+      const max=canKDC?runBal[p.id]*kWRate*kDCFracDC:0;
       const draw=drawFloorDC!==null?Math.min(max,gapDC):max;
       planDrawsDC[p.id]=draw; gapDC=Math.max(0,gapDC-draw);
     });
@@ -1072,7 +1074,7 @@ function renderDC() {
       const isB457=p.id==='b457b';
       const elig=isB457?(bRetired&&bAge62okDC):(bRetired&&bAge595okDC);
       const frac=isB457?bAge62FracDC:bBotherFracDC;
-      return{id:p.id,max:elig?runBal[p.id]*wRate*frac:0};
+      return{id:p.id,max:elig?runBal[p.id]*bWRate*frac:0};
     });
     const bTotDC=bElDC.reduce((s,x)=>s+x.max,0);
     const bDrwDC=drawFloorDC!==null?Math.min(bTotDC,gapDC):bTotDC;
@@ -1080,7 +1082,7 @@ function renderDC() {
     bElDC.forEach(x=>{planDrawsDC[x.id]=(planDrawsDC[x.id]||0)+x.max*bScDC;});
     gapDC=Math.max(0,gapDC-bDrwDC);
     if(!bAge62okDC&&bRetired&&kRetired&&state.minIncome>0&&gapDC>0){
-      const em=Math.max(0,Math.min((runBal['b457b']||0)*wRate,gapDC));
+      const em=Math.max(0,Math.min((runBal['b457b']||0)*bWRate,gapDC));
       planDrawsDC['b457b']=(planDrawsDC['b457b']||0)+em; gapDC=Math.max(0,gapDC-em);
     }
 
@@ -1150,7 +1152,8 @@ function renderFlow() {
   const bAge595=state.brenna.dob?ageDate(state.brenna.dob,59.5):null;
   const kAge595=state.kevin.dob ?ageDate(state.kevin.dob, 59.5):null;
   const ror=state.ror/100, rRor=state.retRor/100;
-  const wRate=(state.withdrawalPct??4)/100;
+  const kWRateFL=(state.kevinWithdrawalPct??4)/100;
+  const bWRateFL=(state.brennaWithdrawalPct??4)/100;
   const bRetYr=bRet?bRet.getFullYear():Infinity;
   const kRetYr=kRet?kRet.getFullYear():Infinity;
   const b595Yr=bAge595?bAge595.getFullYear():Infinity;
@@ -1229,7 +1232,7 @@ function renderFlow() {
     let gapFL=drawFloorFL!==null?Math.max(0,drawFloorFL-nonDCInc):Infinity;
     const planDrawsFL={};
     allPlans.filter(p=>p.owner==='kevin').forEach(p=>{
-      const max=canKDC?(runBal[p.id]||0)*wRate*kDCFracFL:0;
+      const max=canKDC?(runBal[p.id]||0)*kWRateFL*kDCFracFL:0;
       const draw=drawFloorFL!==null?Math.min(max,gapFL):max;
       planDrawsFL[p.id]=draw; gapFL=Math.max(0,gapFL-draw);
     });
@@ -1237,7 +1240,7 @@ function renderFlow() {
       const isB457=p.id==='b457b';
       const elig=isB457?(bRetired&&bAge62okFL):(bRetired&&bAge595okFL);
       const frac=isB457?bDCFrac:bBotherFracFL;
-      return{id:p.id,max:elig?(runBal[p.id]||0)*wRate*frac:0};
+      return{id:p.id,max:elig?(runBal[p.id]||0)*bWRateFL*frac:0};
     });
     const bTotFL=bElFL.reduce((s,x)=>s+x.max,0);
     const bDrwFL=drawFloorFL!==null?Math.min(bTotFL,gapFL):bTotFL;
@@ -1245,7 +1248,7 @@ function renderFlow() {
     bElFL.forEach(x=>{planDrawsFL[x.id]=(planDrawsFL[x.id]||0)+x.max*bScFL;});
     gapFL=Math.max(0,gapFL-bDrwFL);
     if(!bAge62okFL&&bRetired&&kRetired&&state.minIncome>0&&gapFL>0){
-      const em=Math.max(0,Math.min((runBal['b457b']||0)*wRate,gapFL));
+      const em=Math.max(0,Math.min((runBal['b457b']||0)*bWRateFL,gapFL));
       planDrawsFL['b457b']=(planDrawsFL['b457b']||0)+em; gapFL=Math.max(0,gapFL-em);
     }
     const rowData={yr,bSal:bSalYr,kSal:kSalYr,bPenInc,bSuppInc,bRetired,kRetired};
@@ -1345,7 +1348,8 @@ function renderSettings() {
     <div class="form-grid">
       <div class="field"><label>Pre-Retirement Return %</label><input id="f-ror" type="number" step="0.1" value="${state.ror??7}" onchange="state.ror=parseFloat(this.value)||0;saveState();scheduleRender();" /></div>
       <div class="field"><label>Post-Retirement Return %</label><input id="f-rror" type="number" step="0.1" value="${state.retRor??5}" onchange="state.retRor=parseFloat(this.value)||0;saveState();scheduleRender();" /></div>
-      <div class="field"><label>Maximum Annual DC Withdrawal %</label><input id="f-wpct" type="number" step="0.1" value="${state.withdrawalPct??4}" onchange="state.withdrawalPct=parseFloat(this.value)||4;saveState();scheduleRender();" /><div class="field-hint">% of each DC balance withdrawn per year post-retirement (default 4%)</div></div>
+      <div class="field"><label>Max Annual Withdrawal % — Kevin's 401K</label><input id="f-kwpct" type="number" step="0.1" value="${state.kevinWithdrawalPct??4}" onchange="state.kevinWithdrawalPct=parseFloat(this.value)||4;saveState();scheduleRender();" /><div class="field-hint">% of Kevin's 401K balance withdrawn per year post-retirement (default 4%)</div></div>
+      <div class="field"><label>Max Annual Withdrawal % — Brenna's DC Plans</label><input id="f-bwpct" type="number" step="0.1" value="${state.brennaWithdrawalPct??4}" onchange="state.brennaWithdrawalPct=parseFloat(this.value)||4;saveState();scheduleRender();" /><div class="field-hint">% of Brenna's 457B / 401A / IRA balances withdrawn per year post-retirement (default 4%)</div></div>
       <div class="field"><label>Annual Income Goal</label><input id="f-incomegoal" type="text" value="${state.incomeGoal?fmtMoney(state.incomeGoal):''}" onchange="state.incomeGoal=parseMoney(this.value);saveState();scheduleRender();" /></div>
       <div class="field"><label>Minimum Annual Income</label><input id="f-minincome" type="text" value="${state.minIncome?fmtMoney(state.minIncome):''}" onchange="state.minIncome=parseMoney(this.value);saveState();scheduleRender();" /><div class="field-hint">Flags years where income falls below this floor due to withdrawal % limits</div></div>
     </div>
