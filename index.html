@@ -273,8 +273,9 @@ function deepMerge(t, s) {
 // ── Formatting ───────────────────────────────────────────────
 const fmt$ = n => isFinite(n) ? n.toLocaleString('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
 const fmtD = (n, d=1) => isFinite(n) ? Number(n).toFixed(d) : '—';
-const fmtDate = d => d ? new Date(d).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}) : '—';
-const fmtMo   = d => d ? new Date(d).toLocaleDateString('en-US',{year:'numeric',month:'short'}) : '—';
+const parseLD = d => d instanceof Date ? d : (s => new Date(+s[0], +s[1]-1, +s[2]))(String(d).split('-'));
+const fmtDate = d => d ? parseLD(d).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}) : '—';
+const fmtMo   = d => d ? parseLD(d).toLocaleDateString('en-US',{year:'numeric',month:'short'}) : '—';
 function fmtMoney(n) { return Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function parseMoney(s) { return parseFloat(String(s||0).replace(/[,$]/g,'')) || 0; }
 
