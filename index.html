@@ -724,7 +724,7 @@ function renderPhases(tl) {
   let h='<div class="phase-cards">';
   phases.forEach(p=>{
     const r=p.r, yr=p.startYr===p.endYr?`${p.startYr}`:`${p.startYr}–${p.endYr}`;
-    let label=!r.bRet&&!r.kRet?'Both Working':r.bRet&&r.kRet?'Both Retired':r.bRet?'Brenna Retired · Kevin Working':'Kevin Retired · Brenna Working';
+    let label=!r.bRet&&!r.kRet?'Both Working':r.bRet&&r.kRet?'Both Retired':r.bRet?'Brenna Retired · Kevin Working':'Brenna Working · Kevin Retired';
     if (r.sInc>0) label+=' · Supplement';
     if (r.bRet||r.kRet) {
       const dcParts=[];
@@ -1348,8 +1348,8 @@ function renderSettings() {
     <div class="form-grid">
       <div class="field"><label>Pre-Retirement Return %</label><input id="f-ror" type="number" step="0.1" value="${state.ror??7}" onchange="state.ror=parseFloat(this.value)||0;saveState();scheduleRender();" /></div>
       <div class="field"><label>Post-Retirement Return %</label><input id="f-rror" type="number" step="0.1" value="${state.retRor??5}" onchange="state.retRor=parseFloat(this.value)||0;saveState();scheduleRender();" /></div>
-      <div class="field"><label>Max Annual Withdrawal % — Kevin's 401K</label><input id="f-kwpct" type="number" step="0.1" value="${state.kevinWithdrawalPct??4}" onchange="state.kevinWithdrawalPct=parseFloat(this.value)||4;saveState();scheduleRender();" /><div class="field-hint">% of Kevin's 401K balance withdrawn per year post-retirement (default 4%)</div></div>
       <div class="field"><label>Max Annual Withdrawal % — Brenna's DC Plans</label><input id="f-bwpct" type="number" step="0.1" value="${state.brennaWithdrawalPct??4}" onchange="state.brennaWithdrawalPct=parseFloat(this.value)||4;saveState();scheduleRender();" /><div class="field-hint">% of Brenna's 457B / 401A / IRA balances withdrawn per year post-retirement (default 4%)</div></div>
+      <div class="field"><label>Max Annual Withdrawal % — Kevin's 401K</label><input id="f-kwpct" type="number" step="0.1" value="${state.kevinWithdrawalPct??4}" onchange="state.kevinWithdrawalPct=parseFloat(this.value)||4;saveState();scheduleRender();" /><div class="field-hint">% of Kevin's 401K balance withdrawn per year post-retirement (default 4%)</div></div>
       <div class="field"><label>Annual Income Goal</label><input id="f-incomegoal" type="text" value="${state.incomeGoal?fmtMoney(state.incomeGoal):''}" onchange="state.incomeGoal=parseMoney(this.value);saveState();scheduleRender();" /></div>
       <div class="field"><label>Minimum Annual Income</label><input id="f-minincome" type="text" value="${state.minIncome?fmtMoney(state.minIncome):''}" onchange="state.minIncome=parseMoney(this.value);saveState();scheduleRender();" /><div class="field-hint">Flags years where income falls below this floor due to withdrawal % limits</div></div>
     </div>
