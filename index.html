@@ -651,7 +651,7 @@ function calcTimeline() {
     const dBOth = dBOth_max * bScale;
     gap = Math.max(0, gap - bPool_drw);
     // Step 3: 457B emergency pre-62 (only to meet minIncome floor)
-    const d457_gap = (!bAge62ok && bRetired && kRetired && effectiveMinTL > 0 && gap > 0)
+    const d457_gap = (!bAge62ok && bRetired && effectiveMinTL > 0 && gap > 0)
       ? Math.max(0, Math.min(bDC457 * bWRateTL, gap)) : 0;
     d457 += d457_gap;
     const dcDraw = dKDC + dBOth + d457;
@@ -1091,7 +1091,7 @@ function renderDC() {
     const bScDC=bTotDC>0?bDrwDC/bTotDC:0;
     bElDC.forEach(x=>{planDrawsDC[x.id]=(planDrawsDC[x.id]||0)+x.max*bScDC;});
     gapDC=Math.max(0,gapDC-bDrwDC);
-    if(!bAge62okDC&&bRetired&&kRetired&&effectiveMinDC>0&&gapDC>0){
+    if(!bAge62okDC&&bRetired&&effectiveMinDC>0&&gapDC>0){
       const em=Math.max(0,Math.min((runBal['b457b']||0)*bWRate,gapDC));
       planDrawsDC['b457b']=(planDrawsDC['b457b']||0)+em; gapDC=Math.max(0,gapDC-em);
     }
@@ -1262,7 +1262,7 @@ function renderFlow() {
     const bScFL=bTotFL>0?bDrwFL/bTotFL:0;
     bElFL.forEach(x=>{planDrawsFL[x.id]=(planDrawsFL[x.id]||0)+x.max*bScFL;});
     gapFL=Math.max(0,gapFL-bDrwFL);
-    if(!bAge62okFL&&bRetired&&kRetired&&effectiveMinFL>0&&gapFL>0){
+    if(!bAge62okFL&&bRetired&&effectiveMinFL>0&&gapFL>0){
       const em=Math.max(0,Math.min((runBal['b457b']||0)*bWRateFL,gapFL));
       planDrawsFL['b457b']=(planDrawsFL['b457b']||0)+em; gapFL=Math.max(0,gapFL-em);
     }
