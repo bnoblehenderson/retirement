@@ -242,7 +242,7 @@ const DEFAULT = {
       { id: 'k401k', name: '401K', type: '401K', balance: 0, balDate: '', contrib: 0, periods: 26 },
     ],
   },
-  ror: 7, retRor: 5, withdrawalPct: 4, kevinWithdrawalPct: 4, brennaWithdrawalPct: 4, incomeGoal: 0, minIncome: 0,
+  ror: 7, retRor: 5, withdrawalPct: 4, kevinWithdrawalPct: 4, brennaWithdrawalPct: 4, incomeGoal: 0, minIncome: 0, minIncomeDecayStart: 2063, minIncomeDecayRate: 5,
 };
 
 let state = JSON.parse(JSON.stringify(DEFAULT));
@@ -630,7 +630,12 @@ function calcTimeline() {
                         (bRetYr< b595Yr && yr===b595Yr)  ? bAge595DayFracTL : 1;
     const kDCFrac = (kRetYr>=k595Yr&&yr===kRetYr) ? kRetDCFrac : (kRetYr<k595Yr&&yr===k595Yr) ? k595DayFrac : 1;
     const nonDCInc = pInc + sInc + bSal + kSal;
-    const drawFloor = state.minIncome > 0 ? state.minIncome : state.incomeGoal > 0 ? state.incomeGoal : null;
+    const decayYrsTL = state.minIncome > 0 && yr >= (state.minIncomeDecayStart||2063)
+      ? yr - (state.minIncomeDecayStart||2063) + 1 : 0;
+    const effectiveMinTL = decayYrsTL > 0
+      ? state.minIncome * Math.pow(1-(state.minIncomeDecayRate??5)/100, decayYrsTL)
+      : state.minIncome;
+    const drawFloor = effectiveMinTL > 0 ? effectiveMinTL : state.incomeGoal > 0 ? state.incomeGoal : null;
     let gap = drawFloor !== null ? Math.max(0, drawFloor - nonDCInc) : Infinity;
     // Step 1: Kevin's DC (first priority)
     const dKDC_max = canKDC ? kDC * kWRateTL * kDCFrac : 0;
@@ -646,7 +651,7 @@ function calcTimeline() {
     const dBOth = dBOth_max * bScale;
     gap = Math.max(0, gap - bPool_drw);
     // Step 3: 457B emergency pre-62 (only to meet minIncome floor)
-    const d457_gap = (!bAge62ok && bRetired && kRetired && state.minIncome > 0 && gap > 0)
+    const d457_gap = (!bAge62ok && bRetired && kRetired && effectiveMinTL > 0 && gap > 0)
       ? Math.max(0, Math.min(bDC457 * bWRateTL, gap)) : 0;
     d457 += d457_gap;
     const dcDraw = dKDC + dBOth + d457;
@@ -674,7 +679,7 @@ function calcTimeline() {
       const kevinInc  = kSal+dKDC;
       rows.push({ yr, bRet:bRetired, kRet:kRetired, pInc, sInc, d457, dBOth, dKDC, dcDraw, ex457,
         bSal, kSal, can457, canBOther, canKDC, k595ok,
-        brennaInc, kevinInc, total:brennaInc+kevinInc });
+        brennaInc, kevinInc, total:brennaInc+kevinInc, effectiveMin:effectiveMinTL });
     }
   }
   return { rows, bPensionAnn, suppAnn, age62, bAge595, kAge595 };
@@ -757,7 +762,7 @@ function renderPhases(tl) {
           +`</div>`:'')
         +`</div>`
       : '';
-    const phaseBelowMin=state.minIncome>0&&(r.bRet||r.kRet)&&r.total<state.minIncome-0.005&&r.total>0;
+    const phaseBelowMin=(r.effectiveMin??0)>0&&(r.bRet||r.kRet)&&r.total<(r.effectiveMin??0)-0.005&&r.total>0;
     h+=`<div class="phase-card ${cls}"><div class="phase-top"><div><div class="phase-yr">${yr}</div><div class="phase-label">${label}</div></div><div class="phase-total" style="${phaseBelowMin?'color:#c0392b;':''}">${fmt$(r.total)}/yr${phaseBelowMin?` <span title="Below minimum income" style="font-size:0.8em;">⚠</span>`:''}</div></div>${breakdown}</div>`;
   });
   h+='</div>';
@@ -1062,7 +1067,12 @@ function renderDC() {
     const bBotherFracDC=(bRetYr>=b595Yr&&yr===bRetYr)?dayFracDCfn(bRet,bRetYr):(bRetYr<b595Yr&&yr===b595Yr)?bAge595DayFracDC:1;
     const kDCFracDC=(kRetYr>=k595Yr&&yr===kRetYr)?kRetDCFracDCv:(kRetYr<k595Yr&&yr===k595Yr)?k595DayFracDCv:1;
     // Priority-based draws: Kevin first → Brenna eligible DC → 457B emergency pre-62
-    const drawFloorDC=state.minIncome>0?state.minIncome:state.incomeGoal>0?state.incomeGoal:null;
+    const decayYrsDC = state.minIncome > 0 && yr >= (state.minIncomeDecayStart||2063)
+      ? yr - (state.minIncomeDecayStart||2063) + 1 : 0;
+    const effectiveMinDC = decayYrsDC > 0
+      ? state.minIncome * Math.pow(1-(state.minIncomeDecayRate??5)/100, decayYrsDC)
+      : state.minIncome;
+    const drawFloorDC=effectiveMinDC>0?effectiveMinDC:state.incomeGoal>0?state.incomeGoal:null;
     let gapDC=drawFloorDC!==null?Math.max(0,drawFloorDC-nonDCInc):Infinity;
     const planDrawsDC={};
     plans.filter(p=>p.owner==='kevin').forEach(p=>{
@@ -1081,7 +1091,7 @@ function renderDC() {
     const bScDC=bTotDC>0?bDrwDC/bTotDC:0;
     bElDC.forEach(x=>{planDrawsDC[x.id]=(planDrawsDC[x.id]||0)+x.max*bScDC;});
     gapDC=Math.max(0,gapDC-bDrwDC);
-    if(!bAge62okDC&&bRetired&&kRetired&&state.minIncome>0&&gapDC>0){
+    if(!bAge62okDC&&bRetired&&kRetired&&effectiveMinDC>0&&gapDC>0){
       const em=Math.max(0,Math.min((runBal['b457b']||0)*bWRate,gapDC));
       planDrawsDC['b457b']=(planDrawsDC['b457b']||0)+em; gapDC=Math.max(0,gapDC-em);
     }
@@ -1228,7 +1238,12 @@ function renderFlow() {
     const bBotherFracFL=(bRetYr>=b595Yr&&yr===bRetYr)?bRetPenFracFL:(bRetYr<b595Yr&&yr===b595Yr)?bAge595DayFracFL:1;
     const kDCFracFL=(kRetYr>=k595Yr&&yr===kRetYr)?kRetDCFracFL:(kRetYr<k595Yr&&yr===k595Yr)?k595DayFracFL:1;
     // Priority-based draws: Kevin first → Brenna eligible DC pro-rata → 457B emergency pre-62
-    const drawFloorFL=state.minIncome>0?state.minIncome:state.incomeGoal>0?state.incomeGoal:null;
+    const decayYrsFL = state.minIncome > 0 && yr >= (state.minIncomeDecayStart||2063)
+      ? yr - (state.minIncomeDecayStart||2063) + 1 : 0;
+    const effectiveMinFL = decayYrsFL > 0
+      ? state.minIncome * Math.pow(1-(state.minIncomeDecayRate??5)/100, decayYrsFL)
+      : state.minIncome;
+    const drawFloorFL=effectiveMinFL>0?effectiveMinFL:state.incomeGoal>0?state.incomeGoal:null;
     let gapFL=drawFloorFL!==null?Math.max(0,drawFloorFL-nonDCInc):Infinity;
     const planDrawsFL={};
     allPlans.filter(p=>p.owner==='kevin').forEach(p=>{
@@ -1247,7 +1262,7 @@ function renderFlow() {
     const bScFL=bTotFL>0?bDrwFL/bTotFL:0;
     bElFL.forEach(x=>{planDrawsFL[x.id]=(planDrawsFL[x.id]||0)+x.max*bScFL;});
     gapFL=Math.max(0,gapFL-bDrwFL);
-    if(!bAge62okFL&&bRetired&&kRetired&&state.minIncome>0&&gapFL>0){
+    if(!bAge62okFL&&bRetired&&kRetired&&effectiveMinFL>0&&gapFL>0){
       const em=Math.max(0,Math.min((runBal['b457b']||0)*bWRateFL,gapFL));
       planDrawsFL['b457b']=(planDrawsFL['b457b']||0)+em; gapFL=Math.max(0,gapFL-em);
     }
@@ -1280,6 +1295,7 @@ function renderFlow() {
     });
     const dcDrawTotal=allPlans.reduce((s,p)=>s+(rowData[p.id]?.withdrawal||0),0);
     rowData.annualIncome=bSalYr+kSalYr+bPenInc+bSuppInc+dcDrawTotal;
+    rowData.effectiveMin=effectiveMinFL;
     rows.push(rowData);
     const allZero=allPlans.every(p=>runBal[p.id]<0.5);
     if(allZero&&bRetired&&kRetired&&yr>Math.max(bRetYr===Infinity?startYr:bRetYr,kRetYr===Infinity?startYr:kRetYr)+3) break;
@@ -1324,7 +1340,7 @@ function renderFlow() {
       const f=row[p.id]; if(!f){h+=`<td>—</td><td>—</td><td>—</td>`;return;}
       h+=`<td>${fmtFlow(f.cashFlow)}</td><td>${fmtGain(f.invGain)}</td><td>${fmtBal(f.balEnd)}</td>`;
     });
-    const belowMin=state.minIncome>0&&(row.bRetired||row.kRetired)&&row.annualIncome<state.minIncome-0.005&&row.annualIncome>0;
+    const belowMin=(row.effectiveMin??0)>0&&(row.bRetired||row.kRetired)&&row.annualIncome<(row.effectiveMin??0)-0.005&&row.annualIncome>0;
     h+=`<td style="font-weight:600;${belowMin?'color:#c0392b;background:#fdf0ee;':''}">${row.annualIncome>0.5?fmt$(row.annualIncome):'—'}${belowMin?' ⚠':''}</td>`;
     h+=`</tr>`;
   });
@@ -1352,6 +1368,8 @@ function renderSettings() {
       <div class="field"><label>Max Annual Withdrawal % — Kevin's 401K</label><input id="f-kwpct" type="number" step="0.1" value="${state.kevinWithdrawalPct??4}" onchange="state.kevinWithdrawalPct=parseFloat(this.value)||4;saveState();scheduleRender();" /><div class="field-hint">% of Kevin's 401K balance withdrawn per year post-retirement (default 4%)</div></div>
       <div class="field"><label>Annual Income Goal</label><input id="f-incomegoal" type="text" value="${state.incomeGoal?fmtMoney(state.incomeGoal):''}" onchange="state.incomeGoal=parseMoney(this.value);saveState();scheduleRender();" /></div>
       <div class="field"><label>Minimum Annual Income</label><input id="f-minincome" type="text" value="${state.minIncome?fmtMoney(state.minIncome):''}" onchange="state.minIncome=parseMoney(this.value);saveState();scheduleRender();" /><div class="field-hint">Flags years where income falls below this floor due to withdrawal % limits</div></div>
+      <div class="field"><label>Min. Income Decay Start Year</label><input id="f-mindecayyr" type="number" step="1" value="${state.minIncomeDecayStart??2063}" onchange="state.minIncomeDecayStart=parseInt(this.value)||2063;saveState();scheduleRender();" /><div class="field-hint">Year when minimum income floor begins declining annually (default 2063)</div></div>
+      <div class="field"><label>Min. Income Annual Decay %</label><input id="f-mindecayrate" type="number" step="0.5" value="${state.minIncomeDecayRate??5}" onchange="state.minIncomeDecayRate=parseFloat(this.value)||5;saveState();scheduleRender();" /><div class="field-hint">% reduction applied to the floor each year starting in the decay year (default 5%)</div></div>
     </div>
   </div>
   <div class="card"><div class="card-header"><div class="card-title">GitHub Sync</div></div>
